@@ -71,6 +71,7 @@ header p{margin:4px 0 0;font-size:.85rem;opacity:.85}
 .b-diff-中{background:var(--amber-bg);color:var(--amber)}
 .b-diff-難{background:var(--red-bg);color:var(--red)}
 .b-type{background:#f3f4f6;color:var(--sub)}
+.b-done{background:#fde68a;color:#92400e}
 .topic{font-size:.85rem;color:var(--sub);margin-left:auto}
 .qimg{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
 .qacts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
@@ -130,6 +131,7 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
         <div class="mf" id="mfType"></div>
         <div><label>題號範圍（如 1-10 或 3,5,7-9）</label><input type="text" id="fNum" placeholder="全部" style="min-width:150px"></div>
         <div class="grow"><label>關鍵字（主題／代碼／文字）</label><input type="text" id="fKw" placeholder="例如：畢氏定理、相似、S-9-2"></div>
+        <div><label>&nbsp;</label><label style="display:flex;align-items:center;gap:5px;font-size:.85rem;color:var(--sub);padding:7px 0"><input type="checkbox" id="fExclDone">排除已做過</label></div>
         <button class="btn btn-ghost" id="btnReset">清除條件</button>
       </div>
       <div class="hintline">各選單皆可<b>複選</b>（打勾多個即取聯集）；不勾＝該項不限。</div>
@@ -152,6 +154,16 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
   </div>
 
   <div id="anaView" style="display:none">
+    <div class="panel">
+      <h3 style="margin-top:0">☁ 試算表收卷設定</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="cfgUrl" placeholder="貼上 Apps Script 收卷網址（含 ?token=…），設定一次即可" style="flex:1;min-width:280px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:.85rem">
+        <button class="btn btn-ghost" id="btnSaveUrl">儲存</button>
+        <input type="text" id="cfgQuiz" placeholder="試卷名稱篩選（留白＝全部）" style="min-width:190px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:.85rem">
+        <button class="btn btn-blue" id="btnLoadRecs">☁ 從試算表載入紀錄</button>
+      </div>
+      <p class="hint" style="margin:8px 0 0">設定後：匯出線上試卷會<b>自動內嵌收卷網址</b>（學生交卷自動上傳）；載入紀錄後題庫每題會標「⚑ 已考過」，並可在篩選列勾「排除已做過」。首次設定方式見「使用說明」或 apps_script/試算表串接說明.md。</p>
+    </div>
     <div class="panel">
       <h3 style="margin-top:0">📥 貼上作答紀錄</h3>
       <p class="hint" style="margin:4px 0 8px">支援學生交回的 <b>base64 字串</b>（每行一筆，可多位學生）或下載的 <b>JSON 檔內容</b>。貼好按「分析錯題」。</p>
@@ -331,6 +343,7 @@ function filtered(){
     (!F.diff.size || F.diff.has(q.difficulty)) &&
     (!F.type.size || F.type.has(q.type)) &&
     (!numSet || numSet.has(q.num)) &&
+    (!el('fExclDone').checked || !doneIds.has(q.id)) &&
     (!kw || (q.topic+q.solution+q.codes.join(',')+q.perf.join(',')+q.chapter+(q.trap||'')).includes(kw))
   );
 }
@@ -373,6 +386,7 @@ function card(q){
       ${q.codes.map(c=>badge('b-code', c, (CURR['學習內容'][c]||{}).desc)).join('')}
       ${q.perf.map(p=>badge('b-perf', p, CURR['學習表現'][p])).join('')}
       ${badge('b-diff-'+q.difficulty, q.difficulty)}
+      ${doneIds.has(q.id)?badge('b-done','⚑ 已考過','此題出現在已載入的作答紀錄中'):''}
       <span class="topic">${q.topic}</span>
     </div>
     <img class="qimg" loading="lazy" src="${q.img}" alt="${q.id} 題目" onerror="imgFail(this)">
@@ -429,6 +443,7 @@ function togglePick(id,on){
 let uidc = 0;
 const DR = {'易':0,'中':1,'難':2};
 const QIDX = {}; QS.forEach(q=>QIDX[q.id]=q);
+const doneIds = new Set();   // 載入紀錄後：學生曾做過的題目 id
 
 function parseRecords(text){
   const recs = [];
@@ -517,8 +532,12 @@ function analyze(){
     out.innerHTML = '<div class="panel" style="color:var(--red)">讀不到任何作答紀錄——請確認貼的是學生交回的 base64 字串（每行一筆）或 JSON 檔內容。</div>';
     return;
   }
+  // 更新「曾做過的題目」集合（供 ⚑已考過 標記與「排除已做過」篩選）
+  doneIds.clear();
+  recs.forEach(r=>r.answers.forEach(a=>{ if(QIDX[a.id]) doneIds.add(a.id); }));
   let html = '';
   if(bad) html += `<div class="panel" style="color:var(--amber)">⚠ 有 ${bad} 行無法解析，已略過。</div>`;
+  html += `<div class="panel">📌 已記錄 <b>${doneIds.size}</b> 題為「曾做過」：題庫瀏覽中會標 <span class="badge b-done">⚑ 已考過</span>，篩選列可勾「排除已做過」出新卷不重複。</div>`;
   // 學生摘要
   html += `<div class="panel"><h3 style="margin-top:0">👥 學生摘要（${recs.length} 筆）</h3>
     <div class="stats"><table><tr><th>班級</th><th>座號</th><th>姓名</th><th>選擇題得分</th><th>錯題數</th><th>作答時間</th></tr>`
@@ -641,14 +660,18 @@ async function exportQuiz(){
                 k: q.type==='choice' ? btoa(q.answer+'|'+q.id) : ''});
   }
   const safeTitle = title.replace(/[<>&"]/g,'');
+  const su = (localStorage.getItem('submitUrl')||'').trim();
   const html = QUIZ_TPL.split('__TITLE__').join(safeTitle)
+      .split('__SUBMITURL__').join(su)
       .replace('__QUIZDATA__', JSON.stringify(items).replace(/<\//g,'<\\/'));
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = '線上試卷_'+safeTitle+'.html';
   a.click();
-  alert('已下載「線上試卷_'+safeTitle+'.html」。\n\n上架 Netlify：\n1. 把檔案改名為 index.html，放進一個新資料夾\n2. 打開 app.netlify.com/drop\n3. 把整個資料夾拖進去 → 取得網址發給學生');
+  alert('已下載「線上試卷_'+safeTitle+'.html」。\n'
+    + (su ? '✅ 已內嵌收卷網址：學生交卷會自動上傳你的試算表。\n' : '⚠ 尚未設定收卷網址（錯題分析頁可設定），此卷交卷後只能手動複製紀錄。\n')
+    + '\n上架 Netlify：\n1. 檔案改名 index.html 放進新資料夾\n2. 開 app.netlify.com/drop\n3. 資料夾拖進去 → 網址發給學生');
 }
 
 // ---- 統計 ----
@@ -695,6 +718,32 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
 el('btnAnalyze').onclick = analyze;
 el('btnQuizFromAna').onclick = ()=>exportQuiz();
 el('btnPrintFromAna').onclick = ()=>doPrint(false);
+
+// ---- 試算表收卷設定與載入 ----
+el('cfgUrl').value = localStorage.getItem('submitUrl') || '';
+el('btnSaveUrl').onclick = ()=>{
+  localStorage.setItem('submitUrl', el('cfgUrl').value.trim());
+  alert('已儲存收卷網址。之後「匯出線上試卷」會自動內嵌，學生交卷即自動上傳試算表。');
+};
+el('btnLoadRecs').onclick = async ()=>{
+  const u = el('cfgUrl').value.trim();
+  if(!u){ alert('請先貼上收卷網址（含 ?token=…）'); return; }
+  localStorage.setItem('submitUrl', u);
+  const quiz = el('cfgQuiz').value.trim();
+  const url = u + (u.includes('?')?'&':'?') + 'list=1' + (quiz ? ('&quiz='+encodeURIComponent(quiz)) : '');
+  el('anaOut').innerHTML = '<div class="panel">⏳ 從試算表載入中…</div>';
+  try{
+    const resp = await fetch(url);
+    const j = await resp.json();
+    if(!Array.isArray(j)) throw new Error((j && j.error) || '回應格式錯誤');
+    if(!j.length){ el('anaOut').innerHTML = '<div class="panel">試算表目前沒有符合條件的紀錄。</div>'; return; }
+    el('recInput').value = JSON.stringify(j);
+    analyze();
+  }catch(e){
+    el('anaOut').innerHTML = '<div class="panel" style="color:var(--red)">載入失敗：'+e+'<br>請確認網址正確（含 ?token=）、Apps Script 已部署為「任何人可存取」。</div>';
+  }
+};
+el('fExclDone').onchange = ()=>{ page=1; render(); };
 
 render();
 </script>
@@ -752,9 +801,9 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 <div class="wrap">
   <div class="panel">
     <div class="idrow">
-      <div><label>班級</label><input id="stuClass" placeholder="例：309" inputmode="numeric"></div>
-      <div><label>座號</label><input id="stuSeat" placeholder="例：12" inputmode="numeric"></div>
-      <div><label>姓名</label><input id="stuName" placeholder="姓名"></div>
+      <div><label>班級（必填）</label><input id="stuClass" placeholder="例：309" inputmode="numeric"></div>
+      <div><label>座號（必填）</label><input id="stuSeat" placeholder="例：12" inputmode="numeric"></div>
+      <div><label>姓名（選填）</label><input id="stuName" placeholder="可留白"></div>
     </div>
     <p class="hint" style="margin:10px 0 0">共 <b id="totalQ"></b> 題。選擇題點選 A/B/C/D，非選擇題請將計算過程寫在紙上、把答案輸入文字框。作答完按最下方「交卷」。</p>
   </div>
@@ -780,8 +829,9 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 </div>
 <script id="qdata" type="application/json">__QUIZDATA__</script>
 <script>
-// ====== 預留接口：之後有後端時，把 submitUrl 填上（POST JSON），其餘不用改 ======
-const CONFIG = { submitUrl: "" };
+// ====== 收卷網址：由題庫「匯出線上試卷」時自動內嵌（Apps Script 網頁應用程式 URL 含 ?token=）======
+const CONFIG = { submitUrl: "__SUBMITURL__" };
+const SUBMIT = (CONFIG.submitUrl && CONFIG.submitUrl.indexOf('http') === 0) ? CONFIG.submitUrl : '';
 const ITEMS = JSON.parse(document.getElementById('qdata').textContent);
 const ans = {};   // id -> 'A'~'D' 或 文字
 let submitted = false;
@@ -836,7 +886,7 @@ function grade(q){
 }
 document.getElementById('btnSubmit').onclick = () => {
   if(submitted) return;
-  if(!val('stuClass')||!val('stuSeat')||!val('stuName')){ alert('請先填寫 班級、座號、姓名'); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  if(!val('stuClass')||!val('stuSeat')){ alert('請先填寫 班級、座號'); window.scrollTo({top:0,behavior:'smooth'}); return; }
   const blank = ITEMS.filter(q=>!(q.id in ans)).length;
   if(blank>0 && !confirm(`還有 ${blank} 題未作答，確定要交卷嗎？`)) return;
   submitted = true;
@@ -865,10 +915,14 @@ document.getElementById('btnSubmit').onclick = () => {
   document.getElementById('donebar').style.display = 'none';
   document.getElementById('result').scrollIntoView({behavior:'smooth'});
   try{ localStorage.removeItem(LSKEY); }catch(e){}
-  if(CONFIG.submitUrl){
-    fetch(CONFIG.submitUrl, {method:'POST', headers:{'Content-Type':'application/json'}, body:json})
-      .then(r=>{ document.getElementById('postStatus').textContent = r.ok ? '✅ 紀錄已自動上傳' : '⚠ 自動上傳失敗，請改用複製/分享'; })
-      .catch(()=>{ document.getElementById('postStatus').textContent = '⚠ 自動上傳失敗，請改用複製/分享'; });
+  if(SUBMIT){
+    const st = document.getElementById('postStatus');
+    st.textContent = '⏳ 紀錄上傳中…';
+    // Apps Script 需用 text/plain 避免預檢請求
+    fetch(SUBMIT, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:json})
+      .then(r=>r.json())
+      .then(j=>{ st.textContent = j.ok ? '✅ 紀錄已自動上傳老師的試算表（仍建議保留上方紀錄以備援）' : '⚠ 上傳失敗：'+(j.error||'')+'，請改用複製/分享交給老師'; })
+      .catch(()=>{ st.textContent = '⚠ 自動上傳失敗（可能沒有網路），請用「複製紀錄」交給老師'; });
   }
 };
 function copyRec(){
@@ -912,7 +966,7 @@ out2.write_text(html2, encoding="utf-8")
 print("written", out2, f"{out2.stat().st_size/1024/1024:.1f} MB")
 
 
-def make_quiz(question_ids, title, out_path):
+def make_quiz(question_ids, title, out_path, submit_url=""):
     """由 Python 端直接產生線上試卷（與網頁匯出功能同一模板）"""
     idx = {q["id"]: q for q in questions}
     items = []
@@ -925,7 +979,9 @@ def make_quiz(question_ids, title, out_path):
             "k": base64.b64encode(f"{q['answer']}|{q['id']}".encode()).decode() if q["type"] == "choice" else "",
         })
     data = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
-    html = QUIZ_TEMPLATE.replace("__TITLE__", title).replace("__QUIZDATA__", data)
+    html = (QUIZ_TEMPLATE.replace("__TITLE__", title)
+            .replace("__SUBMITURL__", submit_url)
+            .replace("__QUIZDATA__", data))
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     Path(out_path).write_text(html, encoding="utf-8")
     print("written", out_path, f"{Path(out_path).stat().st_size/1024/1024:.1f} MB")
