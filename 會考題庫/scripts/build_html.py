@@ -37,6 +37,19 @@ header p{margin:4px 0 0;font-size:.85rem;opacity:.85}
 .filters label{display:block;font-size:.75rem;color:var(--sub);margin-bottom:3px}
 .filters select,.filters input[type=text]{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:.9rem;background:#fff;min-width:120px}
 .filters .grow{flex:1;min-width:180px}
+.hintline{font-size:.76rem;color:var(--sub);margin-top:8px}
+.mf{position:relative;min-width:130px}
+.mfbtn{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:.9rem;cursor:pointer;text-align:left}
+.mfbtn.on{border-color:var(--blue);color:var(--blue);font-weight:700;background:var(--blue-bg)}
+.mfmenu{display:none;position:absolute;z-index:99;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);max-height:340px;overflow:auto;min-width:250px;padding:8px}
+.mfmenu.open{display:block}
+.mfitem{display:block;padding:6px 8px;border-radius:6px;font-size:.87rem;cursor:pointer;white-space:nowrap}
+.mfitem:hover{background:#f3f4f6}
+.mfitem input{margin-right:6px}
+.mfhead{font-size:.74rem;color:var(--sub);font-weight:700;margin:8px 4px 2px;border-top:1px solid var(--line);padding-top:6px}
+.mfops{display:flex;gap:6px;margin-bottom:6px}
+.mfops button{flex:1;padding:5px;border:1px solid var(--line);background:#f9fafb;border-radius:6px;cursor:pointer;font-size:.8rem}
+.mfops button:hover{background:var(--blue-bg);color:var(--blue)}
 .btn{cursor:pointer;border:none;border-radius:8px;padding:8px 14px;font-size:.88rem;font-weight:600}
 .btn-blue{background:var(--blue);color:#fff}
 .btn-ghost{background:#fff;color:var(--blue);border:1px solid var(--blue)}
@@ -107,21 +120,17 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
   <div id="bankView">
     <div class="panel">
       <div class="filters">
-        <div><label>年度／屆數</label><select id="fYear">
-          <option value="">全部</option>
-          <option value="R3">最近3屆（113–115）</option>
-          <option value="R5">最近5屆（111–115）</option>
-          <option value="R10">最近10屆（106–115）</option>
-        </select></div>
+        <div class="mf" id="mfYear"></div>
+        <div class="mf" id="mfBook"></div>
+        <div class="mf" id="mfChap"></div>
+        <div class="mf" id="mfCode"></div>
+        <div class="mf" id="mfDiff"></div>
+        <div class="mf" id="mfType"></div>
         <div><label>題號範圍（如 1-10 或 3,5,7-9）</label><input type="text" id="fNum" placeholder="全部" style="min-width:150px"></div>
-        <div><label>冊別</label><select id="fBook"><option value="">全部</option></select></div>
-        <div><label>章節</label><select id="fChap"><option value="">全部</option></select></div>
-        <div><label>學習內容</label><select id="fCode"><option value="">全部</option></select></div>
-        <div><label>難度</label><select id="fDiff"><option value="">全部</option><option>易</option><option>中</option><option>難</option></select></div>
-        <div><label>題型</label><select id="fType"><option value="">全部</option><option value="choice">選擇題</option><option value="essay">非選擇題</option></select></div>
         <div class="grow"><label>關鍵字（主題／代碼／文字）</label><input type="text" id="fKw" placeholder="例如：畢氏定理、相似、S-9-2"></div>
         <button class="btn btn-ghost" id="btnReset">清除條件</button>
       </div>
+      <div class="hintline">各選單皆可<b>複選</b>（打勾多個即取聯集）；不勾＝該項不限。</div>
     </div>
     <div class="toolbar">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center" class="wrap-inner">
@@ -129,6 +138,7 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
         <button class="btn btn-green" id="btnPrint">🖨 列印勾選題目（題目卷）</button>
         <button class="btn btn-ghost" id="btnPrintSol">🖨 列印勾選（含詳解）</button>
         <button class="btn btn-blue" id="btnQuiz">🌐 匯出線上試卷</button>
+        <button class="btn btn-ghost" id="btnPickAll">☑ 全選符合條件的題目</button>
         <button class="btn btn-ghost" id="btnPickPage">勾選本頁全部</button>
         <button class="btn btn-ghost" id="btnClearPick">清除勾選</button>
         <span class="count" style="margin:0">已勾選 <b id="pickN">0</b> 題</span>
@@ -195,12 +205,15 @@ let page = 1, picked = new Set(), openSteps = {};
 
 document.getElementById('totalN').textContent = QS.length;
 
-// ---- 篩選器初始化 ----
+// ---- 篩選器（全面複選）----
+function el(id){return document.getElementById(id);}
 const years = [...new Set(QS.map(q=>q.year))].sort();
-const fYear=el('fYear'), fBook=el('fBook'), fChap=el('fChap'), fCode=el('fCode'),
-      fDiff=el('fDiff'), fType=el('fType'), fKw=el('fKw'), fNum=el('fNum');
 const MAXYEAR = Math.max(...years);
-years.forEach(y=>fYear.add(new Option(y+'年', y)));
+const fKw=el('fKw'), fNum=el('fNum');
+// F：各條件的已選集合；空集合＝該項不限
+const F = { year:new Set(), book:new Set(), chap:new Set(), code:new Set(), diff:new Set(), type:new Set() };
+const MF = {};
+
 function parseNums(s){
   const set = new Set();
   s.split(/[,，、\s]+/).forEach(part=>{
@@ -211,34 +224,94 @@ function parseNums(s){
   });
   return set;
 }
-Object.keys(CURR['冊別章節']).forEach(b=>fBook.add(new Option(b, b)));
-function fillChap(){
-  fChap.innerHTML='<option value="">全部</option>';
-  const b=fBook.value;
-  const chaps = b ? CURR['冊別章節'][b] : [...new Set(QS.map(q=>q.book+'｜'+q.chapter))].sort().map(s=>s.split('｜')[1]);
-  (b?chaps:[...new Set(chaps)]).forEach(c=>fChap.add(new Option(c,c)));
+
+function chapOptions(){
+  const books = F.book.size ? Object.keys(CURR['冊別章節']).filter(b=>F.book.has(b)) : Object.keys(CURR['冊別章節']);
+  const opts = [];
+  books.forEach(b=>{
+    CURR['冊別章節'][b].forEach((c,i)=>opts.push({v:c, t:c, header: i===0 ? b : null}));
+  });
+  return opts;
 }
-fillChap();
-[...new Set(QS.flatMap(q=>q.codes))].sort().forEach(c=>{
-  fCode.add(new Option(c+'　'+(CURR['學習內容'][c]?CURR['學習內容'][c].desc.slice(0,12):''), c));
-});
-function el(id){return document.getElementById(id);}
+function registerMF(key, mountId, label, getOptions, presets){
+  MF[key] = {mount:el(mountId), label, getOptions, presets};
+  drawMF(key);
+}
+function drawMF(key, keepOpen){
+  const {mount, label, getOptions, presets} = MF[key];
+  const sel = F[key];
+  const opts = getOptions();
+  const valid = new Set(opts.map(o=>String(o.v)));
+  [...sel].forEach(v=>{ if(!valid.has(String(v))) sel.delete(v); });
+  const wasOpen = keepOpen && mount.querySelector('.mfmenu.open');
+  mount.innerHTML = `<label>${label}</label>
+    <button class="mfbtn ${sel.size?'on':''}" onclick="toggleMenu('${key}',event)">${sel.size?('已選 '+sel.size+' 項'):'全部'} ▾</button>
+    <div class="mfmenu" id="menu-${key}" onclick="event.stopPropagation()">
+      <div class="mfops">
+        ${(presets||[]).map(p=>`<button onclick="mfPreset('${key}','${p.v}')">${p.t}</button>`).join('')}
+        <button onclick="mfSetAll('${key}',true)">全選</button>
+        <button onclick="mfSetAll('${key}',false)">清除</button>
+      </div>
+      ${opts.map(o=>`${o.header?`<div class="mfhead">${o.header}</div>`:''}
+        <label class="mfitem"><input type="checkbox" ${sel.has(o.v)?'checked':''}
+          onchange="mfToggle('${key}', this.dataset.v, this.checked)" data-v="${String(o.v).replace(/"/g,'&quot;')}"> ${o.t}</label>`).join('')}
+    </div>`;
+  if(wasOpen) mount.querySelector('.mfmenu').classList.add('open');
+}
+function toggleMenu(key, ev){
+  ev.stopPropagation();
+  const menu = el('menu-'+key);
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.mfmenu').forEach(m=>m.classList.remove('open'));
+  if(!isOpen) menu.classList.add('open');
+}
+document.addEventListener('click', ()=>document.querySelectorAll('.mfmenu').forEach(m=>m.classList.remove('open')));
+function mfToggle(key, v, on){
+  if(key==='year') v = +v;
+  on ? F[key].add(v) : F[key].delete(v);
+  drawMF(key, true);
+  if(key==='book') drawMF('chap');   // 冊別變動 → 章節清單連動
+  page=1; render();
+}
+function mfSetAll(key, on){
+  F[key].clear();
+  if(on) MF[key].getOptions().forEach(o=>F[key].add(o.v));
+  drawMF(key, true);
+  if(key==='book') drawMF('chap');
+  page=1; render();
+}
+function mfPreset(key, v){   // 年度快選：最近N屆
+  const n = +v.slice(1);
+  F.year = new Set(years.filter(y=>y > MAXYEAR-n));
+  drawMF('year', true);
+  page=1; render();
+}
+registerMF('year','mfYear','年度／屆數（可複選）',
+  ()=>years.map(y=>({v:y, t:y+'年'})),
+  [{v:'R3',t:'最近3屆'},{v:'R5',t:'最近5屆'},{v:'R10',t:'最近10屆'}]);
+registerMF('book','mfBook','冊別（可複選）',
+  ()=>Object.keys(CURR['冊別章節']).map(b=>({v:b, t:b})));
+registerMF('chap','mfChap','章節（可複選）', chapOptions);
+registerMF('code','mfCode','學習內容（可複選）',
+  ()=>[...new Set(QS.flatMap(q=>q.codes))].sort().map(c=>({v:c, t:c+'　'+(CURR['學習內容'][c]?CURR['學習內容'][c].desc.slice(0,12):'')})));
+registerMF('diff','mfDiff','難度（可複選）',
+  ()=>['易','中','難'].map(d=>({v:d, t:d})));
+registerMF('type','mfType','題型',
+  ()=>[{v:'choice',t:'選擇題'},{v:'essay',t:'非選擇題'}]);
 
 function filtered(){
-  const y=fYear.value, b=fBook.value, c=fChap.value, code=fCode.value,
-        d=fDiff.value, t=fType.value, kw=fKw.value.trim(), nums=fNum.value.trim();
+  const kw=fKw.value.trim(), nums=fNum.value.trim();
   const numSet = nums ? parseNums(nums) : null;
-  return QS.filter(q=>{
-    let yearOk = true;
-    if(y){
-      if(y[0]==='R'){ yearOk = q.year > MAXYEAR - (+y.slice(1)); }
-      else yearOk = q.year == y;
-    }
-    return yearOk && (!b||q.book===b) && (!c||q.chapter===c) &&
-    (!code||q.codes.includes(code)) && (!d||q.difficulty===d) && (!t||q.type===t) &&
+  return QS.filter(q=>
+    (!F.year.size || F.year.has(q.year)) &&
+    (!F.book.size || F.book.has(q.book)) &&
+    (!F.chap.size || F.chap.has(q.chapter)) &&
+    (!F.code.size || q.codes.some(c=>F.code.has(c))) &&
+    (!F.diff.size || F.diff.has(q.difficulty)) &&
+    (!F.type.size || F.type.has(q.type)) &&
     (!numSet || numSet.has(q.num)) &&
-    (!kw || (q.topic+q.solution+q.codes.join(',')+q.perf.join(',')+q.chapter+(q.trap||'')).includes(kw));
-  });
+    (!kw || (q.topic+q.solution+q.codes.join(',')+q.perf.join(',')+q.chapter+(q.trap||'')).includes(kw))
+  );
 }
 
 function render(){
@@ -329,6 +402,12 @@ function togglePick(id,on){
 
 // ---- 工具列 ----
 el('btnAllGuide').onclick=()=>{ openSteps={}; document.querySelectorAll('.guide,.sol').forEach(x=>x.style.display='none'); document.querySelectorAll('.step').forEach(x=>x.style.display='none'); };
+el('btnPickAll').onclick=()=>{
+  const list = filtered();
+  if(!list.length){ alert('目前沒有符合條件的題目'); return; }
+  list.forEach(q=>picked.add(q.id));
+  render();
+};
 el('btnPickPage').onclick=()=>{ filtered().slice((page-1)*PAGE,page*PAGE).forEach(q=>picked.add(q.id)); render(); };
 el('btnClearPick').onclick=()=>{ picked.clear(); render(); };
 async function doPrint(withSol){
@@ -349,9 +428,12 @@ async function doPrint(withSol){
 el('btnPrint').onclick=()=>doPrint(false);
 el('btnPrintSol').onclick=()=>doPrint(true);
 el('btnQuiz').onclick=()=>exportQuiz();
-el('btnReset').onclick=()=>{ fYear.value=fBook.value=fChap.value=fCode.value=fDiff.value=fType.value=''; fKw.value=''; fNum.value=''; fillChap(); page=1; render(); };
-[fYear,fBook,fCode,fDiff,fType].forEach(s=>s.onchange=()=>{ if(s===fBook)fillChap(); page=1; render(); });
-fChap.onchange=()=>{page=1;render();};
+el('btnReset').onclick=()=>{
+  Object.values(F).forEach(s=>s.clear());
+  fKw.value=''; fNum.value='';
+  Object.keys(MF).forEach(k=>drawMF(k));
+  page=1; render();
+};
 fKw.oninput=()=>{page=1;render();};
 fNum.oninput=()=>{page=1;render();};
 
