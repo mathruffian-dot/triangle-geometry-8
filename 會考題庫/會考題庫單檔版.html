@@ -98,6 +98,7 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
 <div class="wrap">
   <div class="tabs">
     <div class="tab active" data-view="bank">題庫瀏覽</div>
+    <div class="tab" data-view="ana">錯題分析</div>
     <div class="tab" data-view="stats">命題分析統計</div>
     <div class="tab" data-view="about">使用說明</div>
   </div>
@@ -109,6 +110,7 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
         <div class="mf" id="mfBook"></div>
         <div class="mf" id="mfChap"></div>
         <div class="mf" id="mfCode"></div>
+        <div class="mf" id="mfPerf"></div>
         <div class="mf" id="mfDiff"></div>
         <div class="mf" id="mfType"></div>
         <div><label>題號範圍（如 1-10 或 3,5,7-9）</label><input type="text" id="fNum" placeholder="全部" style="min-width:150px"></div>
@@ -134,10 +136,26 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
     <div class="pagebtns" id="pager"></div>
   </div>
 
+  <div id="anaView" style="display:none">
+    <div class="panel">
+      <h3 style="margin-top:0">📥 貼上作答紀錄</h3>
+      <p class="hint" style="margin:4px 0 8px">支援學生交回的 <b>base64 字串</b>（每行一筆，可多位學生）或下載的 <b>JSON 檔內容</b>。貼好按「分析錯題」。</p>
+      <textarea id="recInput" style="width:100%;min-height:120px;font-size:.78rem;border:1px solid var(--line);border-radius:8px;padding:10px" placeholder="每行貼一筆作答紀錄…"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">
+        <button class="btn btn-blue" id="btnAnalyze">🔍 分析錯題</button>
+        <button class="btn btn-green" id="btnQuizFromAna">🌐 匯出補強卷（用已勾選的題目）</button>
+        <button class="btn btn-ghost" id="btnPrintFromAna">🖨 列印補強卷</button>
+        <span class="count" style="margin:0">已勾選 <b id="pickN2">0</b> 題</span>
+      </div>
+    </div>
+    <div id="anaOut"></div>
+  </div>
+
   <div id="statsView" style="display:none">
     <div class="panel stats" id="statBook"></div>
     <div class="panel stats" id="statChap"></div>
     <div class="panel stats" id="statCode"></div>
+    <div class="panel stats" id="statPerf"></div>
   </div>
 
   <div id="aboutView" style="display:none">
@@ -196,7 +214,7 @@ const years = [...new Set(QS.map(q=>q.year))].sort();
 const MAXYEAR = Math.max(...years);
 const fKw=el('fKw'), fNum=el('fNum');
 // F：各條件的已選集合；空集合＝該項不限
-const F = { year:new Set(), book:new Set(), chap:new Set(), code:new Set(), diff:new Set(), type:new Set() };
+const F = { year:new Set(), book:new Set(), chap:new Set(), code:new Set(), perf:new Set(), diff:new Set(), type:new Set() };
 const MF = {};
 
 function parseNums(s){
@@ -279,6 +297,8 @@ registerMF('book','mfBook','冊別（可複選）',
 registerMF('chap','mfChap','章節（可複選）', chapOptions);
 registerMF('code','mfCode','學習內容（可複選）',
   ()=>[...new Set(QS.flatMap(q=>q.codes))].sort().map(c=>({v:c, t:c+'　'+(CURR['學習內容'][c]?CURR['學習內容'][c].desc.slice(0,12):'')})));
+registerMF('perf','mfPerf','學習表現（可複選）',
+  ()=>[...new Set(QS.flatMap(q=>q.perf))].sort().map(p=>({v:p, t:p+'　'+(CURR['學習表現'][p]||'').slice(0,14)})));
 registerMF('diff','mfDiff','難度（可複選）',
   ()=>['易','中','難'].map(d=>({v:d, t:d})));
 registerMF('type','mfType','題型',
@@ -292,6 +312,7 @@ function filtered(){
     (!F.book.size || F.book.has(q.book)) &&
     (!F.chap.size || F.chap.has(q.chapter)) &&
     (!F.code.size || q.codes.some(c=>F.code.has(c))) &&
+    (!F.perf.size || q.perf.some(p=>F.perf.has(p))) &&
     (!F.diff.size || F.diff.has(q.difficulty)) &&
     (!F.type.size || F.type.has(q.type)) &&
     (!numSet || numSet.has(q.num)) &&
@@ -318,7 +339,7 @@ function render(){
     pb+=`<button class="${i===page?'cur':''}" onclick="goPage(${i})">${i}</button>`;
   }
   el('pager').innerHTML=pb;
-  el('pickN').textContent = picked.size;
+  updPickN();
   slice.forEach(q=>{ (openSteps[q.id]||0) && showSteps(q.id, openSteps[q.id]); });
 }
 function goPage(i){ page=i; render(); window.scrollTo({top:0,behavior:'smooth'}); }
@@ -379,11 +400,171 @@ function showSteps(id,n){
 function toggleSol(id){
   const s = el('sol-'+id); s.style.display = s.style.display==='block'?'none':'block';
 }
+function updPickN(){
+  el('pickN').textContent = picked.size;
+  const p2 = el('pickN2'); if(p2) p2.textContent = picked.size;
+}
 function togglePick(id,on){
   on?picked.add(id):picked.delete(id);
-  el('pickN').textContent=picked.size;
+  updPickN();
   const c=el('card-'+id); if(c) c.classList.toggle('notpicked', !on);
 }
+
+// ---- 錯題分析 ----
+let uidc = 0;
+const DR = {'易':0,'中':1,'難':2};
+const QIDX = {}; QS.forEach(q=>QIDX[q.id]=q);
+
+function parseRecords(text){
+  const recs = [];
+  let whole = null;
+  try{ whole = JSON.parse(text); }catch(e){}
+  if(whole){
+    (Array.isArray(whole)?whole:[whole]).forEach(o=>{ if(o && o.answers) recs.push(o); });
+    return {recs, bad:0};
+  }
+  let bad = 0;
+  text.split(/\n+/).map(s=>s.trim()).filter(Boolean).forEach(line=>{
+    let obj = null;
+    try{ obj = JSON.parse(line); }catch(e){
+      try{ obj = JSON.parse(decodeURIComponent(escape(atob(line)))); }catch(e2){}
+    }
+    if(obj && obj.answers) recs.push(obj); else bad++;
+  });
+  return {recs, bad};
+}
+
+function cardMini(q){
+  const uid = 'u' + (uidc++);
+  return `<div class="qcard" style="margin:8px 0 12px">
+    <div class="qhead">
+      ${badge('b-year', q.year+'年 第'+(q.type==='essay'?'非選'+q.id.split('N')[1]:q.num)+'題')}
+      ${badge('b-book', q.book)}${badge('b-chap', q.chapter)}
+      ${q.codes.map(c=>badge('b-code', c, (CURR['學習內容'][c]||{}).desc)).join('')}
+      ${q.perf.map(p=>badge('b-perf', p, CURR['學習表現'][p])).join('')}
+      ${badge('b-diff-'+q.difficulty, q.difficulty)}
+      <span class="topic">${q.topic}</span>
+    </div>
+    <img class="qimg" loading="lazy" src="${q.img}" alt="${q.id}" onerror="imgFail(this)">
+    <div class="qacts">
+      <button class="btn btn-ghost" onclick="miniSol('${uid}')">📖 詳解</button>
+      <label class="pickbox"><input type="checkbox" ${picked.has(q.id)?'checked':''} onchange="togglePick('${q.id}',this.checked)">選入補強卷</label>
+    </div>
+    <div class="sol" id="msol-${uid}">
+      <div class="ansline">✅ 答案：${q.answer}</div><div>${q.solution}</div>
+      ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${q.trap}</div>`:''}
+    </div>
+  </div>`;
+}
+function miniSol(uid){ const s=el('msol-'+uid); s.style.display = s.style.display==='block'?'none':'block'; }
+
+function masteryHTML(q){
+  const used = new Set([q.id]);
+  let html = '';
+  q.perf.forEach(p=>{
+    const pool = QS.filter(o=>!used.has(o.id) && o.perf.includes(p))
+      .sort((a,b)=> DR[a.difficulty]-DR[b.difficulty] || b.year-a.year)
+      .slice(0,4);
+    pool.forEach(o=>used.add(o.id));
+    html += `<div class="mfhead" style="font-size:.86rem;margin-top:10px">🎯 ${p}｜${CURR['學習表現'][p]||''}<span style="font-weight:400">（由易到難 ${pool.length} 題）</span></div>`
+          + (pool.length ? pool.map(cardMini).join('') : '<p class="hint">題庫無其他同表現題目</p>');
+  });
+  return html;
+}
+function similarHTML(q){
+  const pool = QS.filter(o=>o.id!==q.id).map(o=>{
+    let s = 0;
+    s += o.codes.filter(c=>q.codes.includes(c)).length * 10;
+    if(o.chapter===q.chapter) s += 4;
+    if(o.book===q.book) s += 1;
+    s += o.perf.filter(p=>q.perf.includes(p)).length * 2;
+    if(o.topic===q.topic) s += 6;
+    return {o, s};
+  }).filter(x=>x.s>=10).sort((a,b)=>b.s-a.s).slice(0,6);
+  return pool.length ? pool.map(x=>cardMini(x.o)).join('') : '<p class="hint">題庫中找不到足夠相似的類題</p>';
+}
+function showRec(qid, kind){
+  const target = el('rec-'+kind+'-'+qid);
+  if(!target) return;
+  if(target.dataset.done){ target.style.display = target.style.display==='none'?'block':'none'; return; }
+  const q = QIDX[qid];
+  target.innerHTML = (kind==='m'
+    ? '<b style="color:var(--blue)">🎯 學習表現精熟練習</b>（涵蓋此題全部學習表現，含複合）' + masteryHTML(q)
+    : '<b style="color:var(--green)">🔁 類題練習</b>（同學習內容／章節，相似度排序）' + similarHTML(q));
+  target.dataset.done = 1;
+  target.style.display = 'block';
+}
+
+function analyze(){
+  const {recs, bad} = parseRecords(el('recInput').value);
+  const out = el('anaOut');
+  if(!recs.length){
+    out.innerHTML = '<div class="panel" style="color:var(--red)">讀不到任何作答紀錄——請確認貼的是學生交回的 base64 字串（每行一筆）或 JSON 檔內容。</div>';
+    return;
+  }
+  let html = '';
+  if(bad) html += `<div class="panel" style="color:var(--amber)">⚠ 有 ${bad} 行無法解析，已略過。</div>`;
+  // 學生摘要
+  html += `<div class="panel"><h3 style="margin-top:0">👥 學生摘要（${recs.length} 筆）</h3>
+    <div class="stats"><table><tr><th>班級</th><th>座號</th><th>姓名</th><th>選擇題得分</th><th>錯題數</th><th>作答時間</th></tr>`
+    + recs.map(r=>{
+        const wrong = r.answers.filter(a=>a.ok===false).length;
+        return `<tr><td>${r.cls||''}</td><td>${r.seat||''}</td><td>${r.name||''}</td>
+          <td>${r.score}/${r.total_auto}</td><td>${wrong}</td><td>${Math.round((r.dur_s||0)/60)} 分</td></tr>`;
+      }).join('') + '</table></div></div>';
+  // 錯題聚合
+  const wrongMap = {};
+  const essayIds = new Set();
+  recs.forEach(r=>{
+    r.answers.forEach(a=>{
+      if(!QIDX[a.id]) return;
+      if(a.ok===false){
+        (wrongMap[a.id] = wrongMap[a.id] || []).push(`${r.cls||''}-${r.seat||''} ${r.name||''}（答 ${a.a||'未答'}）`);
+      } else if(a.ok===null){ essayIds.add(a.id); }
+    });
+  });
+  const wrongs = Object.entries(wrongMap).sort((a,b)=>b[1].length-a[1].length);
+  if(!wrongs.length){
+    html += '<div class="panel">🎉 這些紀錄中的選擇題全對，沒有錯題！</div>';
+  } else {
+    html += `<div class="panel"><h3 style="margin-top:0">❌ 錯題分析（共 ${wrongs.length} 題，依錯誤人數排序）</h3>
+      <p class="hint">每題可展開「(a) 學習表現精熟練習」（含複合表現，逐一由易到難）與「(b) 類題練習」（同學習內容/章節）。勾選推薦題後，用上方「匯出補強卷／列印補強卷」。</p></div>`;
+    wrongs.forEach(([qid, students])=>{
+      const q = QIDX[qid];
+      html += `<div class="qcard">
+        <div class="qhead">
+          <span class="badge" style="background:var(--red);color:#fff">✕ ${students.length}/${recs.length} 人錯</span>
+          ${badge('b-year', q.year+'年 第'+(q.type==='essay'?'非選'+q.id.split('N')[1]:q.num)+'題')}
+          ${badge('b-book', q.book)}${badge('b-chap', q.chapter)}
+          ${q.codes.map(c=>badge('b-code', c, (CURR['學習內容'][c]||{}).desc)).join('')}
+          ${q.perf.map(p=>badge('b-perf', p, CURR['學習表現'][p])).join('')}
+          ${badge('b-diff-'+q.difficulty, q.difficulty)}
+          <span class="topic">${q.topic}</span>
+        </div>
+        <div class="hint" style="margin-bottom:6px">錯誤學生：${students.join('、')}</div>
+        <div class="hint" style="margin-bottom:6px">此題學習表現：${q.perf.map(p=>`<b>${p}</b> ${CURR['學習表現'][p]||''}`).join('<br>')}</div>
+        <img class="qimg" loading="lazy" src="${q.img}" onerror="imgFail(this)">
+        <div class="qacts">
+          <button class="btn btn-blue" onclick="showRec('${qid}','m')">🎯 (a) 學習表現精熟練習</button>
+          <button class="btn btn-blue" onclick="showRec('${qid}','s')">🔁 (b) 類題練習</button>
+          <button class="btn btn-ghost" onclick="miniSolQ('${qid}',this)">📖 本題詳解</button>
+        </div>
+        <div class="sol" id="wsol-${qid}">
+          <div class="ansline">✅ 答案：${q.answer}</div><div>${q.solution}</div>
+          ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${q.trap}</div>`:''}
+        </div>
+        <div id="rec-m-${qid}" style="display:none;background:var(--blue-bg);border-radius:10px;padding:8px 12px;margin-top:8px"></div>
+        <div id="rec-s-${qid}" style="display:none;background:var(--green-bg);border-radius:10px;padding:8px 12px;margin-top:8px"></div>
+      </div>`;
+    });
+  }
+  if(essayIds.size){
+    html += `<div class="panel"><h3 style="margin-top:0">✍ 非選擇題（需人工批閱）</h3><p class="hint">${[...essayIds].map(id=>{const q=QIDX[id];return q.year+'年 非選'+id.split('N')[1];}).join('、')}——學生輸入的文字答案在各筆紀錄的 answers 內。</p></div>`;
+  }
+  out.innerHTML = html;
+  updPickN();
+}
+function miniSolQ(qid){ const s=el('wsol-'+qid); s.style.display = s.style.display==='block'?'none':'block'; }
 
 // ---- 工具列 ----
 el('btnAllGuide').onclick=()=>{ openSteps={}; document.querySelectorAll('.guide,.sol').forEach(x=>x.style.display='none'); document.querySelectorAll('.step').forEach(x=>x.style.display='none'); };
@@ -479,6 +660,10 @@ function buildStats(){
     Object.entries(byChap).sort((a,b)=>b[1]-a[1]), total);
   el('statCode').innerHTML = statTable('主要學習內容代碼出題數（每題取第一碼）',
     Object.entries(byCode).sort((a,b)=>b[1]-a[1]), total);
+  const byPerf = {};
+  QS.forEach(q=>q.perf.forEach(p=>byPerf[p]=(byPerf[p]||0)+1));
+  el('statPerf').innerHTML = statTable('學習表現出題數（複合學習表現逐碼計入，一題可計多碼）',
+    Object.entries(byPerf).sort((a,b)=>b[1]-a[1]).map(([p,n])=>[p+'　'+(CURR['學習表現'][p]||'').slice(0,28)+'…', n]), total);
 }
 buildStats();
 
@@ -487,9 +672,14 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   t.classList.add('active');
   el('bankView').style.display = t.dataset.view==='bank'?'':'none';
+  el('anaView').style.display = t.dataset.view==='ana'?'':'none';
   el('statsView').style.display = t.dataset.view==='stats'?'':'none';
   el('aboutView').style.display = t.dataset.view==='about'?'':'none';
+  if(t.dataset.view==='ana') updPickN();
 });
+el('btnAnalyze').onclick = analyze;
+el('btnQuizFromAna').onclick = ()=>exportQuiz();
+el('btnPrintFromAna').onclick = ()=>doPrint(false);
 
 render();
 </script>
