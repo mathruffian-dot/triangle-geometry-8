@@ -76,7 +76,7 @@
   已 build＋deploy_bank 上線；審題結果全文附在審題檔文末
 - 配圖：用 jh-math-geometry 技能渲染 SVG（真實比例，`vertices` 參數控制），以單引號屬性內嵌進 JSON
 - 前端程式：build_html.py 搜 `CONCEPTS` / `openConcept` / `cAnswer`；改完照舊 build → deploy_bank.py
-- 待辦（等打樣審完定稿再鋪開）：批量建置其餘單元（估 40–50 單元）、學生端獨立練習頁（含收卷回傳「觀念-<代碼>」卷名）、依試算表錯誤率排建置優先序
+- ~~待辦：批量建置其餘單元、學生端獨立練習頁、依錯誤率排優先序~~ → **已於 2026-07-16 全部完成，見下方**
 
 ## 2026-07-15 換卷：複習卷B1 上架學生作答站 ✅
 - math809-quiz 現掛「會考數學複習卷B1_30題_0715」（30 題，103–109 年選擇題），已驗證 30 張題圖全載入
@@ -92,6 +92,26 @@
 - 已修復：示範卷改固定輸出到 `backup/示範卷_最近5屆1-10題_index.html`；`netlify_deploy/index.html`
   只在「匯出線上試卷」或手動換卷時才變動
 - 換卷 SOP 不變：新卷放進 netlify_deploy/index.html → `netlify deploy --dir netlify_deploy --prod`
+
+## 2026-07-16 觀念補強全面鋪開（56 單元）＋學生端練習頁 ✅
+- `data/concepts.json`：1 → **56 單元、336 題**，涵蓋題庫出現的全部 35 個學習表現
+  - 優先序：B1 卷 20 筆實測錯誤率（n-IV-7 錯 85% 最優先）→ 題庫出題頻率；清單見 `觀念補強/單元清單.md`
+  - 每單元：白話說明＋配圖（33 張，jh-math-geometry 渲染＋手工 SVG）＋基礎 3 題＋進階 3 題＋審題檔
+- 工具鏈（scripts/）：`validate_concepts.py` 結構驗證、`merge_concepts.py` 批次合併＋正解位置洗牌
+  （詳解/誘答文字一律引用選項內容而非字母，洗牌才安全）、`gen_reviews.py` 審題檔生成（不覆蓋既有）
+- **自審全部通過**（2026-07-16）：336 題逐題數學重驗、洗牌完整性與原稿比對、課綱代碼核對、
+  正解分布 A80/B94/C81/D81、33 張配圖轉 PNG 目視檢查（修正 1 張：等腰三角形刻度標錯邊）；
+  審核結果已附在各審題檔文末
+- **學生端練習頁上線**：https://math809-quiz.netlify.app/practice.html
+  - 由 build_html.py 自動生成 `netlify_deploy/practice.html`（每次 build 重新生成，可安全覆蓋；掛卷的 index.html 不受影響）
+  - 流程：填班級座號姓名 → 選單元（六領域分組）→ 說明＋6 題立即回饋 → 做完自動 POST 試算表，
+    卷名「觀念-<代碼>-<名稱>」（如 觀念-n-IV-7-1-等差數列）；沒填班級姓名就不上傳（方便老師試玩）
+  - 本機留最佳成績標籤（localStorage best_<單元id>）
+- 題庫站「觀念補強」分頁改依六領域分組；單檔版修復（原本 payload 漏了 concepts）
+- ⚠ **Netlify `--prod` 部署自 7/16 起回 403 Forbidden**（draft 正常、帳號登入正常，原因不明）。
+  已改兩段式：draft 部署取 deploy_id → `netlify api restoreSiteDeploy` 發布。
+  `deploy_bank.py` 已內建此流程；學生站（quiz）手動部署也照此：
+  `netlify deploy --dir netlify_deploy --site 05be96f6-… --json` → restoreSiteDeploy
 
 ## 新年度（116）擴充 SOP
 1. `download_exams.py` 年份範圍改 116 → 下載

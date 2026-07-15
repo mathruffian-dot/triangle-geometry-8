@@ -919,13 +919,18 @@ el('fExclDone').onchange = ()=>{ page=1; render(); };
 // ---- 觀念補強（單一學習表現：白話說明＋簡單單選精熟練習，立即回饋）----
 let cState = {};   // 單元索引 -> {done, right}
 function renderConcepts(){
-  el('conceptList').innerHTML = CONCEPTS.length ? CONCEPTS.map((c,i)=>`
+  const DOMS = [['n','🔢 數與量'],['a','🧮 代數'],['f','📈 函數'],['g','📍 坐標幾何'],['s','📐 圖形與空間'],['d','📊 統計與機率']];
+  el('conceptList').innerHTML = CONCEPTS.length ? DOMS.map(([pfx,label])=>{
+    const items = CONCEPTS.map((c,i)=>[c,i]).filter(([c])=>((c.perf||[])[0]||'').startsWith(pfx+'-'));
+    if(!items.length) return '';
+    return `<h2 style="margin:18px 0 8px">${label}<span class="hint" style="font-weight:400">（${items.length} 單元）</span></h2>` + items.map(([c,i])=>`
     <div class="panel">
       <h3 style="margin:0 0 4px">📘 ${c.name}</h3>
       <div style="margin-bottom:6px">${(c.perf||[]).map(p=>badge('b-perf', p, CURR['學習表現'][p])).join('')}${(c.codes||[]).map(cd=>badge('b-code', cd, (CURR['學習內容'][cd]||{}).desc)).join('')}</div>
       <p class="hint" style="margin:0 0 8px">${c.brief||''}</p>
       <button class="btn btn-blue" onclick="openConcept(${i})">進入單元（說明＋${c.questions.length} 題精熟練習）</button>
-    </div>`).join('') : '<div class="panel">尚未建置任何觀念單元（data/concepts.json）。</div>';
+    </div>`).join('');
+  }).join('') : '<div class="panel">尚未建置任何觀念單元（data/concepts.json）。</div>';
 }
 function openConcept(i){
   const c = CONCEPTS[i];
@@ -1210,7 +1215,7 @@ q_embed = json.loads(json.dumps(questions, ensure_ascii=False))
 for q in q_embed:
     img_path = BASE / q["img"]
     q["img"] = "data:image/png;base64," + base64.b64encode(img_path.read_bytes()).decode()
-payload2 = json.dumps({"questions": q_embed, "curriculum": curr}, ensure_ascii=False)
+payload2 = json.dumps({"questions": q_embed, "curriculum": curr, "concepts": concepts}, ensure_ascii=False)
 html2 = TEMPLATE.replace("__PAYLOAD__", payload2.replace("</", "<\\/")).replace("__QUIZB64__", quiz_b64)
 out2 = BASE / "會考題庫單檔版.html"
 out2.write_text(html2, encoding="utf-8")
@@ -1243,3 +1248,146 @@ def make_quiz(question_ids, title, out_path, submit_url=""):
 # （2026-07-15 曾把已上架的複習卷B1蓋掉）；示範卷固定輸出到 backup/，要上架時再手動複製過去
 sample_ids = [q["id"] for q in questions if q["year"] >= 111 and q["type"] == "choice" and q["num"] <= 10]
 make_quiz(sample_ids, "會考數學示範卷（最近5屆 第1-10題）", BASE / "backup" / "示範卷_最近5屆1-10題_index.html")
+
+# =====================================================================
+# 學生端觀念補強練習頁：netlify_deploy/practice.html
+# 每次 build 從 concepts.json 重新生成（與掛卷用的 index.html 無關，可安全覆蓋）
+# 做完一個單元自動 POST 成績到試算表，卷名「觀念-<代碼>-<名稱>」
+# =====================================================================
+PRACTICE_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809"
+
+PRACTICE_TEMPLATE = r"""<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>觀念補強練習</title>
+<style>
+:root{--ink:#1f2937;--sub:#6b7280;--bg:#f5f6f8;--card:#fff;--line:#e5e7eb;--blue:#2563eb;--blue-bg:#eff6ff;--green:#059669;--red:#dc2626;--red-bg:#fef2f2;--amber:#d97706}
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+.wrap{max-width:820px;margin:0 auto;padding:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+h1{font-size:1.25rem;margin:4px 0 10px} h2{font-size:1.05rem;margin:10px 0 6px}
+.btn{display:inline-block;border:none;border-radius:10px;padding:10px 16px;font-size:1rem;cursor:pointer;margin-right:8px}
+.btn-blue{background:var(--blue);color:#fff}.btn-ghost{background:#eef1f5;color:var(--ink)}
+input{font-size:1rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;width:100%}
+.idrow{display:flex;gap:8px}.idrow>div{flex:1}
+.copt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:1rem;cursor:pointer}
+.copt:disabled{opacity:.85}.c-right{border-color:var(--green);background:#ecfdf5}.c-wrong{border-color:var(--red);background:var(--red-bg)}
+.sol{display:none;background:#f8fafc;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:.95rem}
+.trap{color:var(--amber);margin-top:6px}.hint{color:var(--sub);font-size:.9rem}
+.qcard{border-top:1px solid var(--line);padding:12px 0}
+.lv{display:inline-block;font-size:.78rem;padding:2px 8px;border-radius:99px;background:var(--blue-bg);color:var(--blue);margin-right:6px}
+.ubtn{display:block;width:100%;text-align:left;margin:6px 0;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;font-size:1rem;cursor:pointer}
+.done-tag{color:var(--green);font-size:.85rem;margin-left:6px}
+.cfb{font-weight:700;margin-top:6px}
+</style>
+</head>
+<body><div class="wrap">
+<div class="panel">
+  <h1>📘 觀念補強練習</h1>
+  <p class="hint" style="margin:0 0 8px">先填基本資料（做完會自動回傳老師），再選一個單元開始。每個單元＝白話說明＋6 題精熟練習，點選項立即對答案。</p>
+  <div class="idrow">
+    <div><input id="cls" placeholder="班級（如 909）"></div>
+    <div><input id="seat" placeholder="座號"></div>
+    <div><input id="name" placeholder="姓名"></div>
+  </div>
+</div>
+<div id="unitList"></div>
+<div id="unitView"></div>
+</div>
+<script>
+const DB = __CONCEPTS__;
+const SUBMIT = "__SUBMITURL__";
+const DOMS = [['n','🔢 數與量'],['a','🧮 代數'],['f','📈 函數'],['g','📍 坐標幾何'],['s','📐 圖形與空間'],['d','📊 統計與機率']];
+const el = id => document.getElementById(id);
+['cls','seat','name'].forEach(k=>{ el(k).value = localStorage.getItem('stu_'+k)||''; el(k).oninput = ()=>localStorage.setItem('stu_'+k, el(k).value.trim()); });
+function doneTag(c){ const s = localStorage.getItem('best_'+c.id); return s ? `✅ 最佳 ${s}/${c.questions.length}` : ''; }
+function renderList(){
+  el('unitView').innerHTML = '';
+  el('unitList').innerHTML = DOMS.map(([pfx,label])=>{
+    const items = DB.map((c,i)=>[c,i]).filter(([c])=>((c.perf||[])[0]||'').startsWith(pfx+'-'));
+    if(!items.length) return '';
+    return `<div class="panel"><h2>${label}<span class="hint" style="font-weight:400">（${items.length} 單元）</span></h2>` +
+      items.map(([c,i])=>`<button class="ubtn" onclick="openU(${i})">📘 ${c.name}<span class="done-tag" id="tag-${i}">${doneTag(c)}</span><br><span class="hint">${c.brief||''}</span></button>`).join('') + '</div>';
+  }).join('');
+  el('unitList').style.display = '';
+  window.scrollTo(0,0);
+}
+let cur = null;
+function openU(i){
+  const c = DB[i];
+  cur = {i, right:0, done:0, t0:new Date(), ans:[]};
+  el('unitList').style.display = 'none';
+  el('unitView').innerHTML = `<div class="panel"><button class="btn btn-ghost" onclick="renderList()">← 回單元列表</button>
+    <h1 style="margin-top:10px">📘 ${c.name}</h1><div>${c.explain||''}</div><div style="text-align:center;margin:6px 0">${c.figure||''}</div></div>
+    <div class="panel"><h2>✏️ 精熟練習（${c.questions.length} 題）</h2><p class="hint" id="prog" style="margin:0"></p>
+    ${c.questions.map((q,qi)=>qHtml(i,qi)).join('')}
+    <div id="finish" style="display:none"></div></div>`;
+  upd();
+  window.scrollTo(0,0);
+}
+function qHtml(ci,qi){
+  const q = DB[ci].questions[qi];
+  return `<div class="qcard" id="q-${qi}"><span class="lv">${q.level}</span><b>第 ${qi+1} 題</b>
+    <div style="margin:6px 0">${q.stem}</div>
+    ${['A','B','C','D'].map((L,k)=>`<button class="copt" onclick="pick(${qi},'${L}',this)">(${L}) ${q.options[k]}</button>`).join('')}
+    <div class="cfb" id="fb-${qi}"></div>
+    <div class="sol" id="sol-${qi}"><div>✅ 答案：(${q.answer})</div><div>${q.solution}</div>${q.trap?`<div class="trap">⚠ ${q.trap}</div>`:''}</div></div>`;
+}
+function pick(qi,L,btn){
+  const c = DB[cur.i], q = c.questions[qi], box = el('q-'+qi);
+  if(box.dataset.done) return;
+  box.dataset.done = 1;
+  box.querySelectorAll('.copt').forEach(b=>{ b.disabled = true; if(b.textContent.trim().startsWith('('+q.answer+')')) b.classList.add('c-right'); });
+  const ok = (L === q.answer);
+  if(ok){ el('fb-'+qi).textContent = '✅ 答對了！'; el('fb-'+qi).style.color = 'var(--green)'; cur.right++; }
+  else { btn.classList.add('c-wrong'); el('fb-'+qi).textContent = '❌ 正確答案是 ('+q.answer+')，看看下面的說明'; el('fb-'+qi).style.color = 'var(--red)'; }
+  el('sol-'+qi).style.display = 'block';
+  cur.ans[qi] = {id: c.id+'-Q'+(qi+1), a: L, ok: ok};
+  cur.done++;
+  upd();
+  if(cur.done === c.questions.length) finish();
+}
+function upd(){ const c = DB[cur.i]; el('prog').textContent = `已作答 ${cur.done}/${c.questions.length}｜答對 ${cur.right} 題`; }
+function finish(){
+  const c = DB[cur.i];
+  const best = +(localStorage.getItem('best_'+c.id)||0);
+  if(cur.right > best) localStorage.setItem('best_'+c.id, cur.right);
+  const f = el('finish');
+  f.style.display = 'block';
+  f.innerHTML = `<div style="margin-top:10px;padding:12px;border-radius:10px;background:${cur.right===c.questions.length?'#ecfdf5':'#fffbeb'}">
+    ${cur.right===c.questions.length?'🎉 全對！這個觀念過關了':'💪 看完詳解後可以「再練一次」'}（答對 ${cur.right}/${c.questions.length}）
+    <div id="postStatus" class="hint" style="margin-top:6px"></div></div>
+    <div style="margin-top:10px"><button class="btn btn-blue" onclick="openU(${cur.i})">🔄 再練一次</button>
+    <button class="btn btn-ghost" onclick="renderList()">← 回單元列表</button></div>`;
+  submitRec(c);
+  f.scrollIntoView({behavior:'smooth'});
+}
+function submitRec(c){
+  if(!SUBMIT || SUBMIT.indexOf('http') !== 0) return;
+  const st = el('postStatus');
+  const rec = {v:1, quiz:'觀念-'+c.id.replace('CU-','')+'-'+c.name,
+    cls:el('cls').value.trim(), seat:el('seat').value.trim(), name:el('name').value.trim(),
+    ts_start:cur.t0.toISOString(), ts_submit:new Date().toISOString(),
+    dur_s:Math.round((Date.now()-cur.t0.getTime())/1000),
+    score:cur.right, total_auto:c.questions.length, answers:cur.ans.filter(Boolean)};
+  if(!rec.cls && !rec.name){ st.textContent = 'ℹ 沒填班級姓名，這次成績只留在本機'; return; }
+  st.textContent = '⏳ 成績上傳中…';
+  // Apps Script 需用 text/plain 避免預檢請求
+  fetch(SUBMIT, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(rec)})
+    .then(r=>r.json())
+    .then(j=>{ st.textContent = j.ok ? '✅ 成績已自動回傳老師' : '⚠ 上傳失敗：'+(j.error||''); })
+    .catch(()=>{ st.textContent = '⚠ 上傳失敗（可能沒網路），成績仍留在本機'; });
+}
+renderList();
+</script>
+</body>
+</html>"""
+
+practice_html = (PRACTICE_TEMPLATE
+                 .replace("__CONCEPTS__", json.dumps(concepts, ensure_ascii=False).replace("</", "<\\/"))
+                 .replace("__SUBMITURL__", PRACTICE_SUBMIT_URL))
+outp = BASE / "netlify_deploy" / "practice.html"
+outp.write_text(practice_html, encoding="utf-8")
+print("written", outp, f"{outp.stat().st_size/1024:.0f} KB")
