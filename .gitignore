@@ -13,3 +13,7 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
+
+# 影片/文件生成產物（大型 mp4/wav/png，GDrive 已備份，不進 git）
+output/
+working/

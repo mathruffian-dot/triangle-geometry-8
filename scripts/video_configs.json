@@ -1,0 +1,215 @@
+{
+  "q1": {
+    "title": "基礎練習一",
+    "slide_index": 2,
+    "output_dir": "q1_angle_relation",
+    "background_image": "slide_2_clean.png",
+    "audio_name": "q1_narration.wav",
+    "steps": [
+      {
+        "id": "intro",
+        "narration": "各位同學大家好，我是數學老師。今天我們來解基礎練習第一題。題目說，四邊形 ABCD 為平行四邊形。其中角 A 等於 2x 加 3y 度，角 B 等於 2y 度，角 C 等於 3x 加 y 度，角 D 等於 x 度。我們要來求出 x 和 y 的值。",
+        "reveal_shapes": []
+      },
+      {
+        "id": "step_1",
+        "narration": "解題的第一步，我們先寫下解字。接著利用平行四邊形對角相等的性質，因為角 A 和角 C 是對角，所以角 A 等於角 C。這可以列出方程式：2x 加 3y 等於 3x 加 y。移項整理之後，可以得到 x 等於 2y，這就是我們的第一式。",
+        "reveal_shapes": ["shape_5"]
+      },
+      {
+        "id": "step_2",
+        "narration": "再來，我們利用平行四邊形鄰角互補的性質。因為角 A 與角 B 是鄰角，所以角 A 加角 B 等於 180 度。我們把第一式，也就是 x 等於 2y 的關係帶入。這樣一來，角 A 就等於 2 乘 2y 加 3y，等於 7y 度。而角 B 等於 2y 度。將它們相加：7y 加 2y 等於 180 度。也就是 9y 等於 180，計算出來 y 等於 20，這就是我們的第二式。",
+        "reveal_shapes": ["shape_7"]
+      },
+      {
+        "id": "step_3",
+        "narration": "最後，我們將得到的 y 等於 20，代回第一式中。這樣就可以得到：x 等於 2y，也就是 2 乘以 20，算出來 x 等於 40。",
+        "reveal_shapes": ["shape_8"]
+      },
+      {
+        "id": "outro",
+        "narration": "因此，最後寫下答，x 等於 40，y 等於 20。各位同學，這題對角相等、鄰角互補的應用，大家都學會了嗎？",
+        "reveal_shapes": ["shape_9"]
+      }
+    ],
+    "highlights": [
+      { "time": 10.5, "cx": 1450, "cy": 260 },
+      { "time": 13.0, "cx": 1190, "cy": 410 },
+      { "time": 15.2, "cx": 1630, "cy": 410 },
+      { "time": 17.4, "cx": 1890, "cy": 260 },
+      { "time": 27.5, "cx": 1450, "cy": 260 },
+      { "time": 28.7, "cx": 1630, "cy": 410 },
+      { "time": 46.6, "cx": 1450, "cy": 260 },
+      { "time": 47.8, "cx": 1190, "cy": 410 }
+    ],
+    "zoom_center": { "cx": 1540, "cy": 335 },
+    "zooms": [
+      { "time": 7.5, "scale": 2.2 },
+      { "time": 19.0, "scale": 1.0 },
+      { "time": 25.5, "scale": 2.2 },
+      { "time": 33.0, "scale": 1.0 },
+      { "time": 44.5, "scale": 2.2 },
+      { "time": 53.5, "scale": 1.0 }
+    ],
+    "shapes": {
+      "shape_5": {
+        "text": "解",
+        "style": "border-left: 6px solid #ef4444;",
+        "left": 767867,
+        "top": 3959540,
+        "width": 800000,
+        "height": 500000
+      },
+      "shape_7": {
+        "text": "將 <span class=\"eq\">①</span> 代入 <span class=\"eq\">②</span>，得到：<br><span class=\"highlight-eq\">2 &times; 2y + 3y + 2y = 180</span><br><span class=\"highlight-eq\">9y = 180 &rArr; y = 20 &nbsp;&nbsp;&nbsp;&nbsp; &middot;&middot;&middot;&middot;&middot;&middot; ③</span>",
+        "style": "border-left: 6px solid #3b82f6;",
+        "left": 1247292,
+        "top": 4609369,
+        "width": 10081216,
+        "height": 1350000
+      },
+      "shape_8": {
+        "text": "將 <span class=\"eq\">③</span> 代入 <span class=\"eq\">①</span>，得到：<br><span class=\"highlight-eq\">x = 2y = 2 &times; 20 = 40</span>",
+        "style": "border-left: 6px solid #10b981;",
+        "left": 1247292,
+        "top": 5959754,
+        "width": 10004908,
+        "height": 700000
+      },
+      "shape_9": {
+        "text": "答：x = 40, y = 20",
+        "style": "border-left: 6px solid #f59e0b; font-weight: bold; color: #d97706;",
+        "left": 8229983,
+        "top": 5983744,
+        "width": 3474337,
+        "height": 700000
+      }
+    },
+    "zoom_center": { "cx": 1540, "cy": 335 },
+    "zooms": [
+      { "time": 7.5, "scale": 2.2 },
+      { "time": 19.0, "scale": 1.0 },
+      { "time": 25.5, "scale": 2.2 },
+      { "time": 33.0, "scale": 1.0 },
+      { "time": 44.5, "scale": 2.2 },
+      { "time": 53.5, "scale": 1.0 }
+    ]
+  },
+  "q2": {
+    "title": "基礎練習二",
+    "slide_index": 3,
+    "output_dir": "q2_angle_calculation",
+    "background_image": "slide_3_clean.png",
+    "audio_name": "q2_narration.wav",
+    "steps": [
+      {
+        "id": "intro",
+        "narration": "各位同學大家好，我是數學老師。今天我們來解基礎練習第二題。題目說，如右圖，A、B、C、D、E、F、G 七點在同一平面上，四邊形 ABCD、AEFB、BFGC 都是平行四邊形，角 1 等於 126 度，角 2 等於 90 度，則角 ABC 與角 BCD 的度數分別為多少？",
+        "reveal_shapes": []
+      },
+      {
+        "id": "step_1",
+        "narration": "解題的第一步，我們先寫下解字。接著我們來求角 ABC。觀察頂點 B 可以發現，周圍的角 ABC、角 3 與角 4 剛好拼成一個 360 度的圓周角。因此，角 ABC 等於 360 度減去角 3 再減去角 4。",
+        "reveal_shapes": ["shape_12", "shape_4"]
+      },
+      {
+        "id": "step_2",
+        "narration": "接著，因為平行四邊形對角相等。在平行四邊形 AEFB 中，角 4 與角 2 是對角，所以角 4 等於角 2；在平行四邊形 BFGC 中，角 3 與角 1 是對角，所以角 3 等於角 1。我們將它們代入，可以得到角 ABC 等於 360 度減去角 1 再減去角 2。",
+        "reveal_shapes": ["shape_5"]
+      },
+      {
+        "id": "step_3",
+        "narration": "然後，我們把已知條件角 1 等於 126 度、角 2 等於 90 度代入算式中。這樣就可以得到角 ABC 等於 360 減去 126 再減去 90，計算出來角 ABC 等於 144 度。",
+        "reveal_shapes": ["shape_7"]
+      },
+      {
+        "id": "step_4",
+        "narration": "最後，我們來求角 BCD。在平行四邊形 ABCD 中，因為鄰角互補，所以角 BCD 等於 180 度減去角 ABC。我們代入角 ABC 等於 144 度，計算得到：180 減去 144，算出來角 BCD 等於 36 度。",
+        "reveal_shapes": ["shape_13"]
+      },
+      {
+        "id": "outro",
+        "narration": "因此，最後寫下答，角 ABC 等於 144 度，角 BCD 等於 36 度。各位同學，這題對角相等與鄰角互補的複合應用，大家都學會了嗎？",
+        "reveal_shapes": ["shape_14"]
+      }
+    ],
+    "highlights": [
+      { "time": 20.5, "cx": 1690, "cy": 370 },
+      { "time": 22.5, "cx": 1370, "cy": 420 },
+      { "time": 34.0, "cx": 1630, "cy": 300 },
+      { "time": 38.0, "cx": 1650, "cy": 330 },
+      { "time": 39.5, "cx": 1610, "cy": 330 },
+      { "time": 51.5, "cx": 1610, "cy": 330 },
+      { "time": 53.0, "cx": 1370, "cy": 420 },
+      { "time": 58.0, "cx": 1650, "cy": 330 },
+      { "time": 59.5, "cx": 1690, "cy": 370 },
+      { "time": 75.0, "cx": 1690, "cy": 370 },
+      { "time": 77.0, "cx": 1370, "cy": 420 },
+      { "time": 95.0, "cx": 1630, "cy": 300 },
+      { "time": 97.0, "cx": 1710, "cy": 250 }
+    ],
+    "zoom_center": { "cx": 1530, "cy": 350 },
+    "zooms": [
+      { "time": 9.5, "scale": 2.2 },
+      { "time": 27.5, "scale": 1.0 },
+      { "time": 32.0, "scale": 2.2 },
+      { "time": 46.0, "scale": 1.0 },
+      { "time": 50.0, "scale": 2.2 },
+      { "time": 72.0, "scale": 1.0 },
+      { "time": 73.5, "scale": 2.2 },
+      { "time": 89.5, "scale": 1.0 },
+      { "time": 93.0, "scale": 2.2 },
+      { "time": 108.5, "scale": 1.0 }
+    ],
+    "shapes": {
+      "shape_12": {
+        "text": "解",
+        "style": "border-left: 6px solid #ef4444;",
+        "left": 767867,
+        "top": 4207550,
+        "width": 441325,
+        "height": 400050
+      },
+      "shape_4": {
+        "text": "∠ABC＝360°－∠3－∠4",
+        "style": "border-left: 6px solid #3b82f6;",
+        "left": 1213424,
+        "top": 4085460,
+        "width": 7331558,
+        "height": 633250
+      },
+      "shape_5": {
+        "text": "＝360°－∠1－∠2",
+        "style": "border-left: 6px solid #3b82f6;",
+        "left": 1213424,
+        "top": 4642385,
+        "width": 7331558,
+        "height": 633250
+      },
+      "shape_7": {
+        "text": "＝360°－126°－90°＝144°",
+        "style": "border-left: 6px solid #3b82f6; font-weight: bold; color: #1e293b;",
+        "left": 1213424,
+        "top": 5199310,
+        "width": 7331558,
+        "height": 633250
+      },
+      "shape_13": {
+        "text": "∠BCD＝180°－∠ABC＝180°－144°＝36°",
+        "style": "border-left: 6px solid #10b981;",
+        "left": 1213424,
+        "top": 5756235,
+        "width": 7331558,
+        "height": 633250
+      },
+      "shape_14": {
+        "text": "答：∠ABC＝144°，∠BCD＝36°",
+        "style": "border-left: 6px solid #f59e0b; font-weight: bold; color: #d97706;",
+        "left": 1213424,
+        "top": 6313161,
+        "width": 7331558,
+        "height": 584775
+      }
+    }
+  }
+}
