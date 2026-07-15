@@ -17,7 +17,7 @@ window.DECK = window.DECK || [];
         <text id="eqlbl" x="${vbW - 8}" y="20" text-anchor="end" class="mth" font-size="16" fill="${color}"></text>
       </svg>
       <div class="ictrl">
-        ${lockA ? '' : `<label>斜率 a <span class="ival" id="va">${a0}</span></label><input type="range" id="sa" min="${aMin}" max="${aMax}" step="0.5" value="${a0}">`}
+        ${lockA ? '' : `<label>a <span class="ival" id="va">${a0}</span></label><input type="range" id="sa" min="${aMin}" max="${aMax}" step="0.5" value="${a0}">`}
         ${lockB ? '' : `<label>${'常數'} b <span class="ival" id="vb">${b0}</span></label><input type="range" id="sb" min="${bMin}" max="${bMax}" step="1" value="${b0}">`}
       </div></div>`;
     const graph = h.querySelector('#graph'), yint = h.querySelector('#yint'), lbl = h.querySelector('#eqlbl');
@@ -30,7 +30,7 @@ window.DECK = window.DECK || [];
       graph.setAttribute('points', `${p1} ${p2}`);
       yint.setAttribute('cx', P.X(0)); yint.setAttribute('cy', P.Y(b));
       const yl = h.querySelector('#yintlbl');
-      if (yl) { yl.setAttribute('x', P.X(0) + 12); yl.setAttribute('y', P.Y(b) - 8); yl.textContent = 'y截距'; }
+      if (yl) { yl.setAttribute('x', P.X(0) + 12); yl.setAttribute('y', P.Y(b) - 8); yl.textContent = `(0, ${b})`; }
       const bs = b === 0 ? '' : (b > 0 ? '+' + b : '' + b);
       lbl.textContent = `y = ${a === 1 ? '' : a === -1 ? '−' : a}x ${bs}`;
     };
@@ -60,12 +60,11 @@ window.DECK = window.DECK || [];
             <text x="55" y="118" text-anchor="middle" class="mth" font-size="26" fill="#172033">x</text>
             <line x1="80" y1="110" x2="150" y2="110" stroke="#7c3aed" stroke-width="3" marker-end="url(#fm)"/>
             <rect x="155" y="60" width="110" height="100" rx="16" fill="#f3eefe" stroke="#7c3aed" stroke-width="2.5"/>
-            <text x="210" y="100" text-anchor="middle" class="mth" font-size="22" fill="#7c3aed">f</text>
-            <text x="210" y="128" text-anchor="middle" font-size="13" fill="#657187">規則</text>
+            <text x="210" y="118" text-anchor="middle" font-size="19" font-weight="800" fill="#7c3aed">規則</text>
             <line x1="270" y1="110" x2="340" y2="110" stroke="#7c3aed" stroke-width="3" marker-end="url(#fm)"/>
             <text x="368" y="118" text-anchor="middle" class="mth" font-size="26" fill="#172033">y</text>
             <text x="210" y="40" text-anchor="middle" font-size="13" fill="#657187">一個 x → 唯一的 y</text>
-            <text x="210" y="195" text-anchor="middle" font-size="13" fill="#657187">y = f(x)</text>
+            <text x="210" y="195" text-anchor="middle" font-size="13" fill="#657187">x 代入規則 → 算出 y</text>
           </svg></div>`;
         },
         caption: '像自動販賣機：投同一個鈕，一定出同一種飲料。',
@@ -78,53 +77,23 @@ window.DECK = window.DECK || [];
 
       {
         sec: '2-1', secName: '函數與函數圖形',
-        title: '判斷「是不是函數」：垂直線檢驗',
+        title: '函數值：代進去算',
         points: [
-          '同一個 \\(x\\) 只能有<b>一個</b> \\(y\\)——這是函數的鐵則。',
-          '<span class="k">垂直線檢驗法</span>：任何一條鉛直線，最多只能和圖形交<b>一個</b>點。',
-          '若交超過一點 ⇒ 同一個 x 對到多個 y ⇒ <b>不是</b>函數。'
-        ],
-        visual: (h) => {
-          const L = SV.plane({ x0: 36, y0: 18, w: 150, h: 150, xmin: -4, xmax: 4, ymin: -4, ymax: 4 });
-          const R = SV.plane({ x0: 262, y0: 18, w: 150, h: 150, xmin: -4, xmax: 4, ymin: -4, ymax: 4 });
-          let s = L.defs + L.svg;
-          s += `<line x1="${L.X(-3)}" y1="${L.Y(-4)}" x2="${L.X(3)}" y2="${L.Y(2)}" stroke="${C}" stroke-width="3"/>`;
-          s += `<line x1="${L.X(1)}" y1="${L.Y(-4)}" x2="${L.X(1)}" y2="${L.Y(4)}" stroke="#059669" stroke-width="2" stroke-dasharray="5 4"/>`;
-          s += SV.dot(L.X(1), L.Y(0), '#059669', 5);
-          s += `<text x="111" y="212" text-anchor="middle" font-size="13" font-weight="900" fill="#059669">✓ 只交一次 → 是函數</text>`;
-          s += R.svg;
-          s += `<line x1="${R.X(2)}" y1="${R.Y(-4)}" x2="${R.X(2)}" y2="${R.Y(4)}" stroke="#e11d48" stroke-width="2" stroke-dasharray="5 4"/>`;
-          s += SV.dot(R.X(2), R.Y(1), '#e11d48', 5) + SV.dot(R.X(2), R.Y(3), '#e11d48', 5) + SV.dot(R.X(-2), R.Y(-1), '#e11d48', 5) + SV.dot(R.X(-2), R.Y(-3), '#e11d48', 5);
-          s += `<text x="337" y="212" text-anchor="middle" font-size="13" font-weight="900" fill="#e11d48">✗ 交兩點 → 不是函數</text>`;
-          h.innerHTML = `<div style="width:100%;text-align:center"><svg viewBox="0 0 448 228" style="max-width:100%">${s}</svg></div>`;
-        },
-        caption: '左：每條垂直線只交一次；右：同一個 x（虛線）對到兩個 y。',
-        example: {
-          q: '一個「躺著的拋物線」（一個 x 對到上下兩個 y），是函數嗎？',
-          steps: ['畫一條垂直線，會交到兩點。', '同一個 x 有兩個 y ⇒ 不是函數。'],
-          ans: '不是函數'
-        }
-      },
-
-      {
-        sec: '2-1', secName: '函數與函數圖形',
-        title: '函數值 f(x)：代進去算',
-        points: [
-          '\\(f(x)\\) 表示「把 \\(x\\) 代入規則後算出的值」。',
-          '\\(f(3)\\) 就是把式子裡的 \\(x\\) 全部換成 3。',
+          '把 \\(x\\) 的值<b>代入</b>函數的式子，算出來的 \\(y\\) 就是對應的<span class="k">函數值</span>。',
+          '「當 \\(x=3\\) 時的函數值」＝把式子裡的 \\(x\\) 全部換成 3 算出 \\(y\\)。',
           '代入是本章最基本、也最常考的動作。'
         ],
-        formula: { label: '例', tex: 'f(x)=2x+1 \\Rightarrow f(3)=2\\times3+1=7' },
+        formula: { label: '例', tex: 'y=2x+1,\\ 當\\ x=3\\ 時\\ y=2\\times3+1=7' },
         visual: (h) => {
           h.innerHTML = SV.fbox([
-            { label: '函數規則', tex: 'f(x)=2x+1', color: C, fill: '#f3eefe', border: C, size: 20 },
-            { label: '把 x = 3 代入', tex: 'f(3)=2\\times 3+1=7', color: '#059669', border: '#cfe8dd' }
+            { label: '函數規則', tex: 'y=2x+1', color: C, fill: '#f3eefe', border: C, size: 20 },
+            { label: '把 x = 3 代入', tex: 'y=2\\times 3+1=7', color: '#059669', border: '#cfe8dd' }
           ]);
         },
         example: {
-          q: '設 \\(f(x)=x^2-4x\\)，求 \\(f(5)\\) 與 \\(f(-1)\\)。',
-          steps: ['\\(f(5)=5^2-4\\times5=25-20=5\\)', '\\(f(-1)=(-1)^2-4\\times(-1)=1+4=5\\)'],
-          ans: '\\(f(5)=5,\\ f(-1)=5\\)'
+          q: '設 \\(y=3x-4\\)，當 \\(x=5\\) 與 \\(x=-1\\) 時，函數值各是多少？',
+          steps: ['\\(x=5:\\ y=3\\times5-4=11\\)', '\\(x=-1:\\ y=3\\times(-1)-4=-7\\)'],
+          ans: '函數值分別為 11 與 −7'
         }
       },
 
@@ -155,7 +124,7 @@ window.DECK = window.DECK || [];
         caption: '式子、表格、圖形描述的是<b>同一個</b>函數，可互相轉換。',
         example: {
           q: '由表格 x：1,2,3 對應 y：3,5,7，寫出這個一次函數。',
-          steps: ['x 每加 1，y 加 2 ⇒ 斜率 a=2。', '代 (1,3)：\\(3=2\\times1+b\\Rightarrow b=1\\)。', '所以 \\(y=2x+1\\)。'],
+          steps: ['x 每加 1，y 就加 2 ⇒ \\(a=2\\)。', '代 (1,3)：\\(3=2\\times1+b\\Rightarrow b=1\\)。', '所以 \\(y=2x+1\\)。'],
           ans: '\\(y=2x+1\\)'
         }
       },
@@ -183,12 +152,12 @@ window.DECK = window.DECK || [];
         title: '正比函數 y = ax',
         points: [
           '\\(y\\) 與 \\(x\\) 成<b>正比</b>：\\(y=ax\\)（\\(a\\neq0\\)）。',
-          '圖形是通過<b>原點</b>的斜直線；\\(a\\) 是<span class="k">斜率</span>。',
+          '圖形是通過<b>原點</b>的直線。',
           '\\(a>0\\) 往右上、\\(a<0\\) 往右下；\\(|a|\\) 越大越陡。'
         ],
         formula: { label: '正比函數', tex: 'y=ax\\quad(\\text{過原點})' },
         visual: (h) => plotter(h, { a0: 1, b0: 0, lockB: true, aMin: -3, aMax: 3, color: C }),
-        caption: '拖動斜率 a：直線繞著原點轉，永遠通過 (0,0)。',
+        caption: '拖動 a：直線繞著原點轉，永遠通過 (0,0)。',
         example: {
           q: '正比函數通過 (2, 6)，求關係式。',
           steps: ['設 \\(y=ax\\)，代入 (2,6)：\\(6=a\\times2\\)。', '\\(a=3\\)，所以 \\(y=3x\\)。'],
@@ -201,7 +170,7 @@ window.DECK = window.DECK || [];
         title: '一次函數 y = ax + b',
         points: [
           '正比函數上下平移 \\(b\\)，就是<span class="k">一次函數</span> \\(y=ax+b\\)。',
-          '\\(a\\)＝<b>斜率</b>（決定傾斜方向與陡度）；\\(b\\)＝<b>y 截距</b>（線和 y 軸的交點）。',
+          '\\(a\\) 決定<b>傾斜方向與陡度</b>；圖形與 y 軸交於 \\((0,\\,b)\\)。',
           '圖形一定是一條<b>直線</b>。'
         ],
         formula: { label: '一次函數', tex: 'y=ax+b\\quad(a\\neq0)' },
@@ -220,10 +189,10 @@ window.DECK = window.DECK || [];
         points: [
           '常數函數與一次函數合稱<span class="k">線型函數</span>，圖形都是直線。',
           '看圖求式子兩步驟：',
-          '① 讀 <b>y 截距 b</b>：直線和 y 軸的交點。',
-          '② 求 <b>斜率 a</b>：向右 1 格，直線上升幾格。'
+          '① 讀 <b>b</b>：找圖形與 <b>y 軸的交點</b> \\((0,\\,b)\\)。',
+          '② 求 <b>a</b>：向右 1 格，直線<b>上升幾格</b>。'
         ],
-        formula: { label: '斜率＝上升÷右移', tex: 'a=\\dfrac{\\text{上升量}}{\\text{右移量}}' },
+        formula: { label: '求 a', tex: 'a=\\dfrac{\\text{上升量}}{\\text{右移量}}' },
         visual: (h) => {
           const P = SV.plane({ x0: 44, y0: 18, w: 300, h: 300, xmin: -4, xmax: 4, ymin: -4, ymax: 6 });
           let g = P.defs + P.svg;
@@ -233,12 +202,12 @@ window.DECK = window.DECK || [];
           g += `<text x="${P.X(1) + 8}" y="${P.Y(2) + 4}" font-size="12" font-weight="800" fill="#059669">上2</text>`;
           g += SV.dot(P.X(0), P.Y(1), '#e11d48', 6) + `<text x="${P.X(0) - 8}" y="${P.Y(1) - 8}" text-anchor="end" font-size="12" font-weight="800" fill="#e11d48">b=1</text>`;
           h.innerHTML = `<div style="width:100%;text-align:center"><svg viewBox="0 0 ${44 + 300 + 30} ${18 + 300 + 26}" style="max-width:100%">${g}</svg>` +
-            SV.fbox([{ label: '讀截距、數斜率', tex: 'a=\\dfrac{2}{1}=2,\\ b=1\\ \\Rightarrow\\ y=2x+1', color: C, size: 16 }]) + `</div>`;
+            SV.fbox([{ label: '讀交點、數格子', tex: 'a=\\dfrac{2}{1}=2,\\ b=1\\ \\Rightarrow\\ y=2x+1', color: C, size: 16 }]) + `</div>`;
         },
-        caption: 'y 截距＝1、斜率＝2，直接寫出 \\(y=2x+1\\)。',
+        caption: '與 y 軸交於 (0, 1) 得 b＝1；向右 1 上升 2 得 a＝2，直接寫出 \\(y=2x+1\\)。',
         example: {
           q: '一直線交 y 軸於 (0, 3)，向右 1 格下降 1 格，求式子。',
-          steps: ['y 截距 \\(b=3\\)。', '向右 1、下降 1 ⇒ 斜率 \\(a=-1\\)。', '所以 \\(y=-x+3\\)。'],
+          steps: ['與 y 軸交於 (0, 3) ⇒ \\(b=3\\)。', '向右 1、下降 1 ⇒ \\(a=-1\\)。', '所以 \\(y=-x+3\\)。'],
           ans: '\\(y=-x+3\\)'
         }
       },
@@ -278,7 +247,7 @@ window.DECK = window.DECK || [];
         title: '函數圖形的應用：看圖說故事',
         points: [
           '生活中很多關係可用函數圖形表示，例如<b>時間–距離</b>圖。',
-          '<b>斜率</b>代表快慢：越陡走越快；<b>水平線</b>表示停住不動。',
+          '線段<b>越陡</b>代表走越快；<b>水平線</b>表示停住不動。',
           '學會「從圖讀資訊」，比背公式更重要。'
         ],
         visual: (h) => {
@@ -294,7 +263,7 @@ window.DECK = window.DECK || [];
           g += `<text x="${P.X(5)}" y="${P.Y(5) - 14}" text-anchor="middle" font-size="11" font-weight="800" fill="#059669">繼續前進</text>`;
           h.innerHTML = `<div style="width:100%;text-align:center"><svg viewBox="0 0 ${48 + 320 + 30} ${18 + 280 + 34}" style="max-width:100%">${g}</svg></div>`;
         },
-        caption: '時間–距離圖：斜線＝移動、平線＝靜止，看斜率就知道快慢。',
+        caption: '時間–距離圖：斜線＝移動、平線＝靜止，越陡表示走越快。',
         example: {
           q: '上圖第 2～4 分鐘（中間平坦段），這個人在做什麼？',
           steps: ['該段圖形水平，距離沒有變化。', '距離不變 ⇒ 靜止不動（休息）。'],

@@ -66,6 +66,49 @@ window.DECK = window.DECK || [];
     return s;
   }
 
+  // 內角弧（頂點 V、鄰點 X,Y，自動取內部小弧）
+  function iang(V, X, Y, r, color, label = '', opt = {}) {
+    const dA = SV.angleOf(V[0], V[1], X[0], X[1]), dB = SV.angleOf(V[0], V[1], Y[0], Y[1]);
+    const diff = (dB - dA + 360) % 360; const [d0, d1] = diff <= 180 ? [dA, dB] : [dB, dA];
+    return SV.angle(V[0], V[1], r, d0, d1, color, label, opt);
+  }
+
+  // 動態平行截線圖：th=截線方向角（度）；opt.tilt=L₂ 傾角（判別頁用）
+  // opt.mark='corr'|'alt'|'co'；opt.showDeg 顯示度數；opt.letter 顯示 F/Z/C 字樣
+  function dynPar(th, opt = {}) {
+    const { mark = null, tilt = 0, showDeg = false, letter = '' } = opt;
+    const L1y = 95, xL = 35, xR = 425, mid = [230, 170], L2p = [230, 245];
+    const rad = Math.PI / 180;
+    const dir = [Math.cos(th * rad), -Math.sin(th * rad)];
+    const tAtY = y => (y - mid[1]) / dir[1];
+    const Tt = [mid[0] + tAtY(35) * dir[0], 35], Tb = [mid[0] + tAtY(305) * dir[0], 305];
+    const I1 = [mid[0] + tAtY(L1y) * dir[0], L1y];
+    const s2 = Math.tan(tilt * rad);
+    const l2At = x => L2p[1] + (x - L2p[0]) * s2;
+    const t2 = (L2p[1] - mid[1] + (mid[0] - L2p[0]) * s2) / (dir[1] - dir[0] * s2);
+    const I2 = [mid[0] + t2 * dir[0], mid[1] + t2 * dir[1]];
+    let s = SV.seg(xL, L1y, xR, L1y, '#334', 3) + SV.seg(xL, l2At(xL), xR, l2At(xR), '#334', 3) +
+      SV.seg(Tt[0], Tt[1], Tb[0], Tb[1], '#8a94a8', 2.6) +
+      SV.dot(I1[0], I1[1], '#334', 4) + SV.dot(I2[0], I2[1], '#334', 4) +
+      `<text x="${xR - 4}" y="${L1y - 8}" text-anchor="end" font-size="14" fill="#334">L₁</text>` +
+      `<text x="${xR - 4}" y="${l2At(xR) - 8}" text-anchor="end" font-size="14" fill="#334">L₂</text>`;
+    if (Math.abs(tilt) < 0.4) {
+      s += `<path d="M120,${L1y - 6} l8,6 l-8,6" fill="none" stroke="${GRN}" stroke-width="2.4"/>` +
+        `<path d="M120,${l2At(120) - 6} l8,6 l-8,6" fill="none" stroke="${GRN}" stroke-width="2.4"/>`;
+    }
+    const up = th, dn = th + 180;
+    if (mark) {
+      const l2r = SV.angleOf(I2[0], I2[1], xR, l2At(xR));
+      const v1 = m => Math.round(m), v2 = Math.round((up - l2r + 360) % 360);
+      const deg = (I, d0, d1, col, lbl) => SV.angle(I[0], I[1], 30, d0, d1, col, lbl, { w: 4.5, fs: 13, lr: 26 });
+      if (mark === 'corr') s += deg(I1, 0, up, BLU, showDeg ? v1(th) + '°' : '') + deg(I2, l2r, up, BLU, showDeg ? v2 + '°' : '');
+      else if (mark === 'alt') s += deg(I1, 180, dn, RED, showDeg ? v1(th) + '°' : '') + deg(I2, l2r, up, RED, showDeg ? v2 + '°' : '');
+      else if (mark === 'co') s += deg(I1, dn, 360, AMB, showDeg ? v1(180 - th) + '°' : '') + deg(I2, l2r, up, AMB, showDeg ? v2 + '°' : '');
+    }
+    if (letter) s += `<text x="55" y="75" font-size="36" font-weight="900" fill="rgba(217,119,6,0.45)">${letter}</text>`;
+    return s;
+  }
+
   // 平行四邊形頂點（傾斜）
   const PG = { A: [70, 220], B: [280, 220], C: [340, 80], D: [130, 80] };
   const pgPoly = (fill = 'rgba(217,119,6,0.07)') => SV.poly([PG.A, PG.B, PG.C, PG.D], fill, C, 2.6);
@@ -192,8 +235,15 @@ window.DECK = window.DECK || [];
           '圖形長得像英文字母 <b>F</b>。'
         ],
         formula: { label: '平行 ⇒', tex: '\\angle 2 = \\angle 6' },
-        visual: (h) => { h.innerHTML = svg('0 0 460 340', parFig([{ i: 1, r: '2', color: BLU }, { i: 2, r: '2', color: BLU }])); },
-        caption: '同位角：同側、同位置；平行時相等。',
+        visual: (h) => {
+          SV.stepper(h, '0 0 460 320', [
+            { t: '兩條平行線被一條截線所截。', d: () => dynPar(62) },
+            { t: '標出一組同位角：在截線同一側、相對位置相同（都在交點右上）。', d: () => dynPar(62, { mark: 'corr' }) },
+            { t: '兩角排成 F 形；兩線平行 ⇒ 同位角相等。', d: () => dynPar(62, { mark: 'corr', showDeg: true, letter: 'F' }) },
+            { t: '拖這一段轉動截線：兩個同位角一起變大變小，永遠相等。', d: (k) => dynPar(42 + 36 * k, { mark: 'corr', showDeg: true }) }
+          ], { acc: false });
+        },
+        caption: '滑桿第 4 步轉動截線：同位角＝同側、同位置，平行時永遠相等。',
         example: {
           q: '\\(L_1\\parallel L_2\\)，一個同位角為 \\(70^\\circ\\)，另一同位角？',
           steps: ['平行 ⇒ 同位角相等。'],
@@ -210,8 +260,15 @@ window.DECK = window.DECK || [];
           '圖形長得像英文字母 <b>Z</b>。'
         ],
         formula: { label: '平行 ⇒', tex: '\\angle 3 = \\angle 6' },
-        visual: (h) => { h.innerHTML = svg('0 0 460 340', parFig([{ i: 1, r: '3', color: RED }, { i: 2, r: '2', color: RED }], true, { band: true, regions: true })); },
-        caption: '兩角都在<b>內側</b>（藍底）、且分居截線<b>兩側</b>，交錯成 Z；平行時相等。',
+        visual: (h) => {
+          SV.stepper(h, '0 0 460 320', [
+            { t: '兩條平行線被截線所截，先看兩線「之間」的內側區。', d: () => dynPar(62) },
+            { t: '標出一組內錯角：都在內側、且分居截線兩側（交錯）。', d: () => dynPar(62, { mark: 'alt' }) },
+            { t: '兩角交錯成 Z 形；兩線平行 ⇒ 內錯角相等。', d: () => dynPar(62, { mark: 'alt', showDeg: true, letter: 'Z' }) },
+            { t: '拖這一段轉動截線：兩個內錯角同步變化，永遠相等。', d: (k) => dynPar(42 + 36 * k, { mark: 'alt', showDeg: true }) }
+          ], { acc: false });
+        },
+        caption: '滑桿第 4 步轉動截線：內錯角＝內側、異側，交錯成 Z，平行時相等。',
         example: {
           q: '\\(L_1\\parallel L_2\\)，一內錯角為 \\(3x\\)、另一為 \\(x+40\\)，求 \\(x\\)。',
           steps: ['內錯角相等：\\(3x=x+40\\)。', '\\(2x=40\\Rightarrow x=20\\)。'],
@@ -228,8 +285,15 @@ window.DECK = window.DECK || [];
           '圖形長得像 <b>C</b> 或 <b>U</b>。'
         ],
         formula: { label: '平行 ⇒', tex: '\\angle 4 + \\angle 6 = 180^\\circ' },
-        visual: (h) => { h.innerHTML = svg('0 0 460 340', parFig([{ i: 1, r: '4', color: AMB }, { i: 2, r: '2', color: AMB }], true, { band: true, regions: true })); },
-        caption: '兩角都在<b>內側</b>（藍底）、且在截線<b>同一側</b>，圍成 C；平行時相加 180°。',
+        visual: (h) => {
+          SV.stepper(h, '0 0 460 320', [
+            { t: '兩條平行線被截線所截，一樣先看內側區。', d: () => dynPar(62) },
+            { t: '標出一組同側內角：都在內側、且在截線的同一側。', d: () => dynPar(62, { mark: 'co' }) },
+            { t: '兩角圍成 C 形；兩線平行 ⇒ 相加＝180°（互補）。', d: () => dynPar(62, { mark: 'co', showDeg: true, letter: 'C' }) },
+            { t: '拖這一段轉動截線：一個變大另一個就變小，兩角相加永遠是 180°。', d: (k) => dynPar(42 + 36 * k, { mark: 'co', showDeg: true }) }
+          ], { acc: false });
+        },
+        caption: '滑桿第 4 步轉動截線：同側內角一增一減，和固定 180°。',
         example: {
           q: '\\(L_1\\parallel L_2\\)，一同側內角為 \\(110^\\circ\\)，另一個？',
           steps: ['同側內角互補：\\(180^\\circ-110^\\circ\\)。'],
@@ -247,11 +311,13 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '判別（其一）', tex: '\\angle 2=\\angle 6 \\Rightarrow L_1\\parallel L_2' },
         visual: (h) => {
-          h.innerHTML = svg('0 0 460 340',
-            parFig([{ i: 1, r: '2', color: GRN }, { i: 2, r: '2', color: GRN }], true) +
-            `<text x="230" y="330" text-anchor="middle" font-size="14" fill="${C}" font-weight="800">看到相等的同位角 → 判定平行</text>`);
+          SV.stepper(h, '0 0 460 320', [
+            { t: 'L₂ 現在是歪的：量得的同位角不相等 ⇒ 兩線不平行。', d: () => dynPar(62, { tilt: 12, mark: 'corr', showDeg: true }) },
+            { t: '拖這一段慢慢轉正 L₂，盯著兩個同位角的度數。', d: (k) => dynPar(62, { tilt: 12 * (1 - k), mark: 'corr', showDeg: true }) },
+            { t: '同位角相等的那一刻，兩線就平行了（出現 ∥ 記號）！內錯角相等、同側內角互補同理可判別。', d: () => dynPar(62, { tilt: 0, mark: 'corr', showDeg: true }) + `<text x="230" y="315" text-anchor="middle" font-size="14" font-weight="900" fill="${GRN}">同位角相等 ⇒ L₁ ∥ L₂</text>` }
+          ], { acc: false });
         },
-        caption: '性質與判別互為「正反」：一個由平行得角，一個由角得平行。',
+        caption: '滑桿第 2 步轉動 L₂：角相等的瞬間＝平行的瞬間；性質與判別互為正反。',
         example: {
           q: '兩線被截，一組同位角都是 \\(65^\\circ\\)，兩線平行嗎？',
           steps: ['同位角相等 ⇒ 兩線平行（判別法）。'],
@@ -319,23 +385,19 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '性質', tex: '\\overline{AB}=\\overline{DC},\\ \\overline{AD}=\\overline{BC},\\ \\angle A=\\angle C' },
         visual: (h) => {
-          h.innerHTML = svg('0 0 420 300',
-            pgPoly() + pgLabels() +
-            SV.ticks(PG.A[0], PG.A[1], PG.B[0], PG.B[1], 1, RED) + SV.ticks(PG.D[0], PG.D[1], PG.C[0], PG.C[1], 1, RED) +
-            SV.ticks(PG.A[0], PG.A[1], PG.D[0], PG.D[1], 2, BLU) + SV.ticks(PG.B[0], PG.B[1], PG.C[0], PG.C[1], 2, BLU) +
-            iangle(PG.A, PG.B, PG.D, 22, GRN, '', { w: 2.4 }) + iangle(PG.C, PG.D, PG.B, 22, GRN, '', { w: 2.4 }) +
-            `<text x="175" y="242" text-anchor="middle" font-size="12" font-weight="800" fill="${RED}">對邊</text>` +
-            `<text x="96" y="145" text-anchor="middle" font-size="12" font-weight="800" fill="${BLU}">對邊</text>` +
-            `<text x="108" y="198" font-size="11" font-weight="800" fill="${GRN}">對角</text>` +
-            `<text x="300" y="98" font-size="11" font-weight="800" fill="${GRN}">對角</text>` +
-            `<text x="210" y="290" text-anchor="middle" font-size="12.5" fill="#657187">紅・藍各一組對邊（相等）；綠弧為對角（相等）</text>`);
-          function iangle(V, A, B, r, color, label, opt) {
-            const dA = SV.angleOf(V[0], V[1], A[0], A[1]), dB = SV.angleOf(V[0], V[1], B[0], B[1]);
-            const diff = (dB - dA + 360) % 360; const [d0, d1] = diff <= 180 ? [dA, dB] : [dB, dA];
-            return SV.angle(V[0], V[1], r, d0, d1, color, label, opt);
-          }
+          const base = () => pgPoly() + pgLabels();
+          const diag = () => SV.seg(PG.B[0], PG.B[1], PG.D[0], PG.D[1], VIO, 2);
+          const alt1 = () => iang(PG.B, PG.A, PG.D, 26, RED, '', { w: 2.4 }) + iang(PG.D, PG.C, PG.B, 26, RED, '', { w: 2.4 });
+          const alt2 = () => iang(PG.D, PG.A, PG.B, 40, BLU, '', { w: 2.4 }) + iang(PG.B, PG.C, PG.D, 40, BLU, '', { w: 2.4 });
+          SV.stepper(h, '0 0 420 300', [
+            { t: '平行四邊形 ABCD：先只知道「兩雙對邊平行」。', d: () => base() },
+            { t: '畫對角線 BD，把它切成兩個三角形。', d: () => base() + diag() },
+            { t: 'AB∥DC ⇒ 內錯角相等（紅）；AD∥BC ⇒ 內錯角相等（藍）。', d: () => base() + diag() + alt1() + alt2() },
+            { t: '紅角、藍角、夾邊 BD 共用 ⇒ △ABD ≅ △CDB（ASA）！', d: (k) => base() + diag() + alt1() + alt2() + SV.poly([PG.A, PG.B, PG.D], `rgba(225,29,72,${0.10 * k})`, 'rgba(0,0,0,0)', 0) + SV.poly([PG.C, PG.D, PG.B], `rgba(37,99,235,${0.10 * k})`, 'rgba(0,0,0,0)', 0) },
+            { t: '全等 ⇒ 對邊相等（刻度）、對角相等（綠弧）；鄰角互補。', d: () => base() + diag() + SV.ticks(PG.A[0], PG.A[1], PG.B[0], PG.B[1], 1, RED) + SV.ticks(PG.D[0], PG.D[1], PG.C[0], PG.C[1], 1, RED) + SV.ticks(PG.A[0], PG.A[1], PG.D[0], PG.D[1], 2, BLU) + SV.ticks(PG.B[0], PG.B[1], PG.C[0], PG.C[1], 2, BLU) + iang(PG.A, PG.B, PG.D, 22, GRN, '', { w: 2.4 }) + iang(PG.C, PG.D, PG.B, 22, GRN, '', { w: 2.4 }) }
+          ], { acc: false });
         },
-        caption: '對邊一樣長、對角一樣大，是平行四邊形最常用的性質。',
+        caption: '拖動滑桿看證明：一條對角線＋內錯角＋ASA，對邊、對角的相等就都出來了。',
         example: {
           q: '\\(\\square ABCD\\) 中 \\(\\angle A=110^\\circ\\)，求 \\(\\angle B\\) 與 \\(\\angle C\\)。',
           steps: ['相鄰角互補：\\(\\angle B=180^\\circ-110^\\circ=70^\\circ\\)。', '對角相等：\\(\\angle C=\\angle A=110^\\circ\\)。'],
@@ -354,15 +416,17 @@ window.DECK = window.DECK || [];
         formula: { label: '性質', tex: '\\overline{OA}=\\overline{OC},\\ \\overline{OB}=\\overline{OD}' },
         visual: (h) => {
           const O = [(PG.A[0] + PG.C[0]) / 2, (PG.A[1] + PG.C[1]) / 2];
-          h.innerHTML = svg('0 0 420 300',
-            pgPoly() +
-            SV.seg(PG.A[0], PG.A[1], PG.C[0], PG.C[1], VIO, 2) + SV.seg(PG.B[0], PG.B[1], PG.D[0], PG.D[1], VIO, 2) +
-            SV.ticks(PG.A[0], PG.A[1], O[0], O[1], 1, RED) + SV.ticks(O[0], O[1], PG.C[0], PG.C[1], 1, RED) +
-            SV.ticks(PG.B[0], PG.B[1], O[0], O[1], 2, BLU) + SV.ticks(O[0], O[1], PG.D[0], PG.D[1], 2, BLU) +
-            SV.dot(O[0], O[1], VIO, 5) + SV.vlabel(O[0] + 8, O[1] - 6, 'O', VIO) + pgLabels() +
-            `<text x="210" y="288" text-anchor="middle" font-size="13" fill="#657187">O 平分兩條對角線：OA=OC、OB=OD</text>`);
+          const base = () => pgPoly() + pgLabels();
+          const diags = () => SV.seg(PG.A[0], PG.A[1], PG.C[0], PG.C[1], VIO, 2) + SV.seg(PG.B[0], PG.B[1], PG.D[0], PG.D[1], VIO, 2) + SV.dot(O[0], O[1], VIO, 5) + SV.vlabel(O[0] + 8, O[1] - 6, 'O', VIO);
+          const marks = () => iang(PG.A, PG.B, PG.C, 26, RED, '', { w: 2.2 }) + iang(PG.C, PG.D, PG.A, 26, RED, '', { w: 2.2 }) + iang(PG.B, PG.A, PG.D, 40, BLU, '', { w: 2.2 }) + iang(PG.D, PG.C, PG.B, 40, BLU, '', { w: 2.2 }) + SV.ticks(PG.A[0], PG.A[1], PG.B[0], PG.B[1], 1, GRN) + SV.ticks(PG.C[0], PG.C[1], PG.D[0], PG.D[1], 1, GRN);
+          SV.stepper(h, '0 0 420 300', [
+            { t: '畫兩條對角線，交於一點 O。', d: () => base() + diags() },
+            { t: '看 △OAB 和 △OCD：AB∥DC ⇒ 兩組內錯角相等（紅、藍）；又 AB＝DC（前頁性質，綠刻度）。', d: () => base() + diags() + marks() },
+            { t: '角、邊、角 ⇒ △OAB ≅ △OCD（ASA）。', d: (k) => base() + diags() + marks() + SV.poly([O, PG.A, PG.B], `rgba(225,29,72,${0.10 * k})`, 'rgba(0,0,0,0)', 0) + SV.poly([O, PG.C, PG.D], `rgba(37,99,235,${0.10 * k})`, 'rgba(0,0,0,0)', 0) },
+            { t: '全等 ⇒ OA＝OC、OB＝OD：兩條對角線在 O 互相平分！', d: () => base() + diags() + SV.ticks(PG.A[0], PG.A[1], O[0], O[1], 1, RED) + SV.ticks(O[0], O[1], PG.C[0], PG.C[1], 1, RED) + SV.ticks(PG.B[0], PG.B[1], O[0], O[1], 2, BLU) + SV.ticks(O[0], O[1], PG.D[0], PG.D[1], 2, BLU) }
+          ], { acc: false });
         },
-        caption: '對角線交點恰是彼此的中點——這是判別平行四邊形的利器。',
+        caption: '拖動滑桿看證明：內錯角＋對邊等＋ASA ⇒ 交點 O 是兩對角線的中點。',
         example: {
           q: '\\(\\square ABCD\\) 對角線交於 \\(O\\)，\\(\\overline{AC}=12\\)，求 \\(\\overline{OA}\\)。',
           steps: ['對角線互相平分，\\(O\\) 是 \\(\\overline{AC}\\) 中點。', '\\(\\overline{OA}=12\\div2=6\\)。'],
@@ -381,14 +445,19 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '常用判別', tex: '\\overline{AB}\\parallel\\overline{DC}\\ \\text{且}\\ \\overline{AB}=\\overline{DC}\\Rightarrow \\square ABCD' },
         visual: (h) => {
-          h.innerHTML = svg('0 0 420 300',
-            pgPoly() + pgLabels() +
-            SV.ticks(PG.A[0], PG.A[1], PG.B[0], PG.B[1], 1, RED) + SV.ticks(PG.D[0], PG.D[1], PG.C[0], PG.C[1], 1, RED) +
-            `<path d="M170,${PG.A[1] - 6} l8,6 l-8,6" fill="none" stroke="${RED}" stroke-width="2.4"/>` +
-            `<path d="M230,${PG.D[1] - 6} l8,6 l-8,6" fill="none" stroke="${RED}" stroke-width="2.4"/>` +
-            `<text x="210" y="285" text-anchor="middle" font-size="13" fill="#657187">一組對邊「又平行又相等」即可判定</text>`);
+          const O = [(PG.A[0] + PG.C[0]) / 2, (PG.A[1] + PG.C[1]) / 2];
+          const base = () => pgPoly() + pgLabels();
+          const par = (c) => `<path d="M170,${PG.A[1] - 6} l8,6 l-8,6" fill="none" stroke="${c}" stroke-width="2.4"/><path d="M230,${PG.D[1] - 6} l8,6 l-8,6" fill="none" stroke="${c}" stroke-width="2.4"/>`;
+          const par2 = (c) => `<path d="M95,155 l10,4 l-6,8" fill="none" stroke="${c}" stroke-width="2.4"/><path d="M305,155 l10,4 l-6,8" fill="none" stroke="${c}" stroke-width="2.4"/>`;
+          SV.stepper(h, '0 0 420 300', [
+            { t: '判別①（定義）：兩雙對邊分別平行。', d: () => base() + par(BLU) + par2(GRN) },
+            { t: '判別②：兩雙對邊分別相等。', d: () => base() + SV.ticks(PG.A[0], PG.A[1], PG.B[0], PG.B[1], 1, RED) + SV.ticks(PG.D[0], PG.D[1], PG.C[0], PG.C[1], 1, RED) + SV.ticks(PG.A[0], PG.A[1], PG.D[0], PG.D[1], 2, BLU) + SV.ticks(PG.B[0], PG.B[1], PG.C[0], PG.C[1], 2, BLU) },
+            { t: '判別③：兩雙對角分別相等。', d: () => base() + iang(PG.A, PG.B, PG.D, 22, GRN, '', { w: 2.4 }) + iang(PG.C, PG.D, PG.B, 22, GRN, '', { w: 2.4 }) + iang(PG.B, PG.A, PG.C, 22, VIO, '', { w: 2.4 }) + iang(PG.D, PG.C, PG.A, 22, VIO, '', { w: 2.4 }) },
+            { t: '判別④：對角線互相平分。', d: () => base() + SV.seg(PG.A[0], PG.A[1], PG.C[0], PG.C[1], VIO, 2) + SV.seg(PG.B[0], PG.B[1], PG.D[0], PG.D[1], VIO, 2) + SV.dot(O[0], O[1], VIO, 5) + SV.ticks(PG.A[0], PG.A[1], O[0], O[1], 1, RED) + SV.ticks(O[0], O[1], PG.C[0], PG.C[1], 1, RED) + SV.ticks(PG.B[0], PG.B[1], O[0], O[1], 2, BLU) + SV.ticks(O[0], O[1], PG.D[0], PG.D[1], 2, BLU) },
+            { t: '判別⑤（最好用）：一組對邊「又平行又相等」。', d: () => base() + par(RED) + SV.ticks(PG.A[0], PG.A[1], PG.B[0], PG.B[1], 1, RED) + SV.ticks(PG.D[0], PG.D[1], PG.C[0], PG.C[1], 1, RED) }
+          ], { acc: false });
         },
-        caption: '判別＝性質反過來用；⑤「一組對邊平行且相等」最好用。',
+        caption: '拖動滑桿逐一看五種判別法——滿足任一個就是平行四邊形。',
         example: {
           q: '四邊形中 \\(\\overline{AB}\\parallel\\overline{DC}\\) 且 \\(\\overline{AB}=\\overline{DC}\\)，它是？',
           steps: ['符合判別⑤：一組對邊又平行又相等。'],
@@ -407,18 +476,33 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '特徵', tex: '\\text{四內角}=90^\\circ,\\quad \\overline{AC}=\\overline{BD}' },
         visual: (h) => {
-          const A = [90, 220], B = [330, 220], Cc = [330, 70], D = [90, 70];
-          const O = [210, 145];
-          h.innerHTML = svg('0 0 420 290',
-            SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
-            SV.seg(A[0], A[1], Cc[0], Cc[1], VIO, 2) + SV.seg(B[0], B[1], D[0], D[1], VIO, 2) +
-            SV.rightAngle(A[0], A[1], 0, 90, 13, '#657187') + SV.rightAngle(B[0], B[1], 90, 180, 13, '#657187') + SV.rightAngle(Cc[0], Cc[1], 180, 270, 13, '#657187') + SV.rightAngle(D[0], D[1], 270, 360, 13, '#657187') +
-            SV.ticks(A[0], A[1], Cc[0], Cc[1], 1, RED) + SV.ticks(B[0], B[1], D[0], D[1], 1, RED) +
-            SV.dot(O[0], O[1], VIO, 4) +
-            SV.vlabel(A[0] - 18, A[1] + 6, 'A') + SV.vlabel(B[0] + 8, B[1] + 6, 'B') + SV.vlabel(Cc[0] + 8, Cc[1], 'C') + SV.vlabel(D[0] - 18, D[1], 'D') +
-            `<text x="210" y="278" text-anchor="middle" font-size="13" fill="#657187">四個直角＋對角線相等（紅）</text>`);
+          const shape = (sh) => { // sh=剪切量：60→平行四邊形、0→矩形
+            const A = [90, 220], B = [330, 220], Cc = [330 + sh, 70], D = [90 + sh, 70];
+            return { A, B, Cc, D };
+          };
+          const draw = (sh, extra = '') => {
+            const { A, B, Cc, D } = shape(sh);
+            const angA = Math.round(SV.angleOf(A[0], A[1], D[0], D[1]));
+            return SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
+              SV.vlabel(A[0] - 18, A[1] + 6, 'A') + SV.vlabel(B[0] + 8, B[1] + 6, 'B') + SV.vlabel(Cc[0] + 8, Cc[1], 'C') + SV.vlabel(D[0] - 18, D[1], 'D') +
+              (sh > 1 ? iang([...A], B, D, 30, RED, angA + '°', { w: 2.4, fs: 12 }) : '') + extra;
+          };
+          const rectExtra = () => {
+            const { A, B, Cc, D } = shape(0);
+            return SV.rightAngle(A[0], A[1], 0, 90, 13, '#657187') + SV.rightAngle(B[0], B[1], 90, 180, 13, '#657187') + SV.rightAngle(Cc[0], Cc[1], 180, 270, 13, '#657187') + SV.rightAngle(D[0], D[1], 270, 360, 13, '#657187');
+          };
+          const diagExtra = () => {
+            const { A, B, Cc, D } = shape(0);
+            return SV.seg(A[0], A[1], Cc[0], Cc[1], VIO, 2) + SV.seg(B[0], B[1], D[0], D[1], VIO, 2) +
+              SV.ticks(A[0], A[1], Cc[0], Cc[1], 1, RED) + SV.ticks(B[0], B[1], D[0], D[1], 1, RED) + SV.dot(210, 145, VIO, 4);
+          };
+          SV.stepper(h, '0 0 420 290', [
+            { t: '拖這一段把平行四邊形「扶正」：讓 ∠A 慢慢變成 90°。', d: (k) => draw(60 * (1 - k)) },
+            { t: '一個角是直角的平行四邊形＝矩形 ⇒ 四個角全是直角。', d: () => draw(0, rectExtra()) },
+            { t: '矩形多出的性質：兩條對角線等長（AC＝BD，紅刻度）。', d: () => draw(0, rectExtra() + diagExtra()) }
+          ], { acc: false });
         },
-        caption: '矩形＝有直角的平行四邊形，多了「對角線相等」。',
+        caption: '滑桿第 1 步把平行四邊形扶正成矩形；矩形多了「對角線相等」。',
         example: {
           q: '矩形對角線 \\(\\overline{AC}=10\\)，另一條對角線 \\(\\overline{BD}\\)？',
           steps: ['矩形兩對角線相等。'],
@@ -437,16 +521,22 @@ window.DECK = window.DECK || [];
         formula: { label: '特徵', tex: '\\text{四邊相等},\\quad \\overline{AC}\\perp\\overline{BD}' },
         visual: (h) => {
           const A = [210, 250], B = [340, 150], Cc = [210, 50], D = [80, 150], O = [210, 150];
-          h.innerHTML = svg('0 0 420 300',
-            SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
-            SV.seg(A[0], A[1], Cc[0], Cc[1], VIO, 2) + SV.seg(B[0], B[1], D[0], D[1], VIO, 2) +
-            SV.rightAngle(O[0], O[1], 0, 90, 12, VIO) +
-            SV.ticks(A[0], A[1], B[0], B[1], 1, RED) + SV.ticks(B[0], B[1], Cc[0], Cc[1], 1, RED) + SV.ticks(Cc[0], Cc[1], D[0], D[1], 1, RED) + SV.ticks(D[0], D[1], A[0], A[1], 1, RED) +
-            SV.dot(O[0], O[1], VIO, 4) +
-            SV.vlabel(A[0] - 4, A[1] + 22, 'A') + SV.vlabel(B[0] + 8, B[1] + 4, 'B') + SV.vlabel(Cc[0] - 4, Cc[1] - 8, 'C') + SV.vlabel(D[0] - 20, D[1] + 4, 'D') +
-            `<text x="210" y="292" text-anchor="middle" font-size="13" fill="#657187">四邊相等＋對角線互相垂直平分</text>`);
+          const base = () => SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
+            SV.vlabel(A[0] - 4, A[1] + 22, 'A') + SV.vlabel(B[0] + 8, B[1] + 4, 'B') + SV.vlabel(Cc[0] - 4, Cc[1] - 8, 'C') + SV.vlabel(D[0] - 20, D[1] + 4, 'D');
+          const sides = () => SV.ticks(A[0], A[1], B[0], B[1], 1, RED) + SV.ticks(B[0], B[1], Cc[0], Cc[1], 1, RED) + SV.ticks(Cc[0], Cc[1], D[0], D[1], 1, RED) + SV.ticks(D[0], D[1], A[0], A[1], 1, RED);
+          const diags = () => SV.seg(A[0], A[1], Cc[0], Cc[1], VIO, 2) + SV.seg(B[0], B[1], D[0], D[1], VIO, 2) + SV.dot(O[0], O[1], VIO, 4) + SV.vlabel(O[0] + 8, O[1] + 18, 'O', VIO);
+          const perp = () => SV.rightAngle(O[0], O[1], 0, 90, 12, VIO) +
+            SV.ticks(A[0], A[1], O[0], O[1], 2, '#111') + SV.ticks(O[0], O[1], Cc[0], Cc[1], 2, '#111') +
+            SV.ticks(B[0], B[1], O[0], O[1], 3, BLU) + SV.ticks(O[0], O[1], D[0], D[1], 3, BLU);
+          const bis = () => iang(A, B, O, 34, GRN, '', { w: 2 }) + iang(A, O, D, 34, GRN, '', { w: 2 }) + iang(B, Cc, O, 30, GRN, '', { w: 2 }) + iang(B, O, A, 30, GRN, '', { w: 2 });
+          SV.stepper(h, '0 0 420 300', [
+            { t: '四邊等長（紅刻度）的平行四邊形＝菱形。', d: () => base() + sides() },
+            { t: '畫兩條對角線，交於 O。', d: () => base() + sides() + diags() },
+            { t: '對角線互相「垂直」且「平分」：AO＝OC、BO＝OD，且交角 90°。', d: () => base() + sides() + diags() + perp() },
+            { t: '對角線還會平分兩組對角（綠弧）——因為每條對角線都是對稱軸。', d: () => base() + sides() + diags() + perp() + bis() }
+          ], { acc: false });
         },
-        caption: '菱形＝四邊等長的平行四邊形，對角線垂直平分。',
+        caption: '拖動滑桿：菱形的對角線互相垂直平分，還平分兩組對角。',
         example: {
           q: '菱形對角線長 6 與 8，求邊長。',
           steps: ['對角線垂直平分 ⇒ 半對角線 3 與 4，構成直角三角形。', '邊長 \\(=\\sqrt{3^2+4^2}=\\sqrt{25}=5\\)。'],
@@ -465,17 +555,19 @@ window.DECK = window.DECK || [];
         formula: { label: '特徵', tex: '\\text{四邊相等且四角}=90^\\circ' },
         visual: (h) => {
           const A = [120, 230], B = [300, 230], Cc = [300, 50], D = [120, 50], O = [210, 140];
-          h.innerHTML = svg('0 0 420 290',
-            SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.08)', C, 2.6) +
-            SV.seg(A[0], A[1], Cc[0], Cc[1], VIO, 2) + SV.seg(B[0], B[1], D[0], D[1], VIO, 2) +
-            SV.rightAngle(A[0], A[1], 0, 90, 13, '#657187') + SV.rightAngle(B[0], B[1], 90, 180, 13, '#657187') + SV.rightAngle(Cc[0], Cc[1], 180, 270, 13, '#657187') + SV.rightAngle(D[0], D[1], 270, 360, 13, '#657187') +
-            SV.rightAngle(O[0], O[1], 0, 90, 11, VIO) +
-            [[A, B], [B, Cc], [Cc, D], [D, A]].map(([p, q]) => SV.ticks(p[0], p[1], q[0], q[1], 1, RED)).join('') +
-            SV.dot(O[0], O[1], VIO, 4) +
-            SV.vlabel(A[0] - 18, A[1] + 6, 'A') + SV.vlabel(B[0] + 8, B[1] + 6, 'B') + SV.vlabel(Cc[0] + 8, Cc[1], 'C') + SV.vlabel(D[0] - 18, D[1], 'D') +
-            `<text x="210" y="278" text-anchor="middle" font-size="13" fill="#657187">四邊相等＋四直角＝矩形與菱形的綜合</text>`);
+          const base = () => SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.08)', C, 2.6) +
+            SV.vlabel(A[0] - 18, A[1] + 6, 'A') + SV.vlabel(B[0] + 8, B[1] + 6, 'B') + SV.vlabel(Cc[0] + 8, Cc[1], 'C') + SV.vlabel(D[0] - 18, D[1], 'D');
+          const sides = () => [[A, B], [B, Cc], [Cc, D], [D, A]].map(([p, q]) => SV.ticks(p[0], p[1], q[0], q[1], 1, RED)).join('') +
+            SV.rightAngle(A[0], A[1], 0, 90, 13, '#657187') + SV.rightAngle(B[0], B[1], 90, 180, 13, '#657187') + SV.rightAngle(Cc[0], Cc[1], 180, 270, 13, '#657187') + SV.rightAngle(D[0], D[1], 270, 360, 13, '#657187');
+          const diags = () => SV.seg(A[0], A[1], Cc[0], Cc[1], VIO, 2) + SV.seg(B[0], B[1], D[0], D[1], VIO, 2) + SV.dot(O[0], O[1], VIO, 4);
+          SV.stepper(h, '0 0 420 290', [
+            { t: '四邊等長＋四個直角：正方形同時是「矩形」也是「菱形」。', d: () => base() + sides() },
+            { t: '矩形血統 ⇒ 對角線相等（黑刻度）。', d: () => base() + sides() + diags() + SV.ticks(A[0], A[1], Cc[0], Cc[1], 2, '#111') + SV.ticks(B[0], B[1], D[0], D[1], 2, '#111') },
+            { t: '菱形血統 ⇒ 對角線互相垂直平分。', d: () => base() + sides() + diags() + SV.rightAngle(O[0], O[1], 0, 90, 11, VIO) },
+            { t: '對角線平分頂角：和邊的夾角都是 45°。', d: () => base() + sides() + diags() + SV.rightAngle(O[0], O[1], 0, 90, 11, VIO) + iang(A, B, Cc, 34, GRN, '45°', { w: 2, fs: 11 }) + iang(A, Cc, D, 34, GRN, '45°', { w: 2, fs: 11 }) }
+          ], { acc: false });
         },
-        caption: '正方形是「最特別」的四邊形，集所有好性質於一身。'
+        caption: '拖動滑桿：正方形＝矩形∩菱形，兩邊的性質全繼承。'
       },
 
       {
@@ -489,18 +581,21 @@ window.DECK = window.DECK || [];
         formula: { label: '箏形', tex: '\\overline{AB}=\\overline{AD},\\ \\overline{CB}=\\overline{CD}' },
         visual: (h) => {
           const A = [210, 50], B = [330, 150], Cc = [210, 275], D = [90, 150], O = [210, 150];
-          h.innerHTML = svg('0 0 420 320',
-            SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
-            SV.seg(A[0], A[1], Cc[0], Cc[1], VIO, 2) + SV.seg(B[0], B[1], D[0], D[1], VIO, 2) +
-            SV.rightAngle(O[0], O[1], 0, 90, 12, VIO) +
-            SV.ticks(A[0], A[1], B[0], B[1], 1, RED) + SV.ticks(A[0], A[1], D[0], D[1], 1, RED) +
-            SV.ticks(Cc[0], Cc[1], B[0], B[1], 2, BLU) + SV.ticks(Cc[0], Cc[1], D[0], D[1], 2, BLU) +
-            SV.ticks(B[0], B[1], O[0], O[1], 3, '#111') + SV.ticks(O[0], O[1], D[0], D[1], 3, '#111') +
-            SV.dot(O[0], O[1], VIO, 4) +
-            SV.vlabel(A[0] - 4, A[1] - 8, 'A') + SV.vlabel(B[0] + 8, B[1] + 4, 'B') + SV.vlabel(Cc[0] - 4, Cc[1] + 22, 'C') + SV.vlabel(D[0] - 20, D[1] + 4, 'D') +
-            `<text x="210" y="308" text-anchor="middle" font-size="12.5" fill="#657187">兩雙鄰邊相等（紅、藍）；AC ⟂ 且平分 BD（黑）</text>`);
+          const base = () => SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
+            SV.vlabel(A[0] - 4, A[1] - 8, 'A') + SV.vlabel(B[0] + 8, B[1] + 4, 'B') + SV.vlabel(Cc[0] - 4, Cc[1] + 22, 'C') + SV.vlabel(D[0] - 20, D[1] + 4, 'D');
+          const sides = () => SV.ticks(A[0], A[1], B[0], B[1], 1, RED) + SV.ticks(A[0], A[1], D[0], D[1], 1, RED) +
+            SV.ticks(Cc[0], Cc[1], B[0], B[1], 2, BLU) + SV.ticks(Cc[0], Cc[1], D[0], D[1], 2, BLU);
+          const ax = () => SV.seg(A[0], A[1], Cc[0], Cc[1], VIO, 2, '7 5');
+          const bd = () => SV.seg(B[0], B[1], D[0], D[1], VIO, 2) + SV.dot(O[0], O[1], VIO, 4) +
+            SV.rightAngle(O[0], O[1], 90, 180, 12, VIO) + SV.ticks(B[0], B[1], O[0], O[1], 3, '#111') + SV.ticks(O[0], O[1], D[0], D[1], 3, '#111');
+          SV.stepper(h, '0 0 420 320', [
+            { t: '箏形：兩雙「鄰邊」分別相等（上一雙紅、下一雙藍）。', d: () => base() + sides() },
+            { t: 'AC 是對稱軸（虛線）：沿 AC 對摺，左右完全重合。', d: () => base() + sides() + ax() },
+            { t: '對摺 ⇒ 對角線互相垂直，且對稱軸 AC 平分 BD（黑刻度）。', d: () => base() + sides() + ax() + bd() },
+            { t: '對摺也讓 ∠B 疊到 ∠D ⇒ 這一組對角相等（綠弧）。', d: () => base() + sides() + ax() + bd() + iang(B, A, Cc, 26, GRN, '', { w: 2.4 }) + iang(D, A, Cc, 26, GRN, '', { w: 2.4 }) }
+          ], { acc: false });
         },
-        caption: '箏形＝兩雙鄰邊等；對角線互相垂直，對稱軸平分另一條對角線。',
+        caption: '拖動滑桿：用「對摺」理解箏形——垂直、平分、對角相等全來自對稱。',
         example: {
           q: '箏形兩對角線長 6 與 8（互相垂直），面積多少？',
           steps: ['箏形面積＝兩對角線乘積 ÷ 2。', '\\(=\\dfrac{6\\times 8}{2}=24\\)。'],
@@ -519,27 +614,23 @@ window.DECK = window.DECK || [];
         formula: { label: '等腰梯形', tex: '\\overline{AD}=\\overline{BC},\\ \\angle A=\\angle B,\\ \\overline{AC}=\\overline{BD}' },
         visual: (h) => {
           const A = [60, 220], B = [360, 220], Cc = [290, 80], D = [130, 80];
-          h.innerHTML = svg('0 0 440 300',
-            SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
+          const base = () => SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
             `<path d="M200,${A[1] - 6} l8,6 l-8,6" fill="none" stroke="${GRN}" stroke-width="2.4"/>` +
             `<path d="M205,${D[1] - 6} l8,6 l-8,6" fill="none" stroke="${GRN}" stroke-width="2.4"/>` +
-            SV.ticks(A[0], A[1], D[0], D[1], 1, RED) + SV.ticks(B[0], B[1], Cc[0], Cc[1], 1, RED) +
-            iangle2(A, B, D, 26, BLU) + iangle2(B, A, Cc, 26, BLU) +
             SV.vlabel(A[0] - 18, A[1] + 6, 'A') + SV.vlabel(B[0] + 8, B[1] + 6, 'B') + SV.vlabel(Cc[0] + 8, Cc[1], 'C') + SV.vlabel(D[0] - 18, D[1], 'D') +
             `<text x="210" y="66" text-anchor="middle" font-size="13" font-weight="800" fill="${GRN}">上底</text>` +
-            `<text x="210" y="242" text-anchor="middle" font-size="13" font-weight="800" fill="${GRN}">下底</text>` +
-            `<text x="80" y="150" text-anchor="middle" font-size="13" font-weight="800" fill="${RED}">腰</text>` +
-            `<text x="340" y="150" text-anchor="middle" font-size="13" font-weight="800" fill="${RED}">腰</text>` +
-            `<text x="102" y="205" font-size="11" font-weight="800" fill="${BLU}">底角</text>` +
-            `<text x="288" y="205" font-size="11" font-weight="800" fill="${BLU}">底角</text>` +
-            `<text x="220" y="290" text-anchor="middle" font-size="12.5" fill="#657187">上底∥下底、兩腰相等、同底兩底角相等</text>`);
-          function iangle2(V, X, Y, r, color) {
-            const dA = SV.angleOf(V[0], V[1], X[0], X[1]), dB = SV.angleOf(V[0], V[1], Y[0], Y[1]);
-            const diff = (dB - dA + 360) % 360; const [d0, d1] = diff <= 180 ? [dA, dB] : [dB, dA];
-            return SV.angle(V[0], V[1], r, d0, d1, color, '', { w: 2.6 });
-          }
+            `<text x="210" y="242" text-anchor="middle" font-size="13" font-weight="800" fill="${GRN}">下底</text>`;
+          const waist = () => SV.ticks(A[0], A[1], D[0], D[1], 1, RED) + SV.ticks(B[0], B[1], Cc[0], Cc[1], 1, RED) +
+            `<text x="80" y="150" text-anchor="middle" font-size="13" font-weight="800" fill="${RED}">腰</text><text x="340" y="150" text-anchor="middle" font-size="13" font-weight="800" fill="${RED}">腰</text>`;
+          const bang = () => iang(A, B, D, 26, BLU, '', { w: 2.6 }) + iang(B, A, Cc, 26, BLU, '', { w: 2.6 });
+          SV.stepper(h, '0 0 440 300', [
+            { t: '梯形：只有一組對邊平行（上底∥下底，綠記號）。', d: () => base() },
+            { t: '等腰梯形：兩腰等長（紅刻度）。', d: () => base() + waist() },
+            { t: '同一個底的兩個底角相等（藍弧）。', d: () => base() + waist() + bang() },
+            { t: '兩條對角線也相等（AC＝BD，黑刻度）。', d: () => base() + waist() + bang() + SV.seg(A[0], A[1], Cc[0], Cc[1], VIO, 2) + SV.seg(B[0], B[1], D[0], D[1], VIO, 2) + SV.ticks(A[0], A[1], Cc[0], Cc[1], 2, '#111') + SV.ticks(B[0], B[1], D[0], D[1], 2, '#111') }
+          ], { acc: false });
         },
-        caption: '梯形只有一組平行邊；等腰梯形再加「腰等、底角等、對角線等」。',
+        caption: '拖動滑桿：等腰梯形＝腰等、同底底角等、對角線等。',
         example: {
           q: '等腰梯形一底角 \\(70^\\circ\\)，與它<b>同一底</b>的另一底角？',
           steps: ['等腰梯形同底的兩底角相等。'],
@@ -557,21 +648,33 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '梯形中線', tex: '\\overline{MN}=\\dfrac{\\text{上底}+\\text{下底}}{2}' },
         visual: (h) => {
-          const A = [60, 240], B = [380, 240], Cc = [300, 90], D = [140, 90];
-          const M = [(A[0] + D[0]) / 2, (A[1] + D[1]) / 2], N = [(B[0] + Cc[0]) / 2, (B[1] + Cc[1]) / 2];
-          h.innerHTML = svg('0 0 440 300',
-            SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
-            SV.seg(M[0], M[1], N[0], N[1], VIO, 3) +
-            SV.ticks(A[0], A[1], M[0], M[1], 1, RED) + SV.ticks(M[0], M[1], D[0], D[1], 1, RED) +
-            SV.ticks(B[0], B[1], N[0], N[1], 2, BLU) + SV.ticks(N[0], N[1], Cc[0], Cc[1], 2, BLU) +
-            `<path d="M210,${A[1] - 6} l8,6 l-8,6" fill="none" stroke="${GRN}" stroke-width="2.2"/>` +
-            `<path d="M${(M[0] + N[0]) / 2 - 4},${M[1] - 6} l8,6 l-8,6" fill="none" stroke="${GRN}" stroke-width="2.2"/>` +
-            `<path d="M215,${D[1] - 6} l8,6 l-8,6" fill="none" stroke="${GRN}" stroke-width="2.2"/>` +
-            SV.vlabel(A[0] - 18, A[1] + 6, 'A') + SV.vlabel(B[0] + 8, B[1] + 6, 'B') + SV.vlabel(Cc[0] + 8, Cc[1], 'C') + SV.vlabel(D[0] - 18, D[1], 'D') +
-            SV.vlabel(M[0] - 22, M[1] + 4, 'M', VIO) + SV.vlabel(N[0] + 8, N[1] + 4, 'N', VIO) +
-            `<text x="220" y="286" text-anchor="middle" font-size="12.5" fill="#657187">MN ∥ 上下底，且 MN ＝ (上底＋下底) ÷ 2</text>`);
+          const A = [60, 240], B = [380, 240];
+          const geo = (w) => { // w=上底寬(px)，置中於 x=220
+            const D = [220 - w / 2, 90], Cc = [220 + w / 2, 90];
+            const M = [(A[0] + D[0]) / 2, (A[1] + D[1]) / 2], N = [(B[0] + Cc[0]) / 2, (B[1] + Cc[1]) / 2];
+            return { D, Cc, M, N };
+          };
+          const draw = (w, mid, nums) => {
+            const { D, Cc, M, N } = geo(w);
+            const u = 20, a = (w / u).toFixed(1), b = ((B[0] - A[0]) / u).toFixed(1), m = ((N[0] - M[0]) / u).toFixed(1);
+            return SV.poly([A, B, Cc, D], 'rgba(217,119,6,0.07)', C, 2.6) +
+              SV.vlabel(A[0] - 18, A[1] + 6, 'A') + SV.vlabel(B[0] + 8, B[1] + 6, 'B') + SV.vlabel(Cc[0] + 8, Cc[1], 'C') + SV.vlabel(D[0] - 18, D[1], 'D') +
+              SV.dot(M[0], M[1], VIO, 4.5) + SV.dot(N[0], N[1], VIO, 4.5) +
+              SV.vlabel(M[0] - 24, M[1] + 4, 'M', VIO) + SV.vlabel(N[0] + 8, N[1] + 4, 'N', VIO) +
+              SV.ticks(A[0], A[1], M[0], M[1], 1, RED) + SV.ticks(M[0], M[1], D[0], D[1], 1, RED) +
+              SV.ticks(B[0], B[1], N[0], N[1], 2, BLU) + SV.ticks(N[0], N[1], Cc[0], Cc[1], 2, BLU) +
+              (mid ? SV.seg(M[0], M[1], N[0], N[1], VIO, 3) : '') +
+              (nums ? `<text x="220" y="82" text-anchor="middle" font-size="13" font-weight="900" fill="${C}">上底 a＝${a}</text>` +
+                `<text x="220" y="262" text-anchor="middle" font-size="13" font-weight="900" fill="${C}">下底 b＝${b}</text>` +
+                `<text x="220" y="${(90 + 240) / 2 - 10}" text-anchor="middle" font-size="14" font-weight="900" fill="${VIO}">中線＝(${a}＋${b})÷2＝${m}</text>` : '');
+          };
+          SV.stepper(h, '0 0 440 300', [
+            { t: '取兩腰的中點 M、N（紅、藍刻度：上下段等長）。', d: () => draw(160, false, false) },
+            { t: '連 MN 就是中線：它和上、下底平行。', d: () => draw(160, true, false) },
+            { t: '拖這一段改變上底寬度：中線長永遠是「上下底的平均」。', d: (k) => draw(60 + 180 * k, true, true) }
+          ], { acc: false });
         },
-        caption: '中線平行上下底，長度是上下底的平均。',
+        caption: '滑桿第 3 步改變上底：中線＝(上底＋下底)÷2 隨時成立。',
         example: {
           q: '梯形上底 6、下底 10，中線長多少？',
           steps: ['中線 ＝ (上底＋下底) ÷ 2 ＝ (6+10) ÷ 2。'],

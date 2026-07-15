@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8940", "--bind", "127.0.0.1"],
       "port": 8940
+    },
+    {
+      "name": "review-site",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8787", "--bind", "127.0.0.1", "--directory", "複習網站"],
+      "port": 8787
     }
   ]
 }

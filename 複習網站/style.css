@@ -339,6 +339,7 @@ button { font: inherit; cursor: pointer; }
 
 /* 右：視覺欄 */
 .slide-visual {
+  position: relative; /* 浮動互動面板（.ictrl）的定位基準 */
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -357,6 +358,25 @@ button { font: inherit; cursor: pointer; }
 .ictrl { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; margin-top: 14px; }
 .ictrl label { font-size: 13px; font-weight: 800; color: var(--muted); }
 .ictrl input[type="range"] { width: 180px; accent-color: var(--ct); }
+/* 寬螢幕：滑桿浮動在展示區右下角，不佔用、不遮擋展示空間 */
+@media (min-width: 641px) {
+  .ictrl {
+    position: absolute; right: 12px; bottom: 12px; margin-top: 0;
+    flex-direction: column; align-items: stretch; gap: 8px;
+    padding: 10px 14px; z-index: 6;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    border: 1.5px solid var(--ct); border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(23, 32, 51, 0.14);
+  }
+  .ictrl label { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .ictrl input[type="range"] { width: 170px; }
+  .ictrl .step-txt { max-width: 200px; }
+}
+/* 步驟講解器文字 */
+.step-txt { font-size: 12.5px; font-weight: 700; color: var(--ink, #172033); text-align: left; line-height: 1.55; min-height: 1em; }
+.step-txt b { color: var(--ct); }
+.step-hint { font-weight: 700; color: var(--ct); font-size: 11px; }
 .ibtn {
   border: 1px solid var(--ct);
   color: var(--ct);

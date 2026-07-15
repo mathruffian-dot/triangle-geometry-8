@@ -136,7 +136,36 @@ const SV = (() => {
       }).join('') + `</div>`;
   };
 
-  return { pt, angleOf, arcPoints, angle, rightAngle, ticks, dot, vlabel, seg, poly, arrowDefs, plane, RAD, fbox };
+  // 步驟講解器：滑桿逐步展示一個性質的推理過程
+  // steps: [{ t: '步驟說明(HTML)', d: (k)=>SVG片段 }]，k 為該步驟內 0~1 的連續進度
+  // opt.acc=false 時每步只畫自己（d 需畫出完整場景）；預設 true＝疊加之前所有步驟
+  const stepper = (h, vb, steps, opt = {}) => {
+    const acc = opt.acc !== false;
+    const N = steps.length;
+    h.innerHTML = `<div style="width:100%;text-align:center">
+      <svg viewBox="${vb}" style="max-width:100%"><g class="stepg"></g></svg>
+      <div class="ictrl">
+        <div class="step-txt"></div>
+        <label>步驟 <span class="ival stepv">1</span> / ${N}　<span class="step-hint">→ 拖滑桿</span></label>
+        <input class="steps-r" type="range" min="0" max="${N}" step="0.01" value="1">
+      </div></div>`;
+    const g = h.querySelector('.stepg'), txt = h.querySelector('.step-txt'),
+      vEl = h.querySelector('.stepv'), sl = h.querySelector('.steps-r');
+    const draw = () => {
+      const v = +sl.value;
+      const i = Math.max(0, Math.min(N - 1, Math.ceil(v) - 1));
+      const k = Math.max(0, Math.min(1, v - i));
+      vEl.textContent = i + 1;
+      txt.innerHTML = `<b>步驟 ${i + 1}</b>｜${steps[i].t || ''}`;
+      let s = '';
+      if (acc) for (let j = 0; j < i; j++) { if (steps[j].d) s += steps[j].d(1); }
+      if (steps[i].d) s += steps[i].d(k);
+      g.innerHTML = s;
+    };
+    sl.oninput = draw; draw();
+  };
+
+  return { pt, angleOf, arcPoints, angle, rightAngle, ticks, dot, vlabel, seg, poly, arrowDefs, plane, RAD, fbox, stepper };
 })();
 
 // 互動視覺更新後，重新排版該區塊的 MathJax

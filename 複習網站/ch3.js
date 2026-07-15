@@ -27,6 +27,33 @@ window.DECK = window.DECK || [];
     return `<polyline points="${SV.arcPoints(cx, cy, r, d0, d1)}" fill="none" stroke="${color}" stroke-width="1.6" stroke-dasharray="${dash}"/>`;
   }
 
+  // 全等判別頁的逐步視覺：兩個三角形＋逐一標記條件＋最後疊合動畫
+  // geo = {L, R, off, vb, labels:[六個頂點名]}；markSteps = [{t, d:(T)=>標記SVG}]
+  function congVisual(markSteps, geo) {
+    return (h) => {
+      const off = geo?.off ?? 250;
+      const L = geo?.L ?? { A: [40, 150], B: [190, 150], C: [80, 40] };
+      const R = geo?.R ?? { A: [40 + off, 150], B: [190 + off, 150], C: [80 + off, 40] };
+      const lb = geo?.labels ?? ['A', 'B', 'C', 'D', 'E', 'F'];
+      const vb = geo?.vb ?? '0 0 520 205';
+      const base = () =>
+        SV.poly([L.A, L.B, L.C], 'rgba(5,150,105,0.06)', C) + SV.poly([R.A, R.B, R.C], 'rgba(5,150,105,0.06)', C) +
+        SV.vlabel(L.A[0] - 16, L.A[1] + 8, lb[0]) + SV.vlabel(L.B[0] + 6, L.B[1] + 8, lb[1]) + SV.vlabel(L.C[0] - 6, L.C[1] - 8, lb[2]) +
+        SV.vlabel(R.A[0] - 16, R.A[1] + 8, lb[3]) + SV.vlabel(R.B[0] + 6, R.B[1] + 8, lb[4]) + SV.vlabel(R.C[0] - 6, R.C[1] - 8, lb[5]);
+      const steps = [{ t: `兩個三角形 △${lb[0]}${lb[1]}${lb[2]} 與 △${lb[3]}${lb[4]}${lb[5]}，逐步檢查條件。`, d: () => base() }];
+      markSteps.forEach(ms => steps.push({ t: ms.t, d: () => ms.d(L) + ms.d(R) }));
+      steps.push({
+        t: '條件都符合 ⇒ 把右邊的三角形搬過去：完全疊合，全等成立！',
+        d: (k) => {
+          const mv = P => [P[0] - off * k, P[1]];
+          return SV.poly([mv(R.A), mv(R.B), mv(R.C)], 'rgba(124,58,237,0.16)', VIO, 2.4) +
+            (k >= 0.98 ? `<text x="${L.B[0] + 45}" y="${(L.A[1] + L.C[1]) / 2}" font-size="26" font-weight="900" fill="${VIO}">≅</text>` : '');
+        }
+      });
+      SV.stepper(h, vb, steps);
+    };
+  }
+
   window.DECK.push({
     ch: 3,
     title: '三角形的基本性質',
@@ -273,9 +300,9 @@ window.DECK = window.DECK || [];
         sec: '3-2', secName: '尺規作圖',
         title: '尺規作圖：只用直尺與圓規',
         points: [
-          '<b>直尺</b>：只用來畫直線，<u>不可</u>看刻度量長度。',
-          '<b>圓規</b>：用來畫圓弧、以及<b>複製長度</b>。',
-          '複製線段：畫一射線，用圓規量 \\(\\overline{AB}\\) 的長，在射線上截出等長。'
+          '<b>直尺</b>：只用來畫直線，<u>不可</u>看刻度量長度；<b>圓規</b>：畫圓弧、<b>複製長度</b>。',
+          '<span class="k">六大基本作圖</span>：①等線段 ②等角 ③中垂線 ④角平分線 ⑤過線上一點作垂線 ⑥過線外一點作垂線。',
+          '①等線段（複製線段）：畫一射線，用圓規量 \\(\\overline{AB}\\) 的長，在射線上截出等長。'
         ],
         visual: (h) => {
           h.innerHTML = svg('0 0 440 260',
@@ -290,6 +317,42 @@ window.DECK = window.DECK || [];
           );
         },
         caption: '尺規作圖的精神：用「等半徑」保證長度、角度完全相等。'
+      },
+
+      {
+        sec: '3-2', secName: '尺規作圖',
+        title: '等角作圖：複製一個角',
+        points: [
+          '① 以頂點 \\(O\\) 為圓心畫弧，交角的兩邊於 \\(P、Q\\)。',
+          "② 另畫一射線（頂點 \\(O'\\)），以<b>同半徑</b>畫弧交射線於 \\(Q'\\)。",
+          "③ 圓規量 \\(\\overline{PQ}\\) 長，以 \\(Q'\\) 為圓心畫弧，兩弧交於 \\(P'\\)。",
+          "④ 連 \\(O'P'\\)，則 \\(\\angle P'O'Q'=\\angle POQ\\)。"
+        ],
+        visual: (h) => {
+          const O = [55, 205], O2 = [245, 205], r = 85;
+          const E1 = SV.pt(O[0], O[1], 160, 10), E2 = SV.pt(O[0], O[1], 160, 52);
+          const P = SV.pt(O[0], O[1], r, 52), Q = SV.pt(O[0], O[1], r, 10);
+          const E3 = SV.pt(O2[0], O2[1], 160, 10), E4 = SV.pt(O2[0], O2[1], 160, 52);
+          const P2 = SV.pt(O2[0], O2[1], r, 52), Q2 = SV.pt(O2[0], O2[1], r, 10);
+          h.innerHTML = svg('0 0 440 250',
+            // 原角
+            SV.seg(O[0], O[1], E1[0], E1[1], '#334', 2.6) + SV.seg(O[0], O[1], E2[0], E2[1], '#334', 2.6) +
+            carc(O[0], O[1], r, 0, 62, AMB) +
+            SV.angle(O[0], O[1], 30, 10, 52, GRN, '', { w: 2 }) +
+            SV.dot(P[0], P[1], AMB) + SV.dot(Q[0], Q[1], AMB) +
+            SV.vlabel(P[0] - 2, P[1] - 10, 'P', AMB) + SV.vlabel(Q[0] + 8, Q[1] + 4, 'Q', AMB) + SV.vlabel(O[0] - 16, O[1] + 8, 'O') +
+            // 複製的角
+            SV.seg(O2[0], O2[1], E3[0], E3[1], '#334', 2.6) +
+            carc(O2[0], O2[1], r, 0, 62, AMB) +
+            carc(Q2[0], Q2[1], 61, 105, 140, BLU) +
+            SV.seg(O2[0], O2[1], E4[0], E4[1], VIO, 2.8, '6 4') +
+            SV.angle(O2[0], O2[1], 30, 10, 52, GRN, '', { w: 2 }) +
+            SV.dot(P2[0], P2[1], VIO) + SV.dot(Q2[0], Q2[1], AMB) +
+            SV.vlabel(P2[0] - 2, P2[1] - 10, "P'", VIO) + SV.vlabel(Q2[0] + 8, Q2[1] + 4, "Q'", AMB) + SV.vlabel(O2[0] - 16, O2[1] + 8, "O'") +
+            `<text x="220" y="240" text-anchor="middle" font-size="13" fill="#657187">同半徑取 Q'，再量 PQ 長定出 P'</text>`
+          );
+        },
+        caption: "兩弧交點定出 P'：因 OP=O'P'、OQ=O'Q'、PQ=P'Q'（SSS 全等），角就複製成功。"
       },
 
       {
@@ -346,6 +409,56 @@ window.DECK = window.DECK || [];
         caption: '「大於一半」才能讓兩弧相交；上下交點連線即中垂線。'
       },
 
+      {
+        sec: '3-2', secName: '尺規作圖',
+        title: '過直線上一點作垂線',
+        points: [
+          '① 以 \\(P\\) 為圓心畫弧，交直線於 \\(A、B\\) 兩點（\\(P\\) 是 \\(\\overline{AB}\\) 中點）。',
+          '② 分別以 \\(A、B\\) 為圓心、<b>大於 \\(\\overline{AP}\\)</b> 的同半徑畫弧，交於 \\(Q\\)。',
+          '③ 連 \\(PQ\\)，就是過 \\(P\\) 的<span class="k">垂線</span>。'
+        ],
+        visual: (h) => {
+          const P = [220, 195], A = [150, 195], B = [290, 195], Q = [220, 110];
+          h.innerHTML = svg('0 0 440 240',
+            SV.seg(30, 195, 410, 195, '#334', 2.6) +
+            carc(P[0], P[1], 70, -18, 18, AMB) + carc(P[0], P[1], 70, 162, 198, AMB) +
+            carc(A[0], A[1], 110, 35, 66, BLU) + carc(B[0], B[1], 110, 114, 145, BLU) +
+            SV.seg(P[0], P[1], 220, 88, VIO, 2.8, '6 4') +
+            SV.rightAngle(P[0], P[1], 0, 90, 12, VIO) +
+            SV.dot(A[0], A[1], AMB) + SV.dot(B[0], B[1], AMB) + SV.dot(P[0], P[1], '#334') + SV.dot(Q[0], Q[1], VIO) +
+            SV.vlabel(A[0] - 8, A[1] + 22, 'A', AMB) + SV.vlabel(B[0], B[1] + 22, 'B', AMB) +
+            SV.vlabel(P[0] - 6, P[1] + 22, 'P') + SV.vlabel(Q[0] + 10, Q[1], 'Q', VIO) +
+            `<text x="220" y="232" text-anchor="middle" font-size="13" fill="#657187">PQ ⟂ 直線，且通過 P</text>`
+          );
+        },
+        caption: '先取 A、B 讓 P 成為中點，再作 AB 的中垂線——它一定通過 P 且垂直。'
+      },
+
+      {
+        sec: '3-2', secName: '尺規作圖',
+        title: '過直線外一點作垂線',
+        points: [
+          '① 以 \\(P\\) 為圓心、<b>適當半徑</b>畫弧，交直線於 \\(A、B\\) 兩點。',
+          '② 分別以 \\(A、B\\) 為圓心、同半徑畫弧，交於直線<b>另一側</b>的 \\(Q\\)。',
+          '③ 連 \\(PQ\\)，就是過 \\(P\\) 的垂線。'
+        ],
+        visual: (h) => {
+          const P = [220, 58], A = [151, 200], B = [289, 200], Q = [220, 279], M = [220, 200];
+          h.innerHTML = svg('0 0 440 300',
+            SV.seg(30, 200, 410, 200, '#334', 2.6) +
+            carc(P[0], P[1], 158, 236, 252, AMB) + carc(P[0], P[1], 158, 288, 304, AMB) +
+            carc(A[0], A[1], 105, 296, 326, BLU) + carc(B[0], B[1], 105, 214, 244, BLU) +
+            SV.seg(P[0], P[1], Q[0], Q[1], VIO, 2.8, '6 4') +
+            SV.rightAngle(M[0], M[1], 0, 90, 12, VIO) +
+            SV.dot(P[0], P[1], VIO) + SV.dot(A[0], A[1], AMB) + SV.dot(B[0], B[1], AMB) + SV.dot(Q[0], Q[1], VIO) +
+            SV.vlabel(P[0] + 10, P[1], 'P', VIO) + SV.vlabel(A[0] - 12, A[1] + 22, 'A', AMB) + SV.vlabel(B[0] + 4, B[1] + 22, 'B', AMB) +
+            SV.vlabel(Q[0] + 10, Q[1] + 6, 'Q', VIO) +
+            `<text x="360" y="292" text-anchor="middle" font-size="13" fill="#657187">PQ ⟂ 直線</text>`
+          );
+        },
+        caption: 'P、Q 到 A、B 的距離都相等，所以 P、Q 都在 AB 的中垂線上 ⇒ PQ 垂直於直線。'
+      },
+
       /* ---------- 3-3 全等 ---------- */
       {
         sec: '3-3', secName: '三角形的全等性質',
@@ -385,16 +498,12 @@ window.DECK = window.DECK || [];
           '三邊定形：邊長一旦固定，三角形的形狀就唯一了。'
         ],
         formula: { label: 'SSS', tex: '\\overline{AB}=\\overline{DE},\\ \\overline{BC}=\\overline{EF},\\ \\overline{CA}=\\overline{FD}' },
-        visual: (h) => {
-          const L = { A: [40, 150], B: [190, 150], C: [80, 40] }, off = 250;
-          const R = { A: [40 + off, 150], B: [190 + off, 150], C: [80 + off, 40] };
-          const marks = (T) => SV.ticks(T.A[0], T.A[1], T.B[0], T.B[1], 1, RED) + SV.ticks(T.B[0], T.B[1], T.C[0], T.C[1], 2, BLU) + SV.ticks(T.C[0], T.C[1], T.A[0], T.A[1], 3, AMB);
-          h.innerHTML = svg('0 0 520 200',
-            SV.poly([L.A, L.B, L.C], 'rgba(5,150,105,0.06)', C) + marks(L) +
-            SV.poly([R.A, R.B, R.C], 'rgba(5,150,105,0.06)', C) + marks(R) +
-            `<text x="245" y="100" text-anchor="middle" font-size="28" fill="${C}">≅</text>`);
-        },
-        caption: '三邊（1、2、3 條刻度）分別相等 ⇒ 全等。',
+        visual: congVisual([
+          { t: '第一組對應邊相等：AB＝DE（1 條刻度）。', d: T => SV.ticks(T.A[0], T.A[1], T.B[0], T.B[1], 1, RED) },
+          { t: '第二組對應邊相等：BC＝EF（2 條刻度）。', d: T => SV.ticks(T.B[0], T.B[1], T.C[0], T.C[1], 2, BLU) },
+          { t: '第三組對應邊相等：CA＝FD（3 條刻度）。三邊一固定，形狀就唯一。', d: T => SV.ticks(T.C[0], T.C[1], T.A[0], T.A[1], 3, AMB) }
+        ]),
+        caption: '拖動滑桿逐步檢查三邊：三邊（1、2、3 條刻度）分別相等 ⇒ 全等。',
         example: {
           q: '兩三角形三邊分別為 5、6、7，一定全等嗎？',
           steps: ['三組對應邊都相等，符合 SSS。'],
@@ -410,16 +519,12 @@ window.DECK = window.DECK || [];
           '重點是「<b>夾角</b>」——角必須在兩已知邊的<u>中間</u>。'
         ],
         formula: { label: 'SAS', tex: '\\overline{AB}=\\overline{DE},\\ \\angle A=\\angle D,\\ \\overline{AC}=\\overline{DF}' },
-        visual: (h) => {
-          const L = { A: [40, 150], B: [190, 150], C: [80, 40] }, off = 250;
-          const R = { A: [40 + off, 150], B: [190 + off, 150], C: [80 + off, 40] };
-          const marks = (T) => SV.ticks(T.A[0], T.A[1], T.B[0], T.B[1], 1, RED) + SV.ticks(T.A[0], T.A[1], T.C[0], T.C[1], 2, BLU) + iangle(T.A, T.B, T.C, 24, GRN, '', { w: 2.6 });
-          h.innerHTML = svg('0 0 520 200',
-            SV.poly([L.A, L.B, L.C], 'rgba(5,150,105,0.06)', C) + marks(L) +
-            SV.poly([R.A, R.B, R.C], 'rgba(5,150,105,0.06)', C) + marks(R) +
-            `<text x="245" y="100" text-anchor="middle" font-size="28" fill="${C}">≅</text>`);
-        },
-        caption: '兩邊（紅、藍）＋夾角（綠）相等 ⇒ 全等。注意角要「夾在中間」。'
+        visual: congVisual([
+          { t: '第一組邊相等：AB＝DE（紅）。', d: T => SV.ticks(T.A[0], T.A[1], T.B[0], T.B[1], 1, RED) },
+          { t: '兩邊「夾」的角相等：∠A＝∠D（綠）——角一定要在兩邊中間！', d: T => iangle(T.A, T.B, T.C, 24, GRN, '', { w: 2.6 }) },
+          { t: '第二組邊相等：AC＝DF（藍）。邊、角、邊都固定了。', d: T => SV.ticks(T.A[0], T.A[1], T.C[0], T.C[1], 2, BLU) }
+        ]),
+        caption: '拖動滑桿：兩邊（紅、藍）＋夾角（綠）相等 ⇒ 全等。注意角要「夾在中間」。'
       },
 
       {
@@ -431,16 +536,12 @@ window.DECK = window.DECK || [];
           '因為三內角和固定，知道兩角就等於知道三角，所以兩角配一邊即可。'
         ],
         formula: { label: 'ASA', tex: '\\angle A=\\angle D,\\ \\overline{AB}=\\overline{DE},\\ \\angle B=\\angle E' },
-        visual: (h) => {
-          const L = { A: [40, 150], B: [190, 150], C: [80, 40] }, off = 250;
-          const R = { A: [40 + off, 150], B: [190 + off, 150], C: [80 + off, 40] };
-          const marks = (T) => SV.ticks(T.A[0], T.A[1], T.B[0], T.B[1], 1, RED) + iangle(T.A, T.B, T.C, 24, GRN, '', { w: 2.4 }) + iangle(T.B, T.A, T.C, 24, BLU, '', { w: 2.4 });
-          h.innerHTML = svg('0 0 520 200',
-            SV.poly([L.A, L.B, L.C], 'rgba(5,150,105,0.06)', C) + marks(L) +
-            SV.poly([R.A, R.B, R.C], 'rgba(5,150,105,0.06)', C) + marks(R) +
-            `<text x="245" y="100" text-anchor="middle" font-size="28" fill="${C}">≅</text>`);
-        },
-        caption: '兩角（綠、藍）＋夾邊（紅）相等 ⇒ 全等（ASA）。'
+        visual: congVisual([
+          { t: '第一個角相等：∠A＝∠D（綠）。', d: T => iangle(T.A, T.B, T.C, 24, GRN, '', { w: 2.4 }) },
+          { t: '兩角「夾」的邊相等：AB＝DE（紅）。', d: T => SV.ticks(T.A[0], T.A[1], T.B[0], T.B[1], 1, RED) },
+          { t: '第二個角相等：∠B＝∠E（藍）。兩角固定方向、夾邊固定長度，交點只有一個。', d: T => iangle(T.B, T.A, T.C, 24, BLU, '', { w: 2.4 }) }
+        ]),
+        caption: '拖動滑桿：兩角（綠、藍）＋夾邊（紅）相等 ⇒ 全等（ASA）。'
       },
 
       {
@@ -452,19 +553,16 @@ window.DECK = window.DECK || [];
           'RHS 是 SSA 在直角情況下的特例。'
         ],
         formula: { label: 'RHS', tex: '\\angle=90^\\circ,\\ \\text{斜邊相等},\\ \\text{一股相等}' },
-        visual: (h) => {
-          const L = { A: [50, 160], B: [50, 50], C: [200, 160] }, off = 250;
-          const R = { A: [50 + off, 160], B: [50 + off, 50], C: [200 + off, 160] };
-          const marks = (T) => SV.rightAngle(T.A[0], T.A[1], 0, 90, 14, '#657187') +
-            SV.ticks(T.B[0], T.B[1], T.C[0], T.C[1], 1, RED) + // 斜邊
-            SV.ticks(T.A[0], T.A[1], T.C[0], T.C[1], 2, BLU);  // 一股
-          h.innerHTML = svg('0 0 520 210',
-            SV.poly([L.A, L.B, L.C], 'rgba(5,150,105,0.06)', C) + marks(L) +
-            SV.poly([R.A, R.B, R.C], 'rgba(5,150,105,0.06)', C) + marks(R) +
-            `<text x="245" y="110" text-anchor="middle" font-size="28" fill="${C}">≅</text>` +
-            `<text x="130" y="196" text-anchor="middle" font-size="12" fill="#657187">紅＝斜邊，藍＝一股</text>`);
-        },
-        caption: '直角（方框）＋斜邊（紅）＋一股（藍）相等 ⇒ 全等。'
+        visual: congVisual([
+          { t: 'R：兩個都是直角三角形（∠A＝∠D＝90°，方框）。', d: T => SV.rightAngle(T.A[0], T.A[1], 0, 90, 14, '#657187') },
+          { t: 'H：斜邊相等（紅）——直角對面最長的那條邊。', d: T => SV.ticks(T.B[0], T.B[1], T.C[0], T.C[1], 1, RED) },
+          { t: 'S：一股相等（藍）。有直角撐腰，SSA 在這裡是安全的。', d: T => SV.ticks(T.A[0], T.A[1], T.C[0], T.C[1], 2, BLU) }
+        ], {
+          L: { A: [50, 160], B: [50, 50], C: [200, 160] },
+          R: { A: [300, 160], B: [300, 50], C: [450, 160] },
+          off: 250, vb: '0 0 520 215', labels: ['A', 'B', 'C', 'D', 'E', 'F']
+        }),
+        caption: '拖動滑桿：直角（方框）＋斜邊（紅）＋一股（藍）相等 ⇒ 全等。'
       },
 
       /* ---------- 3-4 中垂線與角平分線 ---------- */
@@ -478,20 +576,32 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '性質', tex: 'P\\text{在}\\overline{AB}\\text{中垂線上}\\iff \\overline{PA}=\\overline{PB}' },
         visual: (h) => {
-          const A = [120, 220], B = [320, 220], M = [220, 220], P = [220, 70];
-          h.innerHTML = svg('0 0 440 280',
+          const A = [120, 220], B = [320, 220], M = [220, 220];
+          const base = () =>
             SV.seg(A[0], A[1], B[0], B[1], '#334', 3) +
-            SV.seg(P[0], 40, P[0], 250, VIO, 2, '6 4') +
+            SV.seg(220, 40, 220, 250, VIO, 2, '6 4') +
             SV.rightAngle(M[0], M[1], 0, 90, 12, VIO) +
-            SV.seg(P[0], P[1], A[0], A[1], RED, 2.4) + SV.seg(P[0], P[1], B[0], B[1], BLU, 2.4) +
-            SV.ticks(P[0], P[1], A[0], A[1], 1, '#111') + SV.ticks(P[0], P[1], B[0], B[1], 1, '#111') +
-            SV.dot(A[0], A[1], '#334') + SV.dot(B[0], B[1], '#334') + SV.dot(P[0], P[1], VIO) + SV.dot(M[0], M[1], VIO) +
-            SV.vlabel(A[0] - 18, A[1] + 6, 'A') + SV.vlabel(B[0] + 8, B[1] + 6, 'B') + SV.vlabel(P[0] + 8, P[1] - 4, 'P', VIO) + SV.vlabel(M[0] + 6, M[1] + 20, 'M', VIO) +
-            `<text x="160" y="150" font-size="14" fill="${RED}">PA</text><text x="270" y="150" font-size="14" fill="${BLU}">PB</text>` +
-            `<text x="220" y="272" text-anchor="middle" font-size="13" fill="#657187">P 在中垂線上 ⇒ PA = PB</text>`
-          );
+            SV.dot(A[0], A[1], '#334') + SV.dot(B[0], B[1], '#334') + SV.dot(M[0], M[1], VIO) +
+            SV.vlabel(A[0] - 18, A[1] + 6, 'A') + SV.vlabel(B[0] + 8, B[1] + 6, 'B') + SV.vlabel(M[0] + 6, M[1] + 20, 'M', VIO) +
+            SV.vlabel(228, 52, 'L', VIO);
+          const withP = (Py, showLen) => {
+            const P = [220, Py];
+            const len = (Math.hypot(P[0] - A[0], P[1] - A[1]) / 20).toFixed(1);
+            return base() +
+              SV.seg(P[0], P[1], A[0], A[1], RED, 2.4) + SV.seg(P[0], P[1], B[0], B[1], BLU, 2.4) +
+              SV.ticks(P[0], P[1], A[0], A[1], 1, '#111') + SV.ticks(P[0], P[1], B[0], B[1], 1, '#111') +
+              SV.dot(P[0], P[1], VIO, 5.5) + SV.vlabel(P[0] + 9, P[1] - 4, 'P', VIO) +
+              (showLen ? `<text x="220" y="272" text-anchor="middle" font-size="15" font-weight="900" fill="${GRN}">PA ＝ PB ＝ ${len}</text>` : '');
+          };
+          SV.stepper(h, '0 0 440 285', [
+            { t: '線段 AB 和它的中垂線 L：過中點 M、和 AB 垂直。', d: () => base() },
+            { t: '在 L 上隨便取一點 P。', d: () => base() + SV.dot(220, 90, VIO, 5.5) + SV.vlabel(229, 86, 'P', VIO) },
+            { t: '連 PA、PB：兩段一樣長（△PMA ≅ △PMB，SAS）。', d: () => withP(90, true) },
+            { t: '拖這一段讓 P 上下移動——PA、PB 的長度一起變，但永遠相等。', d: (k) => withP(60 + 130 * k, true) },
+            { t: '反過來（判別）：只要一個點到 A、B 等距，它就一定落在 L 上。', d: () => base() + [70, 120, 175].map(y => SV.dot(220, y, GRN, 5)).join('') + `<text x="248" y="125" font-size="12.5" font-weight="800" fill="${GRN}">到 A、B 等距的點</text><text x="248" y="141" font-size="12.5" font-weight="800" fill="${GRN}">全都排在 L 上</text>` }
+          ], { acc: false });
         },
-        caption: '不論 P 在中垂線的哪個高度，PA 與 PB 永遠一樣長。',
+        caption: '滑桿第 4 步拖動 P：不論 P 在中垂線的哪個高度，PA 與 PB 永遠一樣長。',
         example: {
           q: '\\(P\\) 在 \\(\\overline{AB}\\) 中垂線上，\\(\\overline{PA}=8\\)，求 \\(\\overline{PB}\\)。',
           steps: ['中垂線上的點到兩端等距。'],
@@ -509,24 +619,34 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '性質', tex: 'P\\text{在角平分線上}\\iff d_1=d_2' },
         visual: (h) => {
-          const V = [70, 230];
-          const d1 = 50, d2 = 8;
+          const V = [70, 230], d1 = 50, d2 = 8, dm = (d1 + d2) / 2;
           const E1 = SV.pt(V[0], V[1], 340, d1), E2 = SV.pt(V[0], V[1], 360, d2);
-          const P = SV.pt(V[0], V[1], 210, (d1 + d2) / 2);
-          // 垂足
-          const foot = (E) => { const dx = E[0] - V[0], dy = E[1] - V[1], L = dx * dx + dy * dy; const t = ((P[0] - V[0]) * dx + (P[1] - V[1]) * dy) / L; return [V[0] + t * dx, V[1] + t * dy]; };
-          const F1 = foot(E1), F2 = foot(E2);
-          h.innerHTML = svg('0 0 440 280',
+          const Bnd = SV.pt(V[0], V[1], 300, dm);
+          const foot = (P, E) => { const dx = E[0] - V[0], dy = E[1] - V[1], L = dx * dx + dy * dy; const t = ((P[0] - V[0]) * dx + (P[1] - V[1]) * dy) / L; return [V[0] + t * dx, V[1] + t * dy]; };
+          const base = () =>
             SV.seg(V[0], V[1], E1[0], E1[1], '#334', 2.6) + SV.seg(V[0], V[1], E2[0], E2[1], '#334', 2.6) +
-            SV.seg(V[0], V[1], P[0], P[1], VIO, 2, '6 4') +
-            SV.seg(P[0], P[1], F1[0], F1[1], RED, 2.2) + SV.seg(P[0], P[1], F2[0], F2[1], BLU, 2.2) +
-            SV.ticks(P[0], P[1], F1[0], F1[1], 1, '#111') + SV.ticks(P[0], P[1], F2[0], F2[1], 1, '#111') +
-            SV.dot(P[0], P[1], VIO) + SV.vlabel(P[0] + 8, P[1] + 4, 'P', VIO) + SV.vlabel(V[0] - 16, V[1] + 6, 'O') +
-            SV.angle(V[0], V[1], 42, (d1 + d2) / 2, d1, GRN, '', { w: 2 }) + SV.angle(V[0], V[1], 42, d2, (d1 + d2) / 2, GRN, '', { w: 2 }) +
-            `<text x="220" y="272" text-anchor="middle" font-size="13" fill="#657187">P 到兩邊的垂直距離相等</text>`
-          );
+            SV.seg(V[0], V[1], Bnd[0], Bnd[1], VIO, 2, '6 4') +
+            SV.angle(V[0], V[1], 42, dm, d1, GRN, '', { w: 2 }) + SV.angle(V[0], V[1], 42, d2, dm, GRN, '', { w: 2 }) +
+            SV.vlabel(V[0] - 16, V[1] + 6, 'O');
+          const withP = (dist, showLen) => {
+            const P = SV.pt(V[0], V[1], dist, dm);
+            const F1 = foot(P, E1), F2 = foot(P, E2);
+            const len = (Math.hypot(P[0] - F1[0], P[1] - F1[1]) / 20).toFixed(1);
+            return base() +
+              SV.seg(P[0], P[1], F1[0], F1[1], RED, 2.2) + SV.seg(P[0], P[1], F2[0], F2[1], BLU, 2.2) +
+              SV.rightAngle(F1[0], F1[1], d1, d1 + 90, 10, RED) + SV.rightAngle(F2[0], F2[1], d2 - 90, d2, 10, BLU) +
+              SV.ticks(P[0], P[1], F1[0], F1[1], 1, '#111') + SV.ticks(P[0], P[1], F2[0], F2[1], 1, '#111') +
+              SV.dot(P[0], P[1], VIO, 5.5) + SV.vlabel(P[0] + 8, P[1] + 4, 'P', VIO) +
+              (showLen ? `<text x="300" y="262" text-anchor="middle" font-size="15" font-weight="900" fill="${GRN}">d₁ ＝ d₂ ＝ ${len}</text>` : '');
+          };
+          SV.stepper(h, '0 0 440 285', [
+            { t: '∠O 和它的角平分線（虛線）：把角分成相等的兩半（綠弧）。', d: () => base() },
+            { t: '在角平分線上取一點 P。', d: () => { const P = SV.pt(V[0], V[1], 210, dm); return base() + SV.dot(P[0], P[1], VIO, 5.5) + SV.vlabel(P[0] + 8, P[1] + 4, 'P', VIO); } },
+            { t: '從 P 向兩邊作垂線段（垂直距離＝最短距離）：兩段等長。', d: () => withP(210, true) },
+            { t: '拖這一段讓 P 沿平分線滑動——d₁、d₂ 一起變，但永遠相等。', d: (k) => withP(120 + 160 * k, true) }
+          ], { acc: false });
         },
-        caption: '角平分線把角分兩半，線上的點到兩邊一樣近。',
+        caption: '滑桿第 4 步拖動 P：角平分線上的點，到兩邊永遠一樣近。',
         example: {
           q: '\\(P\\) 在 \\(\\angle O\\) 平分線上，到一邊距離 5，到另一邊距離？',
           steps: ['角平分線上的點到兩邊等距。'],
@@ -546,19 +666,22 @@ window.DECK = window.DECK || [];
         formula: { label: '等腰三角形', tex: '\\overline{AB}=\\overline{AC}\\iff \\angle B=\\angle C' },
         visual: (h) => {
           const A = [210, 60], B = [110, 250], Cc = [310, 250], M = [210, 250];
-          h.innerHTML = svg('0 0 420 320',
+          const tri = () =>
             SV.poly([A, B, Cc], 'rgba(5,150,105,0.07)', C, 2.6) +
-            SV.ticks(A[0], A[1], B[0], B[1], 1, RED) + SV.ticks(A[0], A[1], Cc[0], Cc[1], 1, RED) +
-            SV.seg(A[0], A[1], M[0], M[1], VIO, 2, '6 4') +
-            SV.rightAngle(M[0], M[1], 0, 90, 12, VIO) +
-            SV.ticks(B[0], B[1], M[0], M[1], 2, '#111') + SV.ticks(M[0], M[1], Cc[0], Cc[1], 2, '#111') +
-            iangle(B, A, Cc, 26, BLU, '', { w: 2.6 }) + iangle(Cc, A, B, 26, BLU, '', { w: 2.6 }) +
-            SV.vlabel(A[0] - 4, A[1] - 10, 'A') + SV.vlabel(B[0] - 20, B[1] + 6, 'B') + SV.vlabel(Cc[0] + 8, Cc[1] + 6, 'C') + SV.vlabel(M[0] + 6, M[1] + 22, 'M', VIO) +
-            `<text x="145" y="150" font-size="12" font-weight="800" fill="${RED}">腰</text><text x="272" y="150" font-size="12" font-weight="800" fill="${RED}">腰</text>` +
-            `<text x="210" y="305" text-anchor="middle" font-size="12.5" fill="#657187">兩腰相等（紅）⇒ 兩底角相等（藍）；AM ⟂ 平分底邊</text>`
-          );
+            SV.vlabel(A[0] - 4, A[1] - 10, 'A') + SV.vlabel(B[0] - 20, B[1] + 6, 'B') + SV.vlabel(Cc[0] + 8, Cc[1] + 6, 'C');
+          const waist = () => SV.ticks(A[0], A[1], B[0], B[1], 1, RED) + SV.ticks(A[0], A[1], Cc[0], Cc[1], 1, RED) +
+            `<text x="145" y="150" font-size="12" font-weight="800" fill="${RED}">腰</text><text x="272" y="150" font-size="12" font-weight="800" fill="${RED}">腰</text>`;
+          const bis = () => SV.seg(A[0], A[1], M[0], M[1], VIO, 2, '6 4') + SV.vlabel(M[0] + 6, M[1] + 22, 'D', VIO) +
+            iangle(A, B, M, 30, VIO, '', { w: 2 }) + iangle(A, M, Cc, 30, VIO, '', { w: 2 });
+          SV.stepper(h, '0 0 420 320', [
+            { t: '等腰三角形：AB＝AC（紅刻度，兩腰）。', d: () => tri() + waist() },
+            { t: '作頂角平分線 AD：∠BAD＝∠CAD（紫弧）。', d: () => tri() + waist() + bis() },
+            { t: 'AB＝AC、∠BAD＝∠CAD、AD 共用 ⇒ △ABD ≅ △ACD（SAS）。', d: (k) => tri() + waist() + bis() + SV.poly([A, B, M], `rgba(124,58,237,${0.18 * k})`, 'rgba(0,0,0,0)', 0) + SV.poly([A, M, Cc], `rgba(37,99,235,${0.14 * k})`, 'rgba(0,0,0,0)', 0) },
+            { t: '全等 ⇒ ∠B＝∠C：兩底角相等（等邊對等角）。', d: () => tri() + waist() + bis() + iangle(B, A, Cc, 26, BLU, '', { w: 2.6 }) + iangle(Cc, A, B, 26, BLU, '', { w: 2.6 }) },
+            { t: '全等也給出 BD＝DC、AD⟂BC ⇒ AD 同時是「頂角平分線、中線、高、中垂線」——四線合一。', d: () => tri() + waist() + bis() + iangle(B, A, Cc, 26, BLU, '', { w: 2.6 }) + iangle(Cc, A, B, 26, BLU, '', { w: 2.6 }) + SV.rightAngle(M[0], M[1], 90, 180, 12, VIO) + SV.ticks(B[0], B[1], M[0], M[1], 2, '#111') + SV.ticks(M[0], M[1], Cc[0], Cc[1], 2, '#111') }
+          ], { acc: false });
         },
-        caption: '等腰＝兩腰等、兩底角等；頂角平分線「四線合一」。',
+        caption: '拖動滑桿看推理：兩腰等 → SAS 全等 → 底角等＋四線合一。',
         example: {
           q: '等腰三角形頂角 \\(40^\\circ\\)，兩底角各幾度？',
           steps: ['底角相等，設各 \\(x\\)：\\(40^\\circ+2x=180^\\circ\\)。', '\\(2x=140^\\circ\\Rightarrow x=70^\\circ\\)。'],
@@ -675,17 +798,22 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '畢氏逆定理', tex: 'a^2+b^2=c^2 \\;\\Rightarrow\\; \\text{直角三角形}' },
         visual: (h) => {
-          const A = [120, 268], B = [120, 68], Cc = [270, 268];
-          h.innerHTML = `<div style="width:100%">` + svg('0 0 420 300',
+          const A = [120, 258], B = [120, 58], Cc = [270, 258];
+          const tri = () =>
             SV.poly([A, B, Cc], 'rgba(5,150,105,0.07)', C, 2.8) +
-            SV.rightAngle(A[0], A[1], 0, 90, 15, '#657187') +
             `<text x="${A[0] - 16}" y="${(A[1] + B[1]) / 2}" text-anchor="middle" font-size="15" font-weight="800" fill="${BLU}">4</text>` +
             `<text x="${(A[0] + Cc[0]) / 2}" y="${A[1] + 22}" text-anchor="middle" font-size="15" font-weight="800" fill="${AMB}">3</text>` +
             `<text x="${(B[0] + Cc[0]) / 2 + 8}" y="${(B[1] + Cc[1]) / 2 - 6}" font-size="15" font-weight="800" fill="${RED}">5</text>` +
-            SV.vlabel(A[0] - 20, A[1] + 8, 'A') + SV.vlabel(B[0] - 20, B[1], 'B') + SV.vlabel(Cc[0] + 8, Cc[1] + 6, 'C')
-          ) + SV.fbox([{ label: '檢驗', tex: '3^2+4^2=9+16=25=5^2', color: C, size: 17 }]) + `</div>`;
+            SV.vlabel(A[0] - 20, A[1] + 8, 'A') + SV.vlabel(B[0] - 20, B[1], 'B') + SV.vlabel(Cc[0] + 8, Cc[1] + 6, 'C');
+          const calc = (txt, col) => `<text x="330" y="120" text-anchor="middle" font-size="17" font-weight="900" fill="${col}">${txt}</text>`;
+          SV.stepper(h, '0 0 440 290', [
+            { t: '一個三角形三邊是 3、4、5——先別急著說它是直角三角形。', d: () => tri() },
+            { t: '把兩短邊平方相加：3²＋4²＝9＋16＝25。', d: () => tri() + calc('3²+4²=25', BLU) },
+            { t: '最長邊平方：5²＝25。兩邊相等！', d: () => tri() + calc('3²+4²=25=5²', GRN) },
+            { t: 'a²＋b²＝c² 成立 ⇒ 一定是直角三角形，直角在最長邊的對面（∠A）。', d: (k) => tri() + calc('3²+4²=25=5²', GRN) + (k > 0.3 ? SV.rightAngle(A[0], A[1], 0, 90, 15, RED) + `<text x="330" y="150" text-anchor="middle" font-size="14" font-weight="900" fill="${RED}">∠A＝90°！</text>` : '') }
+          ], { acc: false });
         },
-        caption: '3²+4²=5² ⇒ 3、4、5 一定圍成直角三角形（直角對最長邊）。',
+        caption: '拖動滑桿：檢查 a²+b² 與 c² 相不相等，相等就是直角三角形。',
         example: {
           q: '邊長 6、8、10 的三角形是直角三角形嗎？',
           steps: ['最長邊 10。', '\\(6^2+8^2=36+64=100=10^2\\)。', '符合畢氏 ⇒ 是直角三角形。'],
