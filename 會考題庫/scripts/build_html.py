@@ -1238,6 +1238,8 @@ def make_quiz(question_ids, title, out_path, submit_url=""):
     print("written", out_path, f"{Path(out_path).stat().st_size/1024/1024:.1f} MB")
 
 
-# ---- 示範卷＋Netlify 部署資料夾：最近5屆（111–115）第1–10題 ----
+# ---- 示範卷：最近5屆（111–115）第1–10題 ----
+# 注意：netlify_deploy/index.html 是「目前上架中的學生卷」，build 不得覆蓋
+# （2026-07-15 曾把已上架的複習卷B1蓋掉）；示範卷固定輸出到 backup/，要上架時再手動複製過去
 sample_ids = [q["id"] for q in questions if q["year"] >= 111 and q["type"] == "choice" and q["num"] <= 10]
-make_quiz(sample_ids, "會考數學示範卷（最近5屆 第1-10題）", BASE / "netlify_deploy" / "index.html")
+make_quiz(sample_ids, "會考數學示範卷（最近5屆 第1-10題）", BASE / "backup" / "示範卷_最近5屆1-10題_index.html")
