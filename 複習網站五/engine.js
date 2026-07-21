@@ -23,6 +23,37 @@
     }
   }
 
+  // ---- 自動縮放：讓整頁內容在「不捲動」的前提下盡量放大 ----
+  // 量測內容自然高度，超過欄位可視高度時才等比縮小（下限 0.5，保留字級）。
+  function fitEl(box, content) {
+    if (!box || !content) return;
+    content.style.transform = 'none';
+    const avail = box.clientHeight;
+    const need = content.scrollHeight;
+    if (avail > 0 && need > avail + 1) {
+      content.style.transform = 'scale(' + Math.max(0.5, (avail - 2) / need) + ')';
+    }
+  }
+  function fitSlide() {
+    if (!slideEl || slideEl.classList.contains('divider')) return;
+    const info = slideEl.querySelector('.slide-info');
+    if (info) fitEl(info, info.querySelector('.col-fit'));
+    const vis = slideEl.querySelector('.slide-visual');
+    if (vis) {
+      const host = vis.querySelector('.visual-host');
+      // 互動頁（含滑桿／按鈕）的 SVG 交由 CSS max-height 處理，避免縮放影響控制項定位與操作
+      if (host && !vis.querySelector('.ictrl') && !host.querySelector('input, button')) fitEl(host, host);
+    }
+  }
+  // MathJax 排版完成後才量高縮放（公式高度需排版後才確定）
+  function typesetAndFit(el, tries = 0) {
+    if (window.MathJax && MathJax.typesetPromise) {
+      MathJax.typesetPromise([el]).then(fitSlide).catch(fitSlide);
+    } else if (tries < 60) {
+      setTimeout(() => typesetAndFit(el, tries + 1), 200);
+    } else { fitSlide(); }
+  }
+
   // ---- DOM ----
   const $ = id => document.getElementById(id);
   const slideEl = $('slide');
@@ -119,7 +150,7 @@
           </div>
         </div>`;
       }
-      info.innerHTML = html;
+      info.innerHTML = '<div class="col-fit">' + html + '</div>';
 
       // 右：視覺欄
       const vis = document.createElement('div');
@@ -152,7 +183,9 @@
         tog.onclick = () => {
           sol.classList.toggle('show');
           tog.textContent = sol.classList.contains('show') ? '收起解答' : '顯示解答';
-          typeset(sol);
+          // 展開/收起解答會改變概念欄高度 → 排版後重新縮放
+          if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([sol]).then(fitSlide).catch(fitSlide);
+          else fitSlide();
         };
       }
 
@@ -166,8 +199,8 @@
     nextBtn.disabled = idx === flat.length - 1;
     markTOC();
 
-    // MathJax（若尚未載入完成，typeset 會自動重試補上）
-    typeset(slideEl);
+    // MathJax（若尚未載入完成，typeset 會自動重試補上）；排版後自動縮放使整頁免捲動
+    typesetAndFit(slideEl);
     slideEl.scrollTop = 0;
     if (typeof clearPen === 'function') clearPen(); // 換頁清除筆跡
   }
@@ -184,6 +217,8 @@
   function toggleSidebar() {
     if (window.innerWidth > 1080) app.classList.toggle('toc-collapsed');
     else tocEl.classList.toggle('open');
+    // 版面寬度改變 → 重新縮放（延一格等 grid 重排完成）
+    requestAnimationFrame(fitSlide);
   }
   prevBtn.onclick = prev;
   nextBtn.onclick = next;
@@ -196,6 +231,30 @@
   const laserDot = $('laserDot');
   let laserOn = false, penOn = false, drawing = false, erasing = false, penColor = '#e11d48', lastPt = null;
 
+  // 雷射拖尾：獨立畫布，畫出會隨時間淡出的紅色軌跡（不影響畫筆畫布）
+  const laserCanvas = document.createElement('canvas');
+  laserCanvas.className = 'laser-canvas';
+  document.body.appendChild(laserCanvas);
+  const lctx = laserCanvas.getContext('2d');
+  let laserPts = [];           // 近期軌跡點 {x, y, t}
+  let laserRAF = null;
+  const LASER_LIFE = 1600;     // 每段筆跡殘留時間（毫秒）→ 之後淡出消失
+  function drawLaserTrail() {
+    syncLaserCanvas();
+    const now = performance.now();
+    laserPts = laserPts.filter(p => now - p.t < LASER_LIFE);
+    lctx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+    for (let i = 1; i < laserPts.length; i++) {
+      const a = laserPts[i - 1], b = laserPts[i];
+      const alpha = Math.max(0, 1 - (now - b.t) / LASER_LIFE);   // 越新越濃，隨時間淡出
+      lctx.strokeStyle = 'rgba(255,42,42,' + (0.6 * alpha).toFixed(3) + ')';
+      lctx.lineWidth = 3 + 5 * alpha;
+      lctx.beginPath(); lctx.moveTo(a.x, a.y); lctx.lineTo(b.x, b.y); lctx.stroke();
+    }
+    if (laserOn || laserPts.length > 1) laserRAF = requestAnimationFrame(drawLaserTrail);
+    else { lctx.clearRect(0, 0, laserCanvas.width, laserCanvas.height); laserRAF = null; }
+  }
+
   function fitPen() {
     const w = window.innerWidth, h = window.innerHeight, dpr = window.devicePixelRatio || 1;
     if (canvas._w === w && canvas._h === h) return; // 尺寸未變就不重設，避免清掉筆跡
@@ -207,6 +266,16 @@
     penCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     penCtx.lineCap = 'round'; penCtx.lineJoin = 'round';
   }
+  // 雷射畫布尺寸自我校正（不受 fitPen 的 early-return 影響；尺寸相符時為 no-op）
+  function syncLaserCanvas() {
+    const w = window.innerWidth, h = window.innerHeight, dpr = window.devicePixelRatio || 1;
+    const cw = Math.round(w * dpr), ch = Math.round(h * dpr);
+    if (laserCanvas.width === cw && laserCanvas.height === ch) return;
+    laserCanvas.width = cw; laserCanvas.height = ch;
+    laserCanvas.style.width = w + 'px'; laserCanvas.style.height = h + 'px';
+    lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    lctx.lineCap = 'round'; lctx.lineJoin = 'round';
+  }
   function clearPen() { if (penCtx) penCtx.clearRect(0, 0, canvas.width, canvas.height); }
 
   function setLaser(on) {
@@ -215,6 +284,8 @@
     app.classList.toggle('laser-on', on);
     laserDot.classList.toggle('hidden', !on);
     $('dkLaser').classList.toggle('active', on);
+    if (on) { syncLaserCanvas(); if (!laserRAF) laserRAF = requestAnimationFrame(drawLaserTrail); }
+    // 關閉時不清點：讓已畫出的拖尾自然淡出後停止
   }
   function setPen(on) {
     penOn = on;
@@ -225,9 +296,13 @@
     $('dkColors').classList.toggle('hidden', !on);
   }
 
-  // 雷射點跟隨
+  // 雷射點跟隨 + 記錄拖尾軌跡
   document.addEventListener('mousemove', e => {
-    if (laserOn) { laserDot.style.left = e.clientX + 'px'; laserDot.style.top = e.clientY + 'px'; }
+    if (laserOn) {
+      laserDot.style.left = e.clientX + 'px'; laserDot.style.top = e.clientY + 'px';
+      laserPts.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+      if (laserPts.length > 600) laserPts.shift();
+    }
   });
 
   // 畫筆繪製（滑鼠＋觸控）
@@ -274,7 +349,7 @@
     if (!document.fullscreenElement) (document.documentElement.requestFullscreen && document.documentElement.requestFullscreen());
     else document.exitFullscreen();
   };
-  window.addEventListener('resize', fitPen);
+  window.addEventListener('resize', () => { fitPen(); fitSlide(); });
   fitPen();
 
   document.addEventListener('keydown', e => {
