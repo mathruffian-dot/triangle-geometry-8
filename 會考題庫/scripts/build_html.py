@@ -814,7 +814,11 @@ async function exportQuiz(){
       }
     }
     items.push({id:q.id, year:q.year, num:q.num, type:q.type, img:src,
-                k: q.type==='choice' ? btoa(q.answer+'|'+q.id) : ''});
+                k: q.type==='choice' ? btoa(q.answer+'|'+q.id) : '',
+                // e：交卷後訂正用（正解＋詳解＋逐步引導＋易錯提醒），base64 以免直接被看到
+                e: btoa(unescape(encodeURIComponent(JSON.stringify({
+                     a: q.answer||'', s: q.solution||'', st: q.steps||[], tp: q.trap||''
+                   }))))});
   }
   const safeTitle = title.replace(/[<>&"]/g,'');
   const su = (localStorage.getItem('submitUrl')||'').trim();
@@ -1050,6 +1054,25 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 #recBox{width:100%;min-height:90px;font-size:.75rem;margin-top:8px;word-break:break-all}
 .hint{font-size:.82rem;color:var(--sub)}
 .locked .opt,.locked textarea{pointer-events:none;opacity:.85}
+/* ---- 交卷後的錯題訂正區 ---- */
+.review{margin-top:12px;border-radius:12px;padding:12px 14px;font-size:.95rem}
+.rv-ok{background:#ecfdf5;border:1px solid #a7f3d0}
+.rv-ng{background:#fef2f2;border:1px solid #fecaca}
+.rv-na{background:#f8fafc;border:1px solid var(--line)}
+.rv-head{font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rv-ok .rv-head{color:var(--green)}.rv-ng .rv-head{color:var(--red)}.rv-na .rv-head{color:var(--sub)}
+.rv-ansline{font-size:1rem;margin-bottom:8px}
+.rv-ansline b{font-size:1.15rem}
+.rv-sec{margin-top:8px}
+.rv-sec h4{margin:0 0 4px;font-size:.82rem;color:var(--sub);font-weight:800;letter-spacing:.04em}
+.rv-sol{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.rv-steps{margin:0;padding-left:1.3em}
+.rv-steps li{margin-bottom:4px}
+.rv-trap{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:.9rem}
+.rv-toggle{background:#fff;border:1.5px solid var(--line);color:var(--sub);border-radius:999px;padding:5px 14px;font-size:.82rem;font-weight:700;cursor:pointer}
+.qcard.wrong{border-color:#fca5a5;box-shadow:0 0 0 2px #fee2e2}
+.wrongnav{margin-top:12px;font-size:.95rem;background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:10px 12px}
+.wrongnav a{color:var(--red);font-weight:800;text-decoration:none;border-bottom:1px dashed;margin-right:12px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1072,6 +1095,7 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
     <h2 style="margin:0 0 4px">作答結果</h2>
     <div class="score" id="scoreLine"></div>
     <div id="resTable"></div>
+    <div class="wrongnav" id="wrongNav"></div>
     <h3 style="margin:14px 0 4px">📋 作答紀錄（請交給老師）</h3>
     <p class="hint">按「複製紀錄」後貼到老師指定的地方（LINE／Classroom），或用「分享」「下載」。</p>
     <textarea id="recBox" readonly></textarea>
@@ -1163,6 +1187,7 @@ document.getElementById('btnSubmit').onclick = () => {
   document.getElementById('scoreLine').textContent = `選擇題 ${score} / ${auto.length}`;
   document.getElementById('resTable').innerHTML = '<table class="res"><tr><th>題</th>'+rows.map(r=>`<th>${r.n}</th>`).join('')+'</tr>'+
     '<tr><td>結果</td>'+rows.map(r=>`<td class="${r.ok===null?'':(r.ok?'ok':'ng')}">${r.ok===null?'—':(r.ok?'○':'✕')}</td>`).join('')+'</tr></table>';
+  renderReview(rows);
   const json = JSON.stringify(rec);
   const b64 = btoa(unescape(encodeURIComponent(json)));
   window._rec = {json, b64, fname:`作答紀錄_${rec.cls}_${rec.seat}_${rec.name}.json`};
@@ -1181,6 +1206,62 @@ document.getElementById('btnSubmit').onclick = () => {
       .catch(()=>{ st.textContent = '⚠ 自動上傳失敗（可能沒有網路），請用「複製紀錄」交給老師'; });
   }
 };
+// ---- 交卷後：錯題訂正（正確答案＋詳解）----
+function esc(s){ return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function b64json(s){ try{ return JSON.parse(decodeURIComponent(escape(atob(s||'')))) || {}; }catch(e){ return {}; } }
+function tgSol(btn){
+  const b = btn.closest('.review').querySelector('.rv-body');
+  const on = b.style.display === 'none';
+  b.style.display = on ? 'block' : 'none';
+  btn.textContent = on ? '收起詳解' : '看詳解';
+}
+function jumpQ(n){
+  const q = ITEMS[n-1]; if(!q) return;
+  const el = document.getElementById('q-'+q.id);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderReview(rows){
+  const wrongNs = [];
+  ITEMS.forEach((q,i)=>{
+    const r = rows[i];
+    const card = document.getElementById('q-'+q.id);
+    if(!card || card.querySelector('.review')) return;
+    const ex = b64json(q.e);
+    let correct = ex.a || '';
+    if(!correct && q.k){ try{ correct = atob(q.k).split('|')[0]; }catch(e){} }
+    const mine = r.a || '（未作答）';
+    const detail =
+      (ex.s ? `<div class="rv-sec"><h4>詳解</h4><div class="rv-sol">${esc(ex.s)}</div></div>` : '') +
+      ((ex.st && ex.st.length) ? `<div class="rv-sec"><h4>逐步引導</h4><ol class="rv-steps">${ex.st.map(t=>`<li>${esc(t)}</li>`).join('')}</ol></div>` : '') +
+      (ex.tp ? `<div class="rv-sec"><h4>易錯提醒</h4><div class="rv-trap">⚠ ${esc(ex.tp)}</div></div>` : '');
+    const div = document.createElement('div');
+    if(r.ok === false){
+      wrongNs.push(r.n); card.classList.add('wrong');
+      div.className = 'review rv-ng';
+      div.innerHTML = `<div class="rv-head">✗ 答錯</div>
+        <div class="rv-ansline">你的答案：<b>${esc(mine)}</b>　→　正確答案：<b style="color:var(--green)">${esc(correct)}</b></div>${detail}`;
+    }else if(r.ok === true){
+      div.className = 'review rv-ok';
+      div.innerHTML = `<div class="rv-head">✓ 答對<span style="font-weight:400;color:var(--sub)">正確答案 ${esc(correct)}</span>${detail?'<button class="rv-toggle" onclick="tgSol(this)">看詳解</button>':''}</div>
+        <div class="rv-body" style="display:none">${detail}</div>`;
+    }else{
+      div.className = 'review rv-na';
+      div.innerHTML = `<div class="rv-head">— 非選擇題（請自行對照）</div>
+        <div class="rv-ansline">你的答案：<b>${esc(mine)}</b>${correct?`　→　參考答案：<b style="color:var(--green)">${esc(correct)}</b>`:''}</div>${detail}`;
+    }
+    card.appendChild(div);
+  });
+  const wn = document.getElementById('wrongNav');
+  if(!wn) return;
+  if(wrongNs.length){
+    wn.innerHTML = `<b style="color:var(--red)">錯 ${wrongNs.length} 題</b>：` +
+      wrongNs.map(n=>`<a href="#" onclick="jumpQ(${n});return false;">第${n}題</a>`).join('') +
+      `<div class="hint" style="margin-top:6px">點題號跳到該題，題目下方有<b>正確答案與詳解</b>可以訂正。</div>`;
+  }else{
+    wn.style.background = '#ecfdf5'; wn.style.borderColor = '#a7f3d0';
+    wn.innerHTML = '<b style="color:var(--green)">全部答對，太棒了！</b><div class="hint" style="margin-top:4px">每題下方可按「看詳解」複習解法。</div>';
+  }
+}
 function copyRec(){
   const t = document.getElementById('recBox');
   t.select(); t.setSelectionRange(0, 999999);
@@ -1233,6 +1314,11 @@ def make_quiz(question_ids, title, out_path, submit_url=""):
             "id": q["id"], "year": q["year"], "num": q["num"], "type": q["type"],
             "img": "data:image/png;base64," + b64,
             "k": base64.b64encode(f"{q['answer']}|{q['id']}".encode()).decode() if q["type"] == "choice" else "",
+            # e：交卷後訂正用（正解＋詳解＋逐步引導＋易錯提醒）
+            "e": base64.b64encode(json.dumps({
+                "a": q.get("answer", ""), "s": q.get("solution", ""),
+                "st": q.get("steps", []), "tp": q.get("trap", ""),
+            }, ensure_ascii=False).encode("utf-8")).decode(),
         })
     data = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
     html = (QUIZ_TEMPLATE.replace("__TITLE__", title)

@@ -18,6 +18,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8891", "--bind", "127.0.0.1", "--directory", "複習網站五"],
       "port": 8891
+    },
+    {
+      "name": "quiztest",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8899", "--bind", "127.0.0.1", "--directory", "C:/Users/user/AppData/Local/Temp/claude/G---------2026--809/66af5313-7986-49ff-9562-0f52e98ee0ec/scratchpad/quiztest"],
+      "port": 8899
     }
   ]
 }
