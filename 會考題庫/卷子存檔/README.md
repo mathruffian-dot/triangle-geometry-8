@@ -20,3 +20,7 @@ netlify api restoreSiteDeploy --data '{"site_id":"05be96f6-da95-4687-b3d5-39329a
 | 卷名 | 歸檔日期 | 備註 |
 |------|----------|------|
 | 會考數學複習卷B1_30題_0715 | 2026-07-21 | 建立慣例時歸檔，為當時 quiz 站掛著的卷 |
+| 會考數學複習卷B4_B5_0721 | 2026-07-21 | 30 題。⚠️ 匯出時 submitUrl 誤設為「試算表編輯網址」，上架前已改回 Apps Script `/exec?token=math809` |
+
+> ⚠️ **匯出前務必檢查題庫的「試算表收卷設定」**：要填 Apps Script 的 `…/exec?token=math809`，
+> **不是**試算表的 `docs.google.com/spreadsheets/…/edit` 網址，否則學生交卷收不到紀錄。
