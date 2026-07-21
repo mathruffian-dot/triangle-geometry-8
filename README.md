@@ -61,6 +61,10 @@
    [app.netlify.com/drop](https://app.netlify.com/drop)，取得新網址發給學生。
 4. 學生 iPad 填班級/座號/姓名作答 → 交卷自動批改選擇題 → 作答紀錄依收卷設定上傳試算表。
 
+> **每次推卷都會留底**：因路線 A 會覆蓋 `netlify_deploy/index.html`（只留最新一份），
+> 所以每次部署時另存一份 `會考題庫/卷子存檔/<卷名>.html` 並 commit 到 GitHub，
+> 讓每一份派出去的卷子都永久保存（雲端硬碟＋GitHub）。要重掛舊卷見 `會考題庫/卷子存檔/README.md`。
+
 > 出卷當下即記錄「出題紀錄」（防重複出題）；收卷、出題紀錄、個人分析詳見 `會考題庫/handoff.md`。
 
 ---
