@@ -352,7 +352,10 @@ button { font: inherit; cursor: pointer; }
 }
 .visual-host { flex: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: hidden; transform-origin: center center; }
 .visual-host > * { margin: auto; max-width: 100%; }
+/* 繪圖用 SVG 撐滿欄寬並限高 */
 .visual-host svg { width: 100%; height: auto; max-height: 100%; display: block; }
+/* 但 MathJax 內嵌數學的 SVG 要保留原始尺寸，否則分數會被拉成滿寬而暴大 */
+.visual-host mjx-container svg { width: auto !important; height: auto !important; max-height: none !important; display: inline-block; }
 .visual-caption { margin-top: 12px; text-align: center; font-size: 13px; color: var(--muted); line-height: 1.55; }
 
 /* 互動控制元件（通用） */
