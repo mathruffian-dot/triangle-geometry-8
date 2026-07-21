@@ -214,9 +214,9 @@ window.DECK = window.DECK || [];
         },
         caption: '不論中間線移到哪，左邊 AB:BC 與右邊 DE:EF <b>永遠相等</b>。',
         example: {
-          q: '三平行線截得左側 \\(AB=6,BC=9\\)，右側 \\(DE=4\\)，求 \\(EF\\)。',
-          steps: ['\\(6:9=4:EF\\)，交叉相乘 \\(6\\,EF=36\\)。', '\\(EF=6\\)。'],
-          ans: '\\(EF=6\\)'
+          q: '三平行線截得左側 \\(\\overline{AB}=6,\\overline{BC}=9\\)，右側 \\(\\overline{DE}=4\\)，求 \\(\\overline{EF}\\)。',
+          steps: ['\\(6:9=4:\\overline{EF}\\)，交叉相乘 \\(6\\,\\overline{EF}=36\\)。', '\\(\\overline{EF}=6\\)。'],
+          ans: '\\(\\overline{EF}=6\\)'
         }
       },
 
@@ -251,11 +251,11 @@ window.DECK = window.DECK || [];
           };
           h.querySelector('#ts').oninput = draw; draw();
         },
-        caption: '\\(DE\\parallel BC\\) 時，D、E 把兩腰切成<b>相同比例</b>。',
+        caption: '\\(\\overline{DE}\\parallel \\overline{BC}\\) 時，D、E 把兩腰切成<b>相同比例</b>。',
         example: {
-          q: '\\(\\overline{DE}\\parallel\\overline{BC}\\)，\\(AD=4,DB=6,AE=5\\)，求 \\(EC\\)。',
-          steps: ['\\(4:6=5:EC\\)，交叉相乘 \\(4\\,EC=30\\)。', '\\(EC=7.5\\)。'],
-          ans: '\\(EC=7.5\\)'
+          q: '\\(\\overline{DE}\\parallel\\overline{BC}\\)，\\(\\overline{AD}=4,\\overline{DB}=6,\\overline{AE}=5\\)，求 \\(\\overline{EC}\\)。',
+          steps: ['\\(4:6=5:\\overline{EC}\\)，交叉相乘 \\(4\\,\\overline{EC}=30\\)。', '\\(\\overline{EC}=7.5\\)。'],
+          ans: '\\(\\overline{EC}=7.5\\)'
         }
       },
 
@@ -264,7 +264,7 @@ window.DECK = window.DECK || [];
         title: '中點連線定理',
         points: [
           '三角形<b>兩邊中點</b>的連線段，<b>平行</b>於第三邊，且長度是第三邊的<b>一半</b>。',
-          '這是平行截比例線段在「\\(AD:DB=1:1\\)」時的特例。',
+          '這是平行截比例線段在「\\(\\overline{AD}:\\overline{DB}=1:1\\)」時的特例。',
           '\\(D,E\\) 為 \\(\\overline{AB},\\overline{AC}\\) 中點 \\(\\Rightarrow \\overline{DE}\\parallel\\overline{BC}\\) 且 \\(\\overline{DE}=\\tfrac12\\overline{BC}\\)。'
         ],
         formula: { label: '中點連線', tex: '\\overline{DE}\\parallel\\overline{BC},\\ \\overline{DE}=\\tfrac12\\,\\overline{BC}' },
@@ -284,11 +284,11 @@ window.DECK = window.DECK || [];
           s += `<text x="${(D[0] + E[0]) / 2}" y="${D[1] - 10}" text-anchor="middle" font-size="12" font-weight="800" fill="${RED}">DE = ½ BC</text>`;
           h.innerHTML = svg('0 0 440 300', s);
         },
-        caption: 'D、E 是兩腰中點 ⇒ \\(DE\\) 平行且等於底邊 \\(BC\\) 的一半。',
+        caption: 'D、E 是兩腰中點 ⇒ \\(\\overline{DE}\\) 平行且等於底邊 \\(\\overline{BC}\\) 的一半。',
         example: {
-          q: '\\(D,E\\) 分別為 \\(\\overline{AB},\\overline{AC}\\) 中點，\\(BC=10\\)，求 \\(DE\\)。',
-          steps: ['中點連線 \\(DE=\\tfrac12 BC\\)。', '\\(DE=\\tfrac12\\times10=5\\)。'],
-          ans: '\\(DE=5\\)'
+          q: '\\(D,E\\) 分別為 \\(\\overline{AB},\\overline{AC}\\) 中點，\\(\\overline{BC}=10\\)，求 \\(\\overline{DE}\\)。',
+          steps: ['中點連線 \\(\\overline{DE}=\\tfrac12 \\overline{BC}\\)。', '\\(\\overline{DE}=\\tfrac12\\times10=5\\)。'],
+          ans: '\\(\\overline{DE}=5\\)'
         }
       },
 
@@ -440,7 +440,7 @@ window.DECK = window.DECK || [];
         points: [
           '兩三角形<b>兩組對應邊成比例</b>，且<b>夾角相等</b>，則相似（SAS）。',
           '關鍵：相等的角必須是這兩邊的<b>夾角</b>。',
-          '\\(\\dfrac{AB}{DE}=\\dfrac{AC}{DF}\\) 且 \\(\\angle A=\\angle D\\)。'
+          '\\(\\dfrac{\\overline{AB}}{\\overline{DE}}=\\dfrac{\\overline{AC}}{\\overline{DF}}\\) 且 \\(\\angle A=\\angle D\\)。'
         ],
         formula: { label: 'SAS 相似', tex: '\\dfrac{AB}{DE}=\\dfrac{AC}{DF},\\ \\angle A=\\angle D' },
         visual: (h) => {
@@ -456,7 +456,7 @@ window.DECK = window.DECK || [];
         },
         caption: '夾角（紅）相等，且夾這角的兩邊（黃、紫）成比例 ⇒ 相似。',
         example: {
-          q: '\\(\\angle A=\\angle D\\)，\\(AB=4,AC=6\\)，\\(DE=6,DF=9\\)，相似嗎？',
+          q: '\\(\\angle A=\\angle D\\)，\\(\\overline{AB}=4,\\overline{AC}=6\\)，\\(\\overline{DE}=6,\\overline{DF}=9\\)，相似嗎？',
           steps: ['\\(\\dfrac46=\\dfrac69=\\dfrac23\\)，且夾角相等 ⇒ SAS。'],
           ans: '相似（SAS）'
         }
@@ -467,7 +467,7 @@ window.DECK = window.DECK || [];
         title: '判別法 ③ SSS：三邊對應成比例',
         points: [
           '兩三角形<b>三組對應邊都成比例</b>，則相似（SSS）。',
-          '即 \\(\\dfrac{AB}{DE}=\\dfrac{BC}{EF}=\\dfrac{CA}{FD}\\)。',
+          '即 \\(\\dfrac{\\overline{AB}}{\\overline{DE}}=\\dfrac{\\overline{BC}}{\\overline{EF}}=\\dfrac{\\overline{CA}}{\\overline{FD}}\\)。',
           '和全等的 SSS 類比：全等要邊<b>相等</b>，相似只要邊<b>成比例</b>。'
         ],
         formula: { label: 'SSS 相似', tex: '\\dfrac{AB}{DE}=\\dfrac{BC}{EF}=\\dfrac{CA}{FD}' },
@@ -492,7 +492,7 @@ window.DECK = window.DECK || [];
         points: [
           '確定兩三角形相似後，<b>對應邊成比例</b>就能列式求邊。',
           '關鍵：先把<b>對應頂點</b>對好（相似記號的字母順序＝對應順序）。',
-          '\\(\\triangle ABC\\sim\\triangle DEF\\Rightarrow \\dfrac{AB}{DE}=\\dfrac{BC}{EF}=\\dfrac{CA}{FD}\\)。'
+          '\\(\\triangle ABC\\sim\\triangle DEF\\Rightarrow \\dfrac{\\overline{AB}}{\\overline{DE}}=\\dfrac{\\overline{BC}}{\\overline{EF}}=\\dfrac{\\overline{CA}}{\\overline{FD}}\\)。'
         ],
         formula: { label: '對應邊成比例', tex: '\\dfrac{AB}{DE}=\\dfrac{BC}{EF}' },
         visual: (h) => {
@@ -507,11 +507,11 @@ window.DECK = window.DECK || [];
           s += SV.vlabel(R.A[0] - 4, R.A[1] - 6, 'D') + SV.vlabel(R.B[0] - 18, R.B[1] + 8, 'E') + SV.vlabel(R.Cc[0] + 6, R.Cc[1] + 8, 'F');
           h.innerHTML = svg('0 0 440 235', s);
         },
-        caption: '\\(AB=6\\) 對 \\(DE=9\\)（比 2:3），用比例求 \\(EF\\)。',
+        caption: '\\(\\overline{AB}=6\\) 對 \\(\\overline{DE}=9\\)（比 2:3），用比例求 \\(\\overline{EF}\\)。',
         example: {
-          q: '\\(\\triangle ABC\\sim\\triangle DEF\\)，\\(AB=6,BC=8,DE=9\\)，求 \\(EF\\)。',
-          steps: ['\\(\\dfrac69=\\dfrac{8}{EF}\\Rightarrow 6\\,EF=72\\)。', '\\(EF=12\\)。'],
-          ans: '\\(EF=12\\)'
+          q: '\\(\\triangle ABC\\sim\\triangle DEF\\)，\\(\\overline{AB}=6,\\overline{BC}=8,\\overline{DE}=9\\)，求 \\(\\overline{EF}\\)。',
+          steps: ['\\(\\dfrac69=\\dfrac{8}{\\overline{EF}}\\Rightarrow 6\\,\\overline{EF}=72\\)。', '\\(\\overline{EF}=12\\)。'],
+          ans: '\\(\\overline{EF}=12\\)'
         }
       },
 
@@ -569,7 +569,7 @@ window.DECK = window.DECK || [];
           s += `<text x="162" y="175" font-size="12" font-weight="800" fill="${RED}">h</text>`;
           h.innerHTML = svg('0 0 440 275', s);
         },
-        caption: '\\(\\triangle ACH\\sim\\triangle CBH\\sim\\triangle ABC\\)；高 \\(h\\) 滿足 \\(h^2=AH\\cdot HB\\)。',
+        caption: '\\(\\triangle ACH\\sim\\triangle CBH\\sim\\triangle ABC\\)；高 \\(h\\) 滿足 \\(h^2=\\overline{AH}\\cdot \\overline{HB}\\)。',
         example: {
           q: '直角三角形斜邊上的高把斜邊分成 4 與 9，求這條高。',
           steps: ['\\(h^2=4\\times9=36\\)。', '\\(h=6\\)。'],

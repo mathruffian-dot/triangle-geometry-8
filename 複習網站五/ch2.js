@@ -60,7 +60,7 @@ window.DECK = window.DECK || [];
         title: '弦心距垂直平分弦',
         points: [
           '圓心到弦的<b>垂直距離</b>叫<span class="k">弦心距</span>。',
-          '弦心距一定<b>垂直平分</b>這條弦（\\(OM\\perp AB\\) 且 \\(AM=MB\\)）。',
+          '弦心距一定<b>垂直平分</b>這條弦（\\(\\overline{OM}\\perp \\overline{AB}\\) 且 \\(\\overline{AM}=\\overline{MB}\\)）。',
           '半徑、半弦、弦心距構成直角三角形：\\((\\tfrac{弦}{2})^2+d^2=r^2\\)。拖滑桿看弦怎麼變。'
         ],
         formula: { label: '弦長與弦心距', tex: '\\left(\\tfrac{弦}{2}\\right)^2+d^2=r^2' },
@@ -167,8 +167,8 @@ window.DECK = window.DECK || [];
         sec: '2-1', secName: '切線',
         title: '切線的性質',
         points: [
-          '① 切線<b>垂直</b>於過切點的半徑：\\(OT\\perp\\) 切線（切線性質）。',
-          '② 從圓外一點 \\(P\\) 作兩條切線，<b>切線段等長</b>：\\(PA=PB\\)。',
+          '① 切線<b>垂直</b>於過切點的半徑：\\(\\overline{OT}\\perp\\) 切線（切線性質）。',
+          '② 從圓外一點 \\(P\\) 作兩條切線，<b>切線段等長</b>：\\(\\overline{PA}=\\overline{PB}\\)。',
           '這兩點是解切線題的萬用工具。'
         ],
         formula: { label: '切線段等長', tex: '\\overline{PA}=\\overline{PB}' },
@@ -192,8 +192,8 @@ window.DECK = window.DECK || [];
         },
         caption: '半徑⊥切線（紅直角）；同一外點的兩切線段等長（PA＝PB）。',
         example: {
-          q: '\\(P\\) 到圓心 \\(O\\) 距離 10，圓半徑 6，求切線長 \\(PA\\)。',
-          steps: ['\\(OA\\perp PA\\)：\\(PA=\\sqrt{10^2-6^2}=\\sqrt{64}=8\\)。'],
+          q: '\\(P\\) 到圓心 \\(O\\) 距離 10，圓半徑 6，求切線長 \\(\\overline{PA}\\)。',
+          steps: ['\\(\\overline{OA}\\perp \\overline{PA}\\)：\\(\\overline{PA}=\\sqrt{10^2-6^2}=\\sqrt{64}=8\\)。'],
           ans: '切線長 8'
         }
       },

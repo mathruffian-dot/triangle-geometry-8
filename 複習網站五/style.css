@@ -362,20 +362,23 @@ button { font: inherit; cursor: pointer; }
 .ictrl { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; margin-top: 14px; }
 .ictrl label { font-size: 13px; font-weight: 800; color: var(--muted); }
 .ictrl input[type="range"] { width: 180px; accent-color: var(--ct); }
-/* 寬螢幕：滑桿浮動在展示區右下角，不佔用、不遮擋展示空間 */
+/* 寬螢幕：滑桿改為「圖下方一列」，不再浮動蓋住圖形 */
 @media (min-width: 641px) {
   .ictrl {
-    position: absolute; right: 12px; bottom: 12px; margin-top: 0;
-    flex-direction: column; align-items: stretch; gap: 8px;
-    padding: 10px 14px; z-index: 6;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    margin: 10px auto 0; max-width: 100%;
+    flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 18px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.92);
     border: 1.5px solid var(--ct); border-radius: 14px;
-    box-shadow: 0 6px 18px rgba(23, 32, 51, 0.14);
+    box-shadow: 0 4px 14px rgba(23, 32, 51, 0.10);
   }
-  .ictrl label { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-  .ictrl input[type="range"] { width: 170px; }
-  .ictrl .step-txt { max-width: 200px; }
+  .ictrl label { display: flex; align-items: baseline; gap: 8px; }
+  .ictrl input[type="range"] { width: 160px; }
+  .ictrl .step-txt { max-width: 300px; }
+  /* 有滑桿的視覺欄：圖形頂端對齊並預留底部空間給滑桿，確保滑桿不遮圖 */
+  .slide-visual:has(.ictrl) .visual-host { justify-content: flex-start; }
+  .slide-visual:has(.ictrl) .visual-host > * { margin-top: 0; }
+  .slide-visual:has(.ictrl) .visual-host svg { max-height: calc(100% - 72px); }
 }
 /* 步驟講解器文字 */
 .step-txt { font-size: 12.5px; font-weight: 700; color: var(--ink, #172033); text-align: left; line-height: 1.55; min-height: 1em; }
@@ -470,6 +473,52 @@ svg .dim { fill: var(--muted); }
 .dcolor.active { box-shadow: 0 0 0 3px var(--sc); transform: scale(1.1); }
 .derase { width: 34px; height: 34px; }
 .derase.active { background: var(--amber); color: #fff; }
+
+/* ===================== 範例／圖解「放大成整頁」 ===================== */
+/* 範例框內的放大鈕 */
+.ex-zoom {
+  margin-left: auto; border: 1px solid var(--ct); color: var(--ct); background: #fff;
+  border-radius: 999px; padding: 3px 11px; font-size: 12px; font-weight: 800; line-height: 1.4;
+}
+.ex-zoom:hover { background: var(--ct); color: #fff; }
+/* 視覺欄右上角的放大鈕 */
+.vis-zoom {
+  position: absolute; top: 10px; right: 12px; z-index: 6;
+  border: 1.5px solid var(--ct); color: var(--ct); background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px; padding: 5px 13px; font-size: 12.5px; font-weight: 800;
+  box-shadow: 0 4px 12px rgba(23, 32, 51, 0.12);
+}
+.vis-zoom:hover { background: var(--ct); color: #fff; }
+
+/* 放大內容層：z-index 700 < 畫筆畫布(800)，才能用畫筆寫在放大內容上面 */
+.zoom-modal {
+  position: fixed; inset: 0; z-index: 700; background: #fff;
+  overflow: auto; padding: 82px clamp(20px, 5vw, 80px) 56px;
+}
+.zoom-modal.hidden, .zoom-bar.hidden { display: none !important; }
+.zoom-body { position: relative; min-height: 100%; display: flex; flex-direction: column; }
+.zoom-q { font-size: clamp(23px, 3.3vw, 42px); line-height: 1.7; color: var(--ink); font-weight: 500; }
+.zoom-sol { display: none; margin-top: 28px; padding-top: 20px; border-top: 2px dashed #cdd6e2; }
+.zoom-sol.show { display: block; }
+.zoom-sol ol { font-size: clamp(19px, 2.7vw, 33px); line-height: 1.9; padding-left: 1.3em; margin: 0; }
+.zoom-sol li { margin-bottom: 10px; }
+.zoom-ans { margin-top: 20px; font-size: clamp(21px, 2.9vw, 35px); font-weight: 900; color: #fff; background: var(--ct); display: inline-block; padding: 9px 26px; border-radius: 14px; }
+/* 圖解模式：放大的視覺 host 撐滿 */
+.zoom-body > .visual-host { flex: 1; min-height: 0; }
+.zoom-body > .visual-host svg { max-height: 80vh; }
+
+/* 放大控制列：z-index 1300 > 畫筆畫布，按鈕隨時可點 */
+.zoom-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1300;
+  display: flex; align-items: center; gap: 14px; padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border-bottom: 3px solid var(--ct, #2563eb);
+}
+.zoom-badge { flex: 1; font-weight: 900; color: var(--ct, #2563eb); font-size: clamp(14px, 2vw, 18px); }
+.zoom-btn { border: 1.5px solid var(--ct, #2563eb); color: var(--ct, #2563eb); background: #fff; border-radius: 999px; padding: 8px 20px; font-weight: 800; font-size: 15px; }
+.zoom-btn:hover { background: var(--ct, #2563eb); color: #fff; }
+.zoom-x { border-color: #e11d48; color: #e11d48; }
+.zoom-x:hover { background: #e11d48; color: #fff; }
 
 /* 響應式 */
 @media (max-width: 1080px) {

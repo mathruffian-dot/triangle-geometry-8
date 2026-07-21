@@ -54,6 +54,74 @@
     } else { fitSlide(); }
   }
 
+  /* ========== 範例／圖解「放大成整頁」（方便用畫筆講解）========== */
+  let zoomHost = null, zoomHostParent = null;   // 圖解模式被移入放大層的 host 及其原父節點
+  function ensureZoom() {
+    if (document.getElementById('zoomModal')) return;
+    const m = document.createElement('div');
+    m.id = 'zoomModal'; m.className = 'zoom-modal hidden';
+    m.innerHTML = `<div class="zoom-body" id="zoomBody"></div>`;
+    document.body.appendChild(m);
+    const bar = document.createElement('div');
+    bar.id = 'zoomBar'; bar.className = 'zoom-bar hidden';
+    bar.innerHTML = `<div class="zoom-badge" id="zoomBadge"></div>
+      <button class="zoom-btn" id="zoomSol">顯示解答</button>
+      <button class="zoom-btn zoom-x" id="zoomClose">✕ 關閉</button>`;
+    document.body.appendChild(bar);
+    bar.querySelector('#zoomClose').onclick = closeZoom;
+    bar.querySelector('#zoomSol').onclick = () => {
+      const box = document.getElementById('zoomSolBox'); if (!box) return;
+      box.classList.toggle('show');
+      bar.querySelector('#zoomSol').textContent = box.classList.contains('show') ? '收起解答' : '顯示解答';
+      typeset(box);
+    };
+  }
+  function showZoom(s, badgeTail) {
+    ensureZoom();
+    document.getElementById('zoomBadge').innerHTML = `第 ${s.ch} 章 · ${s.sec} ${s.secName || ''}　${badgeTail}`;
+    document.getElementById('zoomModal').style.setProperty('--ct', s.color);
+    document.getElementById('zoomBar').style.setProperty('--ct', s.color);
+    document.getElementById('zoomModal').classList.remove('hidden');
+    document.getElementById('zoomBar').classList.remove('hidden');
+  }
+  function openExampleModal(s) {
+    ensureZoom();
+    document.getElementById('zoomSol').style.display = '';
+    document.getElementById('zoomSol').textContent = '顯示解答';
+    document.getElementById('zoomBody').innerHTML =
+      `<div class="zoom-q">${s.example.q}</div>
+       <div class="zoom-sol" id="zoomSolBox">
+         ${s.example.steps ? `<ol>${s.example.steps.map(t => `<li>${t}</li>`).join('')}</ol>` : ''}
+         ${s.example.ans ? `<div class="zoom-ans">答：${s.example.ans}</div>` : ''}
+       </div>`;
+    showZoom(s, '範例');
+    typeset(document.getElementById('zoomBody'));
+  }
+  function openVisualModal(s, host) {
+    ensureZoom();
+    document.getElementById('zoomSol').style.display = 'none';   // 圖解不需要「顯示解答」
+    const body = document.getElementById('zoomBody');
+    body.innerHTML = '';
+    zoomHost = host; zoomHostParent = host.parentNode;
+    host.style.transform = 'none';   // 取消縮圖時的縮放，放大層用滿版
+    body.appendChild(host);
+    showZoom(s, '圖解');
+    typeset(body);
+  }
+  function closeZoom() {
+    const m = document.getElementById('zoomModal');
+    if (!m || m.classList.contains('hidden')) return;
+    if (zoomHost && zoomHostParent) {
+      zoomHostParent.insertBefore(zoomHost, zoomHostParent.firstChild);   // 把圖放回原視覺欄
+      zoomHost = null; zoomHostParent = null;
+    }
+    document.getElementById('zoomBody').innerHTML = '';
+    m.classList.add('hidden');
+    document.getElementById('zoomBar').classList.add('hidden');
+    if (typeof clearPen === 'function') clearPen();   // 清掉講解時的筆跡
+    fitSlide();
+  }
+
   // ---- DOM ----
   const $ = id => document.getElementById(id);
   const slideEl = $('slide');
@@ -141,7 +209,7 @@
       }
       if (s.example) {
         html += `<div class="example">
-          <div class="ex-head">範例</div>
+          <div class="ex-head">範例<button class="ex-zoom" title="放大成整頁，方便用畫筆講解">🔍 放大</button></div>
           <div class="ex-q">${s.example.q}</div>
           <button class="ex-toggle">顯示解答</button>
           <div class="ex-sol">
@@ -164,6 +232,13 @@
         cap.innerHTML = s.caption;
         vis.appendChild(cap);
       }
+      // 圖解「放大成整頁」按鈕（浮在視覺欄右上角）
+      const visZoom = document.createElement('button');
+      visZoom.className = 'vis-zoom';
+      visZoom.title = '放大成整頁，方便用畫筆講解';
+      visZoom.textContent = '🔍 放大';
+      visZoom.onclick = () => openVisualModal(s, host);
+      vis.appendChild(visZoom);
 
       slideEl.innerHTML = '';
       slideEl.appendChild(info);
@@ -188,6 +263,9 @@
           else fitSlide();
         };
       }
+      // 範例「放大成整頁」按鈕
+      const exZoom = info.querySelector('.ex-zoom');
+      if (exZoom) exZoom.onclick = () => openExampleModal(s);
 
       crumbEl.innerHTML = `第 ${s.ch} 章 · ${s.sec} <b>${s.title}</b>`;
     }
@@ -206,6 +284,7 @@
   }
 
   function go(i) {
+    closeZoom();
     idx = Math.max(0, Math.min(flat.length - 1, i));
     render();
   }
@@ -361,7 +440,7 @@
     else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
     else if (e.key === 'Home') go(0);
     else if (e.key === 'End') go(flat.length - 1);
-    else if (e.key === 'Escape') { setLaser(false); setPen(false); }
+    else if (e.key === 'Escape') { closeZoom(); setLaser(false); setPen(false); }
     else if (e.key === 'l' || e.key === 'L') setLaser(!laserOn);
     else if (e.key === 'p' || e.key === 'P') setPen(!penOn);
     else if (e.key === 'c' || e.key === 'C') clearPen();

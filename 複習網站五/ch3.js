@@ -140,7 +140,7 @@ window.DECK = window.DECK || [];
         points: [
           '三角形<b>三邊中垂線</b>會交於一點，這點叫<span class="k">外心</span>（記作 O）。',
           '外心到<b>三頂點</b>距離相等：\\(\\overline{OA}=\\overline{OB}=\\overline{OC}\\)。',
-          '以 O 為圓心、\\(OA\\) 為半徑可畫出通過三頂點的<b>外接圓</b>。拖滑桿逐步作圖。'
+          '以 O 為圓心、\\(\\overline{OA}\\) 為半徑可畫出通過三頂點的<b>外接圓</b>。拖滑桿逐步作圖。'
         ],
         formula: { label: '外心性質', tex: '\\overline{OA}=\\overline{OB}=\\overline{OC}=\\text{外接圓半徑}' },
         visual: (h) => {
@@ -161,7 +161,7 @@ window.DECK = window.DECK || [];
         caption: '三邊中垂線交於外心 O；O 是外接圓圓心，到三頂點等距。',
         example: {
           q: '外心 \\(O\\) 到頂點 \\(A\\) 的距離為 5，則外接圓半徑多少？',
-          steps: ['外接圓半徑 \\(=OA=OB=OC\\)。'],
+          steps: ['外接圓半徑 \\(=\\overline{OA}=\\overline{OB}=\\overline{OC}\\)。'],
           ans: '半徑 5'
         }
       },
@@ -172,7 +172,8 @@ window.DECK = window.DECK || [];
         points: [
           '外心 \\(O\\) 是外接圓圓心，所以 \\(\\angle BOC\\) 是<b>圓心角</b>、\\(\\angle A\\) 是同弧<b>圓周角</b>。',
           '由圓周角定理：\\(\\angle BOC=2\\angle A\\)。',
-          '外心位置和三角形形狀有關：<b>銳角</b>三角形在內部、<b>直角</b>在斜邊中點、<b>鈍角</b>在外部。'
+          '外心位置和三角形形狀有關：<b>銳角</b>三角形在內部、<b>直角</b>在斜邊中點、<b>鈍角</b>在外部。',
+          '特例：<b>直角三角形斜邊＝外接圓直徑</b>，所以外接圓半徑 \\(=\\dfrac12\\times\\)斜邊。'
         ],
         formula: { label: '圓心角＝2×圓周角', tex: '\\angle BOC=2\\,\\angle A' },
         visual: (h) => {
@@ -296,8 +297,41 @@ window.DECK = window.DECK || [];
         caption: '三中線交於重心 G；G 把每條中線切成 2:1。',
         example: {
           q: '中線 \\(\\overline{AM}=12\\)，\\(G\\) 為重心，求 \\(\\overline{AG}\\) 與 \\(\\overline{GM}\\)。',
-          steps: ['\\(AG:GM=2:1\\)，全長 12 分成 3 份。', '\\(AG=\\dfrac23\\times12=8,\\ GM=\\dfrac13\\times12=4\\)。'],
-          ans: '\\(AG=8,\\ GM=4\\)'
+          steps: ['\\(\\overline{AG}:\\overline{GM}=2:1\\)，全長 12 分成 3 份。', '\\(\\overline{AG}=\\dfrac23\\times12=8,\\ \\overline{GM}=\\dfrac13\\times12=4\\)。'],
+          ans: '\\(\\overline{AG}=8,\\ \\overline{GM}=4\\)'
+        }
+      },
+
+      {
+        sec: '3-2', secName: '重心',
+        title: '重心坐標 = 三頂點坐標的平均',
+        points: [
+          '在坐標平面上，三角形<b>重心的坐標</b>，就是<b>三個頂點坐標的平均</b>。',
+          '\\(G=\\left(\\dfrac{x_1+x_2+x_3}{3},\\ \\dfrac{y_1+y_2+y_3}{3}\\right)\\)。',
+          '這是「重心分中線 2:1」在坐標上的直接結果，超好用又常考。'
+        ],
+        formula: { label: '重心坐標', tex: 'G=\\left(\\dfrac{x_1+x_2+x_3}{3},\\ \\dfrac{y_1+y_2+y_3}{3}\\right)' },
+        visual: (h) => {
+          const P = SV.plane({ x0: 46, y0: 16, w: 300, h: 300, xmin: -1, xmax: 8, ymin: -1, ymax: 8 });
+          const A = [1, 2], B = [5, 0], Cc = [3, 7], G = [3, 3];
+          const T = p => [P.X(p[0]), P.Y(p[1])];
+          const ta = T(A), tb = T(B), tc = T(Cc), tg = T(G);
+          let g = P.defs + P.svg;
+          g += SV.poly([ta, tb, tc], 'rgba(5,150,105,0.08)', C, 2.4);
+          [[A, mid(B, Cc)], [B, mid(Cc, A)], [Cc, mid(A, B)]].forEach(([u, v]) => {
+            const tu = T(u), tv = T(v); g += SV.seg(tu[0], tu[1], tv[0], tv[1], '#9aa4b6', 1.6);
+          });
+          g += SV.dot(ta[0], ta[1], '#172033', 4) + SV.vlabel(ta[0] - 52, ta[1] + 4, 'A(1,2)', C, 12);
+          g += SV.dot(tb[0], tb[1], '#172033', 4) + SV.vlabel(tb[0] + 6, tb[1] + 14, 'B(5,0)', C, 12);
+          g += SV.dot(tc[0], tc[1], '#172033', 4) + SV.vlabel(tc[0] + 6, tc[1] - 4, 'C(3,7)', C, 12);
+          g += SV.dot(tg[0], tg[1], RED, 5.5) + SV.vlabel(tg[0] + 8, tg[1] + 5, 'G(3,3)', RED, 13);
+          h.innerHTML = svg(`0 0 ${46 + 300 + 26} ${16 + 300 + 30}`, g);
+        },
+        caption: '把三頂點的 x、y 各自平均，就是重心 G 的坐標。',
+        example: {
+          q: '三頂點 \\(A(1,2)\\)、\\(B(5,0)\\)、\\(C(3,7)\\)，求重心 \\(G\\) 的坐標。',
+          steps: ['\\(x\\)：\\(\\dfrac{1+5+3}{3}=3\\)。', '\\(y\\)：\\(\\dfrac{2+0+7}{3}=3\\)。'],
+          ans: '\\(G(3,3)\\)'
         }
       },
 
