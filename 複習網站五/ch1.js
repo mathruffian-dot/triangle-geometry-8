@@ -222,13 +222,14 @@ window.DECK = window.DECK || [];
 
       {
         sec: '1-2', secName: '比例線段',
-        title: '三角形內的平行線',
+        title: '三角形內的平行線（含判定平行）',
         points: [
           '三角形一邊的<b>平行線</b>，截另外兩邊成<span class="k">比例</span>。',
           '\\(\\overline{DE}\\parallel\\overline{BC}\\Rightarrow \\overline{AD}:\\overline{DB}=\\overline{AE}:\\overline{EC}\\)。',
+          '<b>反過來也成立（判定平行）</b>：若 \\(\\overline{AD}:\\overline{DB}=\\overline{AE}:\\overline{EC}\\)，就能斷定 \\(\\overline{DE}\\parallel\\overline{BC}\\)。',
           '這也是「\\(\\triangle ADE\\sim\\triangle ABC\\)」的前奏——拖滑桿看比例。'
         ],
-        formula: { label: '截比例', tex: '\\overline{AD}:\\overline{DB}=\\overline{AE}:\\overline{EC}' },
+        formula: { label: '截比例 ⇔ 平行', tex: '\\overline{AD}:\\overline{DB}=\\overline{AE}:\\overline{EC}\\iff\\overline{DE}\\parallel\\overline{BC}' },
         visual: (h) => {
           h.innerHTML = `<div style="width:100%"><div id="tpar"></div>
             <div class="ictrl"><label>D 在 AB 上的位置 <span class="ival" id="tv">0.45</span></label><input type="range" id="ts" min="0.2" max="0.8" step="0.01" value="0.45"></div></div>`;
@@ -253,9 +254,9 @@ window.DECK = window.DECK || [];
         },
         caption: '\\(\\overline{DE}\\parallel \\overline{BC}\\) 時，D、E 把兩腰切成<b>相同比例</b>。',
         example: {
-          q: '\\(\\overline{DE}\\parallel\\overline{BC}\\)，\\(\\overline{AD}=4,\\overline{DB}=6,\\overline{AE}=5\\)，求 \\(\\overline{EC}\\)。',
-          steps: ['\\(4:6=5:\\overline{EC}\\)，交叉相乘 \\(4\\,\\overline{EC}=30\\)。', '\\(\\overline{EC}=7.5\\)。'],
-          ans: '\\(\\overline{EC}=7.5\\)'
+          q: '\\(D,E\\) 在 \\(\\overline{AB},\\overline{AC}\\) 上，\\(\\overline{AD}=4,\\overline{DB}=6,\\overline{AE}=6,\\overline{EC}=9\\)，問 \\(\\overline{DE}\\) 與 \\(\\overline{BC}\\) 平行嗎？',
+          steps: ['\\(\\overline{AD}:\\overline{DB}=4:6=2:3\\)；\\(\\overline{AE}:\\overline{EC}=6:9=2:3\\)。', '兩比相等，由判定平行 \\(\\Rightarrow\\overline{DE}\\parallel\\overline{BC}\\)。'],
+          ans: '平行'
         }
       },
 

@@ -199,9 +199,10 @@ window.DECK = window.DECK || [];
       },
 
       {
-        sec: '2-1', secName: '兩圓',
-        title: '兩圓的位置關係',
+        sec: '2-1', secName: '兩圓（延伸）',
+        title: '兩圓的位置關係（延伸）',
         points: [
+          '<span style="background:#fff3cd;color:#8a6d00;font-weight:800;padding:1px 8px;border-radius:6px;font-size:12.5px">延伸補充</span>　108 課綱未列此項，作為進階參考。',
           '設兩圓半徑 \\(R,r\\)，圓心距 \\(d\\)。比較 \\(d\\) 與 \\(R+r\\)、\\(R-r\\)：',
           '\\(d\\gt R+r\\) 外離；\\(d=R+r\\) 外切；\\(R-r\\lt d\\lt R+r\\) 相交；',
           '\\(d=R-r\\) 內切；\\(d\\lt R-r\\) 內含。拖滑桿移動右圓看變化。'
