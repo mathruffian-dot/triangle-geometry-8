@@ -30,8 +30,9 @@
     content.style.transform = 'none';
     const avail = box.clientHeight;
     const need = content.scrollHeight;
+    // 留 6px 安全邊界，吸收縮放後的次像素捨入，避免滑桿底緣被裁掉一絲
     if (avail > 0 && need > avail + 1) {
-      content.style.transform = 'scale(' + Math.max(0.5, (avail - 2) / need) + ')';
+      content.style.transform = 'scale(' + Math.max(0.5, (avail - 6) / need) + ')';
     }
   }
   function fitSlide() {
@@ -41,8 +42,9 @@
     const vis = slideEl.querySelector('.slide-visual');
     if (vis) {
       const host = vis.querySelector('.visual-host');
-      // 互動頁（含滑桿／按鈕）的 SVG 交由 CSS max-height 處理，避免縮放影響控制項定位與操作
-      if (host && !vis.querySelector('.ictrl') && !host.querySelector('input, button')) fitEl(host, host);
+      // 視覺欄一律等比縮放：把「圖＋滑桿／按鈕」當成一整組縮到欄內，
+      // 確保矮螢幕下滑桿也不會被裁掉或被推到看不見（原本只縮靜態圖，互動頁會爆版）
+      if (host) fitEl(host, host);
     }
   }
   // MathJax 排版完成後才量高縮放（公式高度需排版後才確定）
@@ -429,6 +431,13 @@
     else document.exitFullscreen();
   };
   window.addEventListener('resize', () => { fitPen(); fitSlide(); });
+  // 拖動滑桿／步驟器時，說明文字行數可能改變（例如步驟說明從一行變兩行），
+  // 導致視覺欄需要重新量高縮放；用 rAF 去抖，避免拖曳過程重複計算
+  let _refitRAF = null;
+  slideEl.addEventListener('input', () => {
+    if (_refitRAF) return;
+    _refitRAF = requestAnimationFrame(() => { _refitRAF = null; fitSlide(); });
+  });
   fitPen();
 
   document.addEventListener('keydown', e => {
