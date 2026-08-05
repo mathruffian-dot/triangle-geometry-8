@@ -196,6 +196,42 @@
 - ❌ GitHub Pages：免費強制 public；付費 Pro 用 private repo **網站仍公開**，私有站只有 Enterprise。
 - ❌ GAS 每次建新試算表：不需要，用「試卷名稱」欄位區分即可。
 
+### 📌 2026-08-05 現況總覽（最新，接手先看這段）
+
+**線上網址**
+| 網址 | 用途 |
+|---|---|
+| https://math809-quiz.pages.dev | 學生站入口（輸卷代碼／點清單） |
+| └ `/q/hanlin-1-<班級>/` | 翰林模擬卷**各班專屬**（班級內建鎖定，學生只填座號）902/904/906/907/908/909/910 |
+| └ `/q/hanlin-1/` | 翰林卷原始網址（保留，已發出去的不失效） |
+| └ `/q/0723/`、`/q/b1b2-0722/`、`/q/sim-115/`、`/q/sim-114/`、`/q/essay-all/` | 其餘卷 |
+| https://math809-bank.pages.dev | 🔒 老師題庫＋「✍ 非選覆核」（含詳解，勿發學生） |
+| [收卷試算表](https://docs.google.com/spreadsheets/d/1vZg5vVUTym__8Fhht5vWeDq1Y6v5QOavIr-E-06DvDY/edit) | 作答紀錄／逐題明細／非選作答／出題紀錄 |
+- Netlify 舊站（math809-essay/quiz/bank、review1~5）保留不動；math809-review4 為 404 待修。
+
+**常用指令**（派新卷：編 data/quizzes.json 加一筆，可加 "classes":["902",…] 自動展開各班）
+```
+python scripts/build_quiz_site.py
+npx wrangler pages deploy quiz_site --project-name math809-quiz --branch main --commit-dirty=true
+# 題庫：python scripts/build_html.py → 複製 index.html+01_題目圖片 到 bank_site → 同上 deploy --project-name math809-bank
+python scripts/grade_essays.py --quiz "卷名"            # 只批未批過的（增量）
+python scripts/grade_essays.py --quiz "卷名" --transcribe  # 只補 AI辨識內容
+python scripts/make_redpen.py --quiz "卷名"             # 產紅筆圖並自動上傳 Drive
+python scripts/make_feedback_pdf.py --quiz "卷名"        # 個人回饋單 PDF
+```
+
+**題庫現況**：385 題（103-115 官方 358 ＋ 翰林模擬 27）。評分規準 28 題（103-114 官方 ＋ HL1-N1/N2 取自翰林解答篇的評分指引）。
+
+**翰林卷成績（8人，平均87.6）**：902-9陳昱翔100 ／904-8 95 ／910-5邱楷翔95 ／904-16 89.1 ／908-5洪宣典88.2 ／908-13謝沛翰87.5 ／906-16沈淳迦79.8 ／307-1王敦珩66.2。
+教學觀察：4人選擇滿分但非選平均僅3.25/6；908-13 選擇25/25、非選僅1/6（會算但寫不出過程）。
+
+**⚠ 未完成／待辦**
+1. **GAS 尚未部署最新版**（本機 apps_script/Code.gs 312行、含 `_nid()` ×9）。老師多次貼上失敗：Drive 同步延遲拿到舊檔、或複製被截斷（曾只貼到第100行）。**建議做法：請 Claude 直接把檔案傳給老師**（SendUserFile），用記事本開啟複製，貼完確認**最後行號是 312**、搜 `_nid` 有 9 個。
+   - 未部署只差「後端寫入時再正規化一次」這層保險，前端已上線、現有功能全部正常。
+2. **髒資料待老師手動刪**（後端無刪除接口，老師指示先不加）：試算表刪「非選端對端測試卷」全部、以及 809-9／915-38（試玩）。
+3. **307-1 王敦珩**為真實學生填錯班級 → 待老師告知正班級後改試算表班級欄。309-1／309-12（B1_B2卷）也待確認。
+4. 908-13 的 HL1-N1 曾上傳成 0 bytes，已重交補批（現有空圖防護擋下此情形）。
+
 ### ✅ 2026-08-05 已搬家到 Cloudflare Pages（正式啟用）
 - wrangler 已登入 mathruffian@gmail.com。建立兩個 Pages 專案並部署成功：
   - **https://math809-quiz.pages.dev** ← 學生站（單站多卷）：`/`入口頁、`/q/0723/`、`/q/essay-all/`、各卷 `print.pdf`、`/practice.html`。全部實測 200。
