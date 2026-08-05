@@ -5,31 +5,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>會考數學示範卷（最近5屆 第1-10題）</title>
 <style>
-:root{--ink:#1f2937;--sub:#6b7280;--line:#e5e7eb;--blue:#2563eb;--green:#059669;--red:#dc2626}
+:root{--ink:#111827;--sub:#6b7280;--line:#e2e8f0;--blue:#2563eb;--green:#059669;--red:#dc2626;
+      --sh:0 1px 3px rgba(16,24,40,.07);--sh-md:0 4px 14px rgba(16,24,40,.09);--tap:48px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:"Microsoft JhengHei","PingFang TC",system-ui,sans-serif;color:var(--ink);background:#f5f6f8;line-height:1.6}
-header{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:16px 20px}
-header h1{margin:0;font-size:1.15rem}
-.wrap{max-width:860px;margin:0 auto;padding:14px}
-.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"Microsoft JhengHei","PingFang TC",system-ui,-apple-system,sans-serif;color:var(--ink);background:#f1f5f9;line-height:1.6;
+     -webkit-font-smoothing:antialiased}
+header{background:linear-gradient(135deg,#0f2942,#1e40af 55%,#2563eb);color:#fff;padding:16px 20px;box-shadow:var(--sh-md)}
+header h1{margin:0;font-size:1.18rem;letter-spacing:.01em}
+.printpdf{display:inline-block;margin-top:10px;color:#fff;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);border-radius:999px;
+          padding:9px 16px;font-size:.86rem;font-weight:700;text-decoration:none;min-height:40px;line-height:22px}
+.printpdf:active{background:rgba(255,255,255,.3)}
+.wrap{max-width:900px;margin:0 auto;padding:14px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--sh)}
 .idrow{display:flex;gap:10px;flex-wrap:wrap}
 .idrow div{flex:1;min-width:110px}
-.idrow label{display:block;font-size:.8rem;color:var(--sub);margin-bottom:4px}
-.idrow input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:1.05rem}
-.qcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.idrow label{display:block;font-size:.82rem;color:var(--sub);margin-bottom:5px;font-weight:600}
+.idrow input{width:100%;padding:13px;border:1.5px solid var(--line);border-radius:12px;font-size:1.05rem;min-height:var(--tap);transition:border-color .15s}
+.idrow input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.qcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--sh)}
 .qtitle{font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .qtag{font-size:.72rem;color:var(--sub);font-weight:400}
 .qimg{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
 .opts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
-.opt{padding:16px 0;font-size:1.25rem;font-weight:700;text-align:center;border:2px solid var(--line);
-     border-radius:12px;background:#fff;cursor:pointer;user-select:none}
-.opt.sel{background:var(--blue);border-color:var(--blue);color:#fff}
+.opt{padding:18px 0;font-size:1.3rem;font-weight:800;text-align:center;border:2px solid var(--line);
+     border-radius:14px;background:#fff;cursor:pointer;user-select:none;min-height:56px;transition:all .12s}
+.opt:active{transform:scale(.96)}
+.opt.sel{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.18)}
 textarea.essay{width:100%;min-height:110px;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:1rem;margin-top:12px}
-.donebar{position:sticky;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:12px;text-align:center;backdrop-filter:blur(4px)}
-.btn{cursor:pointer;border:none;border-radius:12px;padding:14px 26px;font-size:1.05rem;font-weight:700}
-.btn-blue{background:var(--blue);color:#fff}
-.btn-ghost{background:#fff;border:2px solid var(--blue);color:var(--blue);padding:12px 20px}
-.progress{font-size:.9rem;color:var(--sub);margin-bottom:8px}
+/* ---- 非選手寫作答 ---- */
+.hwwrap{margin-top:12px}
+.hwbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.hwhint{font-size:.82rem;color:var(--sub)}
+.hwbtn{background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;font-size:.88rem;font-weight:700;color:var(--ink);cursor:pointer;
+       min-height:40px;transition:all .12s}
+.hwbtn:active{background:#eef2ff;transform:scale(.96)}
+.hwbtn-cam{border-color:#bfdbfe;color:var(--blue);background:#f8fbff}
+.hwcanvas{width:100%;height:340px;border:1.5px solid #cbd5e1;border-radius:14px;background:#fff;touch-action:none;display:block;cursor:crosshair;
+          box-shadow:inset 0 1px 3px rgba(16,24,40,.05)}
+.hwans{width:100%;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:1rem}
+.hwbtn-cam{border-color:var(--blue);color:var(--blue)}
+.hwphoto{width:100%;max-height:72vh;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff;display:block}
+.scanbusy{margin-top:8px;padding:8px 12px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;font-size:.85rem;text-align:center}
+.donebar{position:sticky;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+         text-align:center;backdrop-filter:blur(10px);box-shadow:0 -4px 16px rgba(16,24,40,.07);z-index:40}
+.btn{cursor:pointer;border:none;border-radius:14px;padding:15px 28px;font-size:1.06rem;font-weight:800;min-height:var(--tap);
+     transition:transform .06s,box-shadow .15s;box-shadow:var(--sh-md)}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff}
+.btn-ghost{background:#fff;border:2px solid #bfdbfe;color:var(--blue);padding:13px 22px;box-shadow:var(--sh)}
+.progress{font-size:.92rem;color:var(--sub);margin-bottom:9px;font-weight:600}
+.pbar{height:7px;border-radius:99px;background:#e2e8f0;overflow:hidden;margin:0 auto 10px;max-width:420px}
+.pbar i{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#3b82f6);width:0;transition:width .3s}
 #result{display:none}
 .score{font-size:2rem;font-weight:800;color:var(--green);text-align:center;margin:6px 0}
 table.res{border-collapse:collapse;width:100%;font-size:.9rem;margin-top:10px}
@@ -37,7 +64,7 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 .ok{color:var(--green);font-weight:700}.ng{color:var(--red);font-weight:700}
 #recBox{width:100%;min-height:90px;font-size:.75rem;margin-top:8px;word-break:break-all}
 .hint{font-size:.82rem;color:var(--sub)}
-.locked .opt,.locked textarea{pointer-events:none;opacity:.85}
+.locked .opt,.locked textarea,.locked .hwcanvas,.locked .hwbtn,.locked .hwans{pointer-events:none;opacity:.85}
 /* ---- 交卷後的錯題訂正區 ---- */
 .review{margin-top:12px;border-radius:12px;padding:12px 14px;font-size:.95rem}
 .rv-ok{background:#ecfdf5;border:1px solid #a7f3d0}
@@ -68,11 +95,17 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
       <div><label>座號（必填）</label><input id="stuSeat" placeholder="例：12" inputmode="numeric"></div>
       <div><label>姓名（選填）</label><input id="stuName" placeholder="可留白"></div>
     </div>
-    <p class="hint" style="margin:10px 0 0">共 <b id="totalQ"></b> 題。選擇題點選 A/B/C/D，非選擇題請將計算過程寫在紙上、把答案輸入文字框。作答完按最下方「交卷」。</p>
+    <p class="hint" style="margin:10px 0 0">共 <b id="totalQ"></b> 題。選擇題點選 A/B/C/D；非選擇題可<b>用 Apple Pencil／手指在框內手寫</b>，或按 <b>「📷 拍照／上傳」把紙上算好的計算過程拍照／掃描繳交</b>，最後答案可另填欄位。作答完按最下方「交卷」。</p>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost" id="btnMyResult" style="padding:8px 16px">🔍 查我的非選批改結果</button>
+      <span class="hint" id="myResultHint">（交卷後、老師批改完可回來查）</span>
+    </div>
   </div>
+  <div id="myResultBox"></div>
   <div id="qwrap"></div>
   <div class="donebar" id="donebar">
-    <div class="progress">已作答 <b id="doneN">0</b> / <span id="doneT"></span></div>
+    <div class="progress">已作答 <b id="doneN">0</b> / <span id="doneT"></span> 題</div>
+    <div class="pbar"><i id="pbarFill"></i></div>
     <button class="btn btn-blue" id="btnSubmit">✅ 交卷</button>
   </div>
   <div class="panel" id="result">
@@ -97,7 +130,13 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 const CONFIG = { submitUrl: "" };
 const SUBMIT = (CONFIG.submitUrl && CONFIG.submitUrl.indexOf('http') === 0) ? CONFIG.submitUrl : '';
 const ITEMS = JSON.parse(document.getElementById('qdata').textContent);
-const ans = {};   // id -> 'A'~'D' 或 文字
+const ans = {};        // id -> 'A'~'D'（選擇）或 '[手寫]'（非選）
+const imgs = {};       // 非選 id -> 作答圖 JPEG dataURL（手寫或拍照）
+const essayText = {};  // 非選 id -> 最後答案文字（選填）
+const HW = {};         // 非選 id -> 手寫畫布狀態
+const MODE = {};       // 非選 id -> 'pen'（手寫）或 'photo'（拍照上傳）
+const SCAN = {};       // 非選 id -> {origUrl, scannedUrl, view}
+let _cvPromise = null; // OpenCV.js（文件掃描）延遲載入
 let submitted = false;
 const tsStart = Date.now();
 const LSKEY = 'quiz-會考數學示範卷（最近5屆 第1-10題）';
@@ -111,8 +150,24 @@ document.getElementById('qwrap').innerHTML = ITEMS.map((q,i)=>`
     <img class="qimg" src="${q.img}" alt="第${i+1}題">
     ${q.type==='choice'
       ? `<div class="opts">${['A','B','C','D'].map(o=>`<div class="opt" data-q="${q.id}" data-o="${o}" onclick="pick('${q.id}','${o}',this)">${o}</div>`).join('')}</div>`
-      : `<textarea class="essay" placeholder="請輸入你的答案（計算過程寫在紙上）" oninput="essay('${q.id}',this.value)"></textarea>`}
+      : `<div class="hwwrap" data-q="${q.id}">
+           <div class="hwbar">
+             <span class="hwhint" id="hwhint-${q.id}">✍ 手寫作答，或改用拍照／掃描上傳</span>
+             <span style="flex:1"></span>
+             <button type="button" class="hwbtn" data-role="pen" onclick="hwUndo('${q.id}')">↶ 上一步</button>
+             <button type="button" class="hwbtn" data-role="pen" onclick="hwClear('${q.id}')">🗑 清除</button>
+             <button type="button" class="hwbtn scantoggle" style="display:none" onclick="toggleScanView('${q.id}')">🔁 看原圖</button>
+             <button type="button" class="hwbtn" data-role="photo" style="display:none" onclick="backToPen('${q.id}')">✍ 改回手寫</button>
+             <button type="button" class="hwbtn hwbtn-cam" onclick="pickPhoto('${q.id}')">📷 拍照／上傳</button>
+             <input type="file" accept="image/*" id="file-${q.id}" style="display:none" onchange="onPhoto('${q.id}',this)">
+           </div>
+           <canvas class="hwcanvas" id="hw-${q.id}"></canvas>
+           <div class="scanbusy" id="busy-${q.id}" style="display:none"></div>
+           <img class="hwphoto" id="photo-${q.id}" alt="上傳的計算過程" style="display:none">
+           <input class="hwans" id="hwa-${q.id}" placeholder="最後答案（選填，例：(1) 9圈 (2) 第17週星期四）" oninput="essayAns('${q.id}',this.value)">
+         </div>`}
   </div>`).join('');
+document.querySelectorAll('.hwcanvas').forEach(setupCanvas);
 
 function pick(id,o,elm){
   if(submitted) return;
@@ -121,11 +176,183 @@ function pick(id,o,elm){
   elm.classList.add('sel');
   refresh(); save();
 }
-function essay(id,v){ if(submitted)return; if(v.trim())ans[id]=v.trim(); else delete ans[id]; refresh(); save(); }
-function refresh(){ document.getElementById('doneN').textContent = Object.keys(ans).length; }
+function essayAns(id,v){ if(submitted) return; if(v.trim()) essayText[id]=v.trim(); else delete essayText[id]; save(); }
+// ---- 手寫畫布 ----
+function setupCanvas(canvas){
+  const id = canvas.id.slice(3);                 // 'hw-<id>' -> <id>
+  const ratio = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 600, cssH = canvas.clientHeight || 340;   // 取實際 CSS 高度，避免筆跡被拉伸
+  canvas.width = Math.round(cssW*ratio); canvas.height = Math.round(cssH*ratio);
+  const ctx = canvas.getContext('2d'); ctx.scale(ratio,ratio);
+  const st = {canvas, ctx, cssW, cssH, strokes:[], cur:null, baseImg:null};
+  HW[id] = st; redraw(st);
+  const pos = e=>{ const r=canvas.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; };
+  canvas.addEventListener('pointerdown', e=>{ if(submitted) return; e.preventDefault();
+    try{ canvas.setPointerCapture(e.pointerId); }catch(_){} st.cur=[pos(e)]; redraw(st); });
+  canvas.addEventListener('pointermove', e=>{ if(submitted||!st.cur) return; e.preventDefault();
+    const co = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
+    const evs = (co && co.length) ? co : [e];
+    for(const ev of evs) st.cur.push(pos(ev)); redraw(st); });
+  const end = ()=>{ if(!st.cur) return; if(st.cur.length) st.strokes.push(st.cur); st.cur=null; commitCanvas(id); };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('pointerleave', end);
+}
+function redraw(st){
+  const {ctx,cssW,cssH} = st;
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,cssW,cssH);
+  // 淡格線：幫助寫整齊（顏色極淡，不影響辨識）
+  ctx.strokeStyle='#eef2f7'; ctx.lineWidth=1;
+  for(let y=34; y<cssH; y+=34){ ctx.beginPath(); ctx.moveTo(8,y+.5); ctx.lineTo(cssW-8,y+.5); ctx.stroke(); }
+  if(st.baseImg) ctx.drawImage(st.baseImg,0,0,cssW,cssH);
+  ctx.strokeStyle='#111827'; ctx.fillStyle='#111827'; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=2.4;
+  const all = st.cur ? st.strokes.concat([st.cur]) : st.strokes;
+  for(const s of all){
+    if(s.length===1){ ctx.beginPath(); ctx.arc(s[0].x,s[0].y,1.3,0,7); ctx.fill(); continue; }
+    ctx.beginPath(); ctx.moveTo(s[0].x,s[0].y);
+    for(let i=1;i<s.length;i++) ctx.lineTo(s[i].x,s[i].y);
+    ctx.stroke();
+  }
+}
+function commitCanvas(id){
+  if(MODE[id]==='photo') return;      // 照片模式不由畫布決定作答
+  const st = HW[id]; if(!st) return;
+  if(st.strokes.length===0 && !st.baseImg){ delete imgs[id]; delete ans[id]; }
+  else { imgs[id] = st.canvas.toDataURL('image/jpeg', 0.72); ans[id] = '[手寫]'; }
+  refresh(); save();
+}
+function hwClear(id){ const st=HW[id]; if(!st||submitted||MODE[id]==='photo') return; st.strokes=[]; st.cur=null; st.baseImg=null; redraw(st); commitCanvas(id); }
+function hwUndo(id){ const st=HW[id]; if(!st||submitted||MODE[id]==='photo') return; st.strokes.pop(); redraw(st); commitCanvas(id); }
+// ---- 拍照／掃描上傳 ----
+function pickPhoto(id){ if(submitted) return; document.getElementById('file-'+id).click(); }
+function setPhotoImage(id, url){ const ph=document.getElementById('photo-'+id); ph.src=url; ph.style.display='block'; }
+function showScanBusy(id, msg){
+  const el = (id!=null) && document.getElementById('busy-'+id); if(!el) return;
+  if(msg){ el.textContent = '⏳ '+msg; el.style.display='block'; } else el.style.display='none';
+}
+function setScanToggle(id, show){
+  const btn = document.querySelector(`.hwwrap[data-q="${id}"] .scantoggle`);
+  if(btn) btn.style.display = show ? '' : 'none';
+}
+// 選了照片：讀圖(套EXIF方向+downscale) → 顯示原圖 → 背景做文件掃描(抓正+增強) → 成功則切成掃描版
+function onPhoto(id, input){
+  if(submitted) return;
+  const f = input.files && input.files[0]; if(!f) return; input.value='';
+  MODE[id]='photo'; ans[id]='[照片]';
+  document.getElementById('hw-'+id).style.display='none';
+  setEssayMode(id,'photo'); setScanToggle(id,false);
+  showScanBusy(id,'讀取照片…');
+  loadPhoto(f, 2048, (origCnv, origUrl)=>{
+    SCAN[id] = {origUrl, scannedUrl:null, view:'orig'};
+    setPhotoImage(id, origUrl); imgs[id]=origUrl; refresh(); save();
+    showScanBusy(id,'掃描抓正中…（首次需載入掃描元件，請稍候）');
+    loadCV().then(()=>{
+      let r=null; try{ r=scanCanvas(origCnv); }catch(e){ r=null; }
+      if(r && r.ok){
+        SCAN[id].scannedUrl=r.url; SCAN[id].view='scan'; imgs[id]=r.url;
+        setPhotoImage(id, r.url); setScanToggle(id,true);
+        const btn=document.querySelector(`.hwwrap[data-q="${id}"] .scantoggle`); if(btn) btn.textContent='🔁 看原圖';
+      }
+      showScanBusy(id,false); save();
+    }).catch(()=>{ showScanBusy(id,false); });   // 掃描元件載不到 → 保留原圖（一樣可交卷）
+  });
+}
+// 讀圖到 canvas：<img> 會自動套 EXIF 方向；downscale 到 maxEdge 並避開 iOS canvas 面積上限(16.7MP)
+function loadPhoto(file, maxEdge, cb){
+  const img = new Image(); img.decoding='async';
+  img.onload = ()=>{
+    const sw=img.naturalWidth, sh=img.naturalHeight;
+    const AREA=16000000;
+    let s=Math.min(1, maxEdge/Math.max(sw,sh));
+    if(sw*s*sh*s>AREA) s=Math.sqrt(AREA/(sw*sh));
+    const cw=Math.max(1,Math.round(sw*s)), ch=Math.max(1,Math.round(sh*s));
+    const cnv=document.createElement('canvas'); cnv.width=cw; cnv.height=ch;
+    cnv.getContext('2d').drawImage(img,0,0,cw,ch);
+    URL.revokeObjectURL(img.src);
+    cb(cnv, cnv.toDataURL('image/jpeg',0.85));
+  };
+  img.onerror=()=>{ alert('讀取照片失敗，請再試一次'); showScanBusy(null,false); };
+  img.src=URL.createObjectURL(file);
+}
+// 延遲載入 OpenCV.js(~8MB) + jscanify，只在第一次拍照時載
+function loadCV(){
+  if(_cvPromise) return _cvPromise;
+  _cvPromise = new Promise((resolve,reject)=>{
+    setTimeout(()=>reject(new Error('timeout')), 30000);   // 逾時退場（用原圖）
+    const loadJscanify=()=>{
+      if(window.jscanify) return resolve();
+      const j=document.createElement('script');
+      j.src='https://cdn.jsdelivr.net/npm/jscanify@1.3.0/src/jscanify.min.js';
+      j.onload=()=>resolve(); j.onerror=reject; document.body.appendChild(j);
+    };
+    if(window.cv && cv.Mat) return loadJscanify();
+    const s=document.createElement('script');
+    s.src='https://docs.opencv.org/4.8.0/opencv.js'; s.async=true;
+    s.onload=()=>{ if(window.cv && cv.Mat) loadJscanify(); else cv['onRuntimeInitialized']=loadJscanify; };
+    s.onerror=reject; document.body.appendChild(s);
+  });
+  return _cvPromise;
+}
+// 用 jscanify 偵測紙張四角 → 透視校正 → adaptiveThreshold 增強對比；回 {ok,url}
+function scanCanvas(srcCnv){
+  const scanner=new jscanify();
+  let mat; try{ mat=cv.imread(srcCnv); }catch(e){ return {ok:false}; }
+  let corners=null;
+  try{ corners=scanner.getCornerPoints(scanner.findPaperContour(mat)); }
+  catch(e){ mat.delete(); return {ok:false}; }
+  mat.delete();
+  const c=corners||{}, tl=c.topLeftCorner, tr=c.topRightCorner, bl=c.bottomLeftCorner, br=c.bottomRightCorner;
+  if(!tl||!tr||!bl||!br) return {ok:false};
+  const D=(a,b)=>Math.hypot(a.x-b.x, a.y-b.y);
+  const wTop=D(tl,tr), wBot=D(bl,br), hL=D(tl,bl), hR=D(tr,br);
+  if(Math.max(wTop,wBot) < srcCnv.width*0.35 || Math.max(hL,hR) < srcCnv.height*0.35) return {ok:false}; // 框太小＝沒抓到
+  const outW=1240, outH=Math.max(1, Math.round(outW*((hL+hR)/(wTop+wBot))));
+  let warped; try{ warped=scanner.extractPaper(srcCnv, outW, outH, corners); }catch(e){ return {ok:false}; }
+  let enhanced; try{ enhanced=enhance(warped); }catch(e){ enhanced=warped; }
+  return {ok:true, url: enhanced.toDataURL('image/jpeg',0.85)};
+}
+function enhance(canvas){
+  const src=cv.imread(canvas), gray=new cv.Mat(), dst=new cv.Mat();
+  cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+  cv.adaptiveThreshold(gray,dst,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,25,12);
+  const out=document.createElement('canvas'); cv.imshow(out,dst);
+  src.delete(); gray.delete(); dst.delete();
+  return out;
+}
+function toggleScanView(id){
+  const s=SCAN[id]; if(!s||!s.scannedUrl) return;
+  s.view = s.view==='scan' ? 'orig' : 'scan';
+  const url = s.view==='scan' ? s.scannedUrl : s.origUrl;
+  imgs[id]=url; setPhotoImage(id,url); save();
+  const btn=document.querySelector(`.hwwrap[data-q="${id}"] .scantoggle`);
+  if(btn) btn.textContent = s.view==='scan' ? '🔁 看原圖' : '🔁 看掃描版';
+}
+function setEssayMode(id, mode){
+  MODE[id] = mode;
+  const wrap = document.querySelector(`.hwwrap[data-q="${id}"]`); if(!wrap) return;
+  wrap.querySelectorAll('[data-role="pen"]').forEach(b=>b.style.display = mode==='pen' ? '' : 'none');
+  wrap.querySelectorAll('[data-role="photo"]').forEach(b=>b.style.display = mode==='photo' ? '' : 'none');
+  const hint = document.getElementById('hwhint-'+id);
+  if(hint) hint.textContent = mode==='photo' ? '📷 已上傳計算過程照片（可改回手寫）' : '✍ 手寫作答，或改用拍照／掃描上傳';
+}
+function backToPen(id){
+  if(submitted) return;
+  const ph = document.getElementById('photo-'+id); ph.style.display = 'none'; ph.src = '';
+  document.getElementById('hw-'+id).style.display = 'block';
+  setScanToggle(id, false); showScanBusy(id, false); delete SCAN[id];
+  setEssayMode(id, 'pen');
+  commitCanvas(id);   // 依畫布現況重算（無筆跡則清空該題作答）
+}
+function refresh(){
+  const n = Object.keys(ans).length;
+  document.getElementById('doneN').textContent = n;
+  const bar = document.getElementById('pbarFill');
+  if(bar) bar.style.width = ITEMS.length ? Math.round(n/ITEMS.length*100)+'%' : '0%';
+}
 function save(){
-  try{ localStorage.setItem(LSKEY, JSON.stringify({ans,
-    cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName')})); }catch(e){}
+  const base = {ans, essayText, mode:MODE, cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName')};
+  try{ localStorage.setItem(LSKEY, JSON.stringify({...base, imgs})); }
+  catch(e){ try{ localStorage.setItem(LSKEY, JSON.stringify(base)); }catch(_){} }  // 作答圖太大存不下時，至少保住文字與選擇
 }
 function val(id){ return document.getElementById(id).value.trim(); }
 // 還原草稿
@@ -133,12 +360,26 @@ try{
   const d = JSON.parse(localStorage.getItem(LSKEY)||'null');
   if(d){
     Object.assign(ans, d.ans||{});
+    Object.assign(imgs, d.imgs||{});
+    Object.assign(essayText, d.essayText||{});
+    Object.assign(MODE, d.mode||{});
     ['stuClass','stuSeat','stuName'].forEach((k,i)=>{ document.getElementById(k).value = [d.cls,d.seat,d.name][i]||''; });
     for(const [id,a] of Object.entries(ans)){
       const btn = document.querySelector(`.opt[data-q="${id}"][data-o="${a}"]`);
-      if(btn) btn.classList.add('sel');
-      else { const ta = document.querySelector(`#q-${CSS.escape(id)} textarea`); if(ta) ta.value = a; }
+      if(btn){ btn.classList.add('sel'); continue; }
+      if(!imgs[id]) continue;
+      if(MODE[id]==='photo'){                      // 還原拍照上傳
+        const ph = document.getElementById('photo-'+id);
+        if(ph){ ph.src = imgs[id]; ph.style.display = 'block'; }
+        const cv = document.getElementById('hw-'+id); if(cv) cv.style.display = 'none';
+        setEssayMode(id, 'photo');
+      } else if(HW[id]){                            // 還原手寫圖到畫布
+        const im = new Image();
+        im.onload = ()=>{ HW[id].baseImg = im; redraw(HW[id]); };
+        im.src = imgs[id];
+      }
     }
+    for(const [id,t] of Object.entries(essayText)){ const inp=document.getElementById('hwa-'+id); if(inp) inp.value=t; }
     refresh();
   }
 }catch(e){}
@@ -157,24 +398,32 @@ document.getElementById('btnSubmit').onclick = () => {
   document.body.classList.add('locked');
   const rows = ITEMS.map((q,i)=>{
     const ok = grade(q);
-    return {id:q.id, n:i+1, a:ans[q.id]||'', ok};
+    let a = ans[q.id]||'';
+    if(q.type!=='choice') a = essayText[q.id] || (imgs[q.id] ? (ans[q.id]||'[手寫]') : '');
+    return {id:q.id, n:i+1, a, ok};
   });
   const auto = rows.filter(r=>r.ok!==null);
   const score = auto.filter(r=>r.ok).length;
+  const essay_imgs = ITEMS.filter(q=>q.type!=='choice' && imgs[q.id])
+    .map(q=>({id:q.id, img:imgs[q.id], ans:essayText[q.id]||''}));
   const rec = {
     v:1, quiz:"會考數學示範卷（最近5屆 第1-10題）", cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName'),
     ts_start:new Date(tsStart).toISOString(), ts_submit:new Date().toISOString(),
     dur_s:Math.round((Date.now()-tsStart)/1000),
-    score, total_auto:auto.length,
+    score, total_auto:auto.length, n_essay:essay_imgs.length,
     answers:rows.map(r=>({id:r.id, a:r.a, ok:r.ok}))
   };
-  document.getElementById('scoreLine').textContent = `選擇題 ${score} / ${auto.length}`;
+  const parts = [];
+  if(auto.length) parts.push(`選擇題 ${score} / ${auto.length}`);
+  if(essay_imgs.length) parts.push(`非選 ${essay_imgs.length} 題已送出（待批改）`);
+  document.getElementById('scoreLine').textContent = parts.join('　｜　') || '已交卷';
   document.getElementById('resTable').innerHTML = '<table class="res"><tr><th>題</th>'+rows.map(r=>`<th>${r.n}</th>`).join('')+'</tr>'+
     '<tr><td>結果</td>'+rows.map(r=>`<td class="${r.ok===null?'':(r.ok?'ok':'ng')}">${r.ok===null?'—':(r.ok?'○':'✕')}</td>`).join('')+'</tr></table>';
   renderReview(rows);
-  const json = JSON.stringify(rec);
-  const b64 = btoa(unescape(encodeURIComponent(json)));
-  window._rec = {json, b64, fname:`作答紀錄_${rec.cls}_${rec.seat}_${rec.name}.json`};
+  const showJson = JSON.stringify(rec);                    // 給學生複製/下載（不含大圖）
+  const postJson = JSON.stringify({...rec, essay_imgs});   // 上傳用（含手寫圖，後端存 Drive）
+  const b64 = btoa(unescape(encodeURIComponent(showJson)));
+  window._rec = {json: showJson, b64, fname:`作答紀錄_${rec.cls}_${rec.seat}_${rec.name}.json`};
   document.getElementById('recBox').value = b64;
   document.getElementById('result').style.display = 'block';
   document.getElementById('donebar').style.display = 'none';
@@ -184,9 +433,9 @@ document.getElementById('btnSubmit').onclick = () => {
     const st = document.getElementById('postStatus');
     st.textContent = '⏳ 紀錄上傳中…';
     // Apps Script 需用 text/plain 避免預檢請求
-    fetch(SUBMIT, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:json})
+    fetch(SUBMIT, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:postJson})
       .then(r=>r.json())
-      .then(j=>{ st.textContent = j.ok ? '✅ 紀錄已自動上傳老師的試算表（仍建議保留上方紀錄以備援）' : '⚠ 上傳失敗：'+(j.error||'')+'，請改用複製/分享交給老師'; })
+      .then(j=>{ st.textContent = j.ok ? '✅ 已自動上傳老師的試算表（含手寫作答；仍建議保留上方紀錄以備援）' : '⚠ 上傳失敗：'+(j.error||'')+'，請改用複製/分享交給老師'; })
       .catch(()=>{ st.textContent = '⚠ 自動上傳失敗（可能沒有網路），請用「複製紀錄」交給老師'; });
   }
 };
@@ -230,8 +479,9 @@ function renderReview(rows){
         <div class="rv-body" style="display:none">${detail}</div>`;
     }else{
       div.className = 'review rv-na';
-      div.innerHTML = `<div class="rv-head">— 非選擇題（請自行對照）</div>
-        <div class="rv-ansline">你的答案：<b>${esc(mine)}</b>${correct?`　→　參考答案：<b style="color:var(--green)">${esc(correct)}</b>`:''}</div>${detail}`;
+      const mineTxt = (mine==='[手寫]'||mine==='[照片]') ? '（已'+(mine==='[照片]'?'上傳照片':'手寫')+'作答，等待老師／AI 批改）' : mine;
+      div.innerHTML = `<div class="rv-head">✍ 非選擇題（作答已送出，待批改）</div>
+        <div class="rv-ansline">你的作答：<b>${esc(mineTxt)}</b>${correct?`　→　參考答案：<b style="color:var(--green)">${esc(correct)}</b>`:''}</div>${detail}`;
     }
     card.appendChild(div);
   });
@@ -261,6 +511,47 @@ function dlRec(){
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([window._rec.json], {type:'application/json'}));
   a.download = window._rec.fname; a.click();
+}
+// ---- 查我的非選批改結果（只顯示老師覆核完的級分；沒批到＝批改中）----
+document.getElementById('btnMyResult').onclick = async ()=>{
+  const cls = val('stuClass'), seat = val('stuSeat');
+  const hint = document.getElementById('myResultHint');
+  if(!cls || !seat){ alert('請先填「班級、座號」再查'); return; }
+  if(!SUBMIT){ hint.textContent = '（此卷沒有設定收卷網址，無法查詢）'; return; }
+  const box = document.getElementById('myResultBox');
+  box.innerHTML = '<div class="panel">⏳ 查詢中…</div>';
+  const url = SUBMIT + (SUBMIT.indexOf('?')>=0?'&':'?') + 'myresult=1&quiz=' + encodeURIComponent("會考數學示範卷（最近5屆 第1-10題）") + '&cls=' + encodeURIComponent(cls) + '&seat=' + encodeURIComponent(seat);
+  try{ const rows = await (await fetch(url)).json(); renderMyResult(Array.isArray(rows)?rows:[]); }
+  catch(e){ box.innerHTML = '<div class="panel">查詢失敗，請稍後再試。</div>'; }
+};
+function renderMyResult(rows){
+  const box = document.getElementById('myResultBox');
+  if(!rows.length){ box.innerHTML = '<div class="panel review rv-na">查不到你的非選作答紀錄——確認班級座號正確、而且已經交卷。</div>'; return; }
+  const byId = {}; ITEMS.forEach(q=>byId[q.id]=q);
+  const cards = rows.map(r=>{
+    const q = byId[r.qid] || {}, ex = b64json(q.e);
+    const graded = String(r.level==null?'':r.level)!=='';
+    const num = (String(r.qid).split('N')[1]||'');
+    const lvHtml = graded ? '<b style="color:var(--green);font-size:1.25rem">'+esc(r.level)+' 級</b><span style="color:var(--sub)"> / 3</span>'
+                          : '<b style="color:#b45309">批改中…</b>';
+    let detail = '';
+    if(graded){
+      const cleanReason = String(r.reason||'').replace(/^\[[^\]]*\]\s*/,'').trim();  // 去掉 [AI初評…] 內部標籤
+      if(r.transcript) detail += '<div class="rv-sec"><h4>AI 讀到你的作答（若讀錯，跟老師說）</h4><div class="rv-sol" style="white-space:pre-wrap">'+esc(r.transcript)+'</div></div>';
+      if(r.comment) detail += '<div class="rv-sec"><h4>老師評語</h4><div class="rv-trap">'+esc(r.comment)+'</div></div>';
+      // 為什麼得這個分數：老師採用AI級分時才顯示AI判讀（改過分又沒留言就不顯示，避免對不上）
+      if(cleanReason && String(r.level)===String(r.ai_level))
+        detail += '<div class="rv-sec"><h4>為什麼得這個分數（依官方評分規準）</h4><div class="rv-sol">'+esc(cleanReason)+'</div></div>';
+      if(ex.a) detail += '<div class="rv-sec"><h4>參考答案</h4><div class="rv-sol">'+esc(ex.a)+'</div></div>';
+      if(ex.s) detail += '<div class="rv-sec"><h4>詳解</h4><div class="rv-sol">'+esc(ex.s)+'</div></div>';
+    }
+    return '<div class="review rv-na" style="margin-top:10px"><div class="rv-head">'+(q.year||'')+'年 非選第'+num+'題　'+lvHtml+'</div>'
+      + (r.img?'<div style="margin:4px 0"><a href="'+esc(r.img)+'" target="_blank" rel="noopener" class="hint">🖼 看我當初交的作答</a></div>':'')
+      + detail + '</div>';
+  }).join('');
+  box.innerHTML = '<div class="panel"><h3 style="margin:0 0 4px">📋 我的非選批改結果</h3>'
+    + '<p class="hint" style="margin:0">「批改中」＝老師還沒批到，晚點再回來查；級分 0–3（會考制），最終以老師為準。</p>' + cards + '</div>';
+  box.scrollIntoView({behavior:'smooth'});
 }
 </script>
 </body>

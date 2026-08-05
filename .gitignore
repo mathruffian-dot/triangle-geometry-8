@@ -21,3 +21,13 @@ working/
 # Python 快取
 __pycache__/
 *.pyc
+
+# ── 會考題庫：建置產物（可重新生成，不進 git）──
+會考題庫/quiz_site/
+會考題庫/bank_site/
+會考題庫/essay_deploy/
+會考題庫/netlify_deploy/
+會考題庫/.wrangler/
+
+# ⚠ 學生作答與批改圖（含姓名座號，屬個資，一律不上傳）
+會考題庫/redpen_out/

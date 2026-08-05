@@ -13,8 +13,12 @@ curr = json.loads((DATA / "curriculum_108.json").read_text(encoding="utf-8"))
 # 觀念補強單元（學習表現補強題庫，與歷屆試題分開維護；檔案不存在則為空）
 _concepts_file = DATA / "concepts.json"
 concepts = json.loads(_concepts_file.read_text(encoding="utf-8")) if _concepts_file.exists() else []
+# 非選評分規準（老師覆核時對照官方逐級分指引；檔案不存在則為空）
+_rubrics_file = DATA / "essay_rubrics.json"
+essay_rubrics = json.loads(_rubrics_file.read_text(encoding="utf-8")) if _rubrics_file.exists() else {}
 
-payload = json.dumps({"questions": questions, "curriculum": curr, "concepts": concepts}, ensure_ascii=False)
+payload = json.dumps({"questions": questions, "curriculum": curr, "concepts": concepts,
+                      "essay_rubrics": essay_rubrics}, ensure_ascii=False)
 
 TEMPLATE = r"""<!DOCTYPE html>
 <html lang="zh-Hant">
@@ -24,18 +28,25 @@ TEMPLATE = r"""<!DOCTYPE html>
 <title>國中會考數學歷屆試題題庫（103–115）</title>
 <style>
 :root{
-  --ink:#1f2937; --sub:#6b7280; --bg:#f5f6f8; --card:#ffffff; --line:#e5e7eb;
+  --ink:#111827; --sub:#6b7280; --bg:#f1f5f9; --card:#ffffff; --line:#e2e8f0;
   --blue:#2563eb; --blue-bg:#eff6ff; --green:#059669; --green-bg:#ecfdf5;
   --amber:#d97706; --amber-bg:#fffbeb; --red:#dc2626; --red-bg:#fef2f2;
   --purple:#7c3aed; --purple-bg:#f5f3ff;
+  --r:14px; --r-sm:10px;
+  --sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+  --sh-md:0 4px 12px rgba(16,24,40,.08);
+  --sh-lg:0 12px 32px rgba(16,24,40,.14);
+  --tap:44px;   /* iPad/手機最小觸控目標 */
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:"Microsoft JhengHei","PingFang TC",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.65}
-header{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:18px 24px}
-header h1{margin:0;font-size:1.35rem}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"Microsoft JhengHei","PingFang TC",system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg);line-height:1.65;
+     -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+header{background:linear-gradient(135deg,#0f2942,#1e40af 55%,#2563eb);color:#fff;padding:18px 24px;box-shadow:var(--sh-md)}
+header h1{margin:0;font-size:1.35rem;letter-spacing:.01em}
 header p{margin:4px 0 0;font-size:.85rem;opacity:.85}
 .wrap{max-width:1180px;margin:0 auto;padding:16px}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sh)}
 .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
 .filters label{display:block;font-size:.75rem;color:var(--sub);margin-bottom:3px}
 .filters select,.filters input[type=text]{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:.9rem;background:#fff;min-width:120px}
@@ -53,14 +64,38 @@ header p{margin:4px 0 0;font-size:.85rem;opacity:.85}
 .mfops{display:flex;gap:6px;margin-bottom:6px}
 .mfops button{flex:1;padding:5px;border:1px solid var(--line);background:#f9fafb;border-radius:6px;cursor:pointer;font-size:.8rem}
 .mfops button:hover{background:var(--blue-bg);color:var(--blue)}
-.btn{cursor:pointer;border:none;border-radius:8px;padding:8px 14px;font-size:.88rem;font-weight:600}
+.btn{cursor:pointer;border:none;border-radius:var(--r-sm);padding:10px 16px;font-size:.9rem;font-weight:700;min-height:40px;
+     transition:transform .06s,box-shadow .15s,background .15s;box-shadow:var(--sh)}
+.btn:hover{box-shadow:var(--sh-md)}
+.btn:active{transform:translateY(1px)}
 .btn-blue{background:var(--blue);color:#fff}
-.btn-ghost{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+.btn-blue:hover{background:#1d4ed8}
+.btn-ghost{background:#fff;color:var(--blue);border:1.5px solid #bfdbfe}
+.btn-ghost:hover{background:var(--blue-bg);border-color:var(--blue)}
 .btn-green{background:var(--green);color:#fff}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.tabs{display:flex;gap:8px;margin-bottom:12px}
-.tab{padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:.9rem;font-weight:600;color:var(--sub)}
-.tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-green:hover{background:#047857}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.tabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.tab{padding:10px 18px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:.92rem;font-weight:700;color:var(--sub);
+     white-space:nowrap;min-height:var(--tap);display:flex;align-items:center;transition:all .15s;box-shadow:var(--sh)}
+.tab:hover{color:var(--blue);border-color:#bfdbfe}
+.tab.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:var(--sh-md)}
+.lvbtns{display:inline-flex;gap:8px;vertical-align:middle}
+.lvbtn{width:var(--tap);height:var(--tap);border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:800;font-size:1.15rem;cursor:pointer;color:var(--ink);
+       transition:all .12s}
+.lvbtn:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.lvbtn:active{transform:scale(.94)}
+.lvbtn.on{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 0 0 3px rgba(5,150,105,.18)}
+/* 覆核頁：進度列與鍵盤提示 */
+.rvbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+       padding:10px 14px;margin:-16px -18px 12px;border-radius:var(--r) var(--r) 0 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.rvprog{flex:1;min-width:120px;height:8px;border-radius:99px;background:#e2e8f0;overflow:hidden}
+.rvprog i{display:block;height:100%;background:linear-gradient(90deg,#059669,#10b981);transition:width .3s}
+.kbd{display:inline-block;padding:1px 7px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;background:#f8fafc;
+     font-size:.78rem;font-weight:700;color:var(--sub);font-family:ui-monospace,monospace}
+.rvcard.done{opacity:.55}
+.rvcard.cur{box-shadow:0 0 0 3px rgba(37,99,235,.35),var(--sh-md)}
+@media(max-width:640px){.rvgrid{grid-template-columns:1fr !important}}
 .count{font-size:.85rem;color:var(--sub);margin:6px 2px 10px}
 .qcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px}
 .qhead{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
@@ -105,7 +140,7 @@ header p{margin:4px 0 0;font-size:.85rem;opacity:.85}
 footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
 @media print{
   body{background:#fff}
-  header,.toolbar,.panel,.tabs,.count,.qacts,.guide,.pagebtns,footer,#statsView,#conceptView{display:none !important}
+  header,.toolbar,.panel,.tabs,.count,.qacts,.guide,.pagebtns,footer,#statsView,#conceptView,#reviewView,#anaView{display:none !important}
   .qcard{border:none;page-break-inside:avoid;padding:6px 0;margin-bottom:8px}
   .qcard.notpicked{display:none}
   .sol{display:none !important}
@@ -125,6 +160,7 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
   <div class="tabs">
     <div class="tab active" data-view="bank">題庫瀏覽</div>
     <div class="tab" data-view="ana">錯題分析</div>
+    <div class="tab" data-view="review">✍ 非選覆核</div>
     <div class="tab" data-view="concept">觀念補強</div>
     <div class="tab" data-view="stats">命題分析統計</div>
     <div class="tab" data-view="about">使用說明</div>
@@ -156,6 +192,10 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
         <button class="btn btn-ghost" id="btnPickAll">☑ 全選符合條件的題目</button>
         <button class="btn btn-ghost" id="btnPickPage">勾選本頁全部</button>
         <button class="btn btn-ghost" id="btnClearPick">清除勾選</button>
+        <span style="display:inline-flex;align-items:center;gap:6px;border-left:1px solid var(--line);padding-left:10px;margin-left:2px">
+          抽 <input type="number" id="drawN" min="1" placeholder="20" style="width:62px;padding:6px;border:1px solid var(--line);border-radius:8px">
+          題 <button class="btn btn-green" id="btnDraw">🎲 依範圍隨機抽題</button>
+        </span>
         <span class="count" style="margin:0">已勾選 <b id="pickN">0</b> 題</span>
       </div>
     </div>
@@ -192,6 +232,26 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
       </div>
     </div>
     <div id="anaOut"></div>
+  </div>
+
+  <div id="reviewView" style="display:none">
+    <div class="panel">
+      <h3 style="margin-top:0">✍ 非選覆核（AI 初評 → 你一鍵確認／改分）</h3>
+      <p class="hint" style="margin:0 0 8px">先到「錯題分析」頁設定並儲存收卷網址。輸入卷名（留白＝全部）載入學生手寫作答與 AI 初評，逐份確認或改分。<b>學生查成績只會看到你覆核過的級分</b>（沒覆核的顯示「批改中」）。批改前先在本機跑 <code>python scripts/grade_essays.py --quiz "卷名"</code> 產生 AI 初評。</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="rvQuiz" placeholder="卷名（留白＝全部）" style="min-width:220px;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:.92rem">
+        <input type="text" id="rvCls" placeholder="班級（留白＝全部）" style="width:130px;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:.92rem">
+        <button class="btn btn-blue" id="btnLoadReview">☁ 載入待覆核</button>
+        <button class="btn btn-green" id="btnApplyAllAI">⚡ 一鍵套用全部 AI 級分</button>
+        <label style="font-size:.88rem;color:var(--sub);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="rvOnlyTodo" checked style="width:18px;height:18px">只看未覆核</label>
+      </div>
+      <div class="rvbar" style="margin:12px -18px -16px;border-radius:0 0 var(--r) var(--r);border-bottom:none;border-top:1px solid var(--line);position:static">
+        <span class="count" id="rvCount" style="margin:0;font-weight:700"></span>
+        <div class="rvprog"><i id="rvProgBar" style="width:0%"></i></div>
+        <span class="hint" style="margin:0">快捷鍵：<span class="kbd">0</span><span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span> 給分並存　<span class="kbd">A</span> 套用AI　<span class="kbd">J</span>/<span class="kbd">K</span> 下/上一份</span>
+      </div>
+    </div>
+    <div id="reviewOut"></div>
   </div>
 
   <div id="conceptView" style="display:none">
@@ -761,6 +821,20 @@ el('btnPickAll').onclick=()=>{
 };
 el('btnPickPage').onclick=()=>{ filtered().slice((page-1)*PAGE,page*PAGE).forEach(q=>picked.add(q.id)); render(); };
 el('btnClearPick').onclick=()=>{ picked.clear(); render(); };
+// 指定題數＋範圍：範圍＝目前篩選條件，題數＝輸入的 N，從範圍內隨機抽 N 題入試卷
+el('btnDraw').onclick=()=>{
+  const pool = filtered();
+  if(!pool.length){ alert('目前範圍內沒有符合條件的題目，請先用上方篩選（年度／冊別／章節／題號範圍等）設定範圍'); return; }
+  const n = parseInt(el('drawN').value, 10);
+  if(!n || n<1){ alert('請先在「抽 __ 題」欄位輸入要抽的題數'); el('drawN').focus(); return; }
+  const arr = pool.slice();
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; }  // 洗牌
+  const take = Math.min(n, arr.length);
+  picked.clear();
+  arr.slice(0, take).forEach(q=>picked.add(q.id));
+  render();
+  alert(take<n ? `此範圍內只有 ${arr.length} 題，已全部抽入（${take} 題）` : `已從範圍內隨機抽 ${take} 題（可再手動勾選增減）`);
+};
 async function doPrint(withSol){
   if(picked.size===0){ alert('請先勾選題目（每題右下角「選入試卷」）'); return; }
   // 印出所有已勾選（跨頁面）：暫時渲染全部勾選題
@@ -824,6 +898,7 @@ async function exportQuiz(){
   const su = (localStorage.getItem('submitUrl')||'').trim();
   const html = QUIZ_TPL.split('__TITLE__').join(safeTitle)
       .split('__SUBMITURL__').join(su)
+      .split('__PRINTPDF__').join('')
       .replace('__QUIZDATA__', JSON.stringify(items).replace(/<\//g,'<\\/'));
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const a = document.createElement('a');
@@ -874,14 +949,143 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   t.classList.add('active');
   el('bankView').style.display = t.dataset.view==='bank'?'':'none';
   el('anaView').style.display = t.dataset.view==='ana'?'':'none';
+  el('reviewView').style.display = t.dataset.view==='review'?'':'none';
   el('conceptView').style.display = t.dataset.view==='concept'?'':'none';
   el('statsView').style.display = t.dataset.view==='stats'?'':'none';
   el('aboutView').style.display = t.dataset.view==='about'?'':'none';
   if(t.dataset.view==='ana') updPickN();
+  if(t.dataset.view==='review' && el('rvQuiz') && !el('rvQuiz').value){ const su=localStorage.getItem('submitUrl'); if(!su) el('reviewOut').innerHTML='<div class="panel">請先到「錯題分析」頁貼上並儲存收卷網址，再回來載入。</div>'; }
 });
 el('btnAnalyze').onclick = analyze;
 el('btnQuizFromAna').onclick = ()=>exportQuiz();
 el('btnPrintFromAna').onclick = ()=>doPrint(false);
+
+// ---- 非選覆核 ----
+function escR(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const ESSAY_RUBRICS = (DB.essay_rubrics && DB.essay_rubrics.questions) || {};
+let reviewData = [], rvPick = {};
+el('btnLoadReview').onclick = async ()=>{
+  const u = (localStorage.getItem('submitUrl')||'').trim();
+  if(!u){ alert('請先到「錯題分析」頁貼上並儲存收卷網址（含 ?token=…）'); return; }
+  const quiz = el('rvQuiz').value.trim(), cls = el('rvCls').value.trim();
+  const url = u + (u.includes('?')?'&':'?') + 'essays=1' + (quiz?('&quiz='+encodeURIComponent(quiz)):'') + (cls?('&cls='+encodeURIComponent(cls)):'');
+  el('reviewOut').innerHTML = '<div class="panel">⏳ 載入中…</div>';
+  try{ const j = await (await fetch(url)).json(); reviewData = Array.isArray(j)?j:[]; rvPick={}; renderReviewList(); }
+  catch(e){ el('reviewOut').innerHTML = '<div class="panel">載入失敗：'+escR(e)+'</div>'; }
+};
+if(el('rvOnlyTodo')) el('rvOnlyTodo').onchange = renderReviewList;
+el('btnApplyAllAI').onclick = async ()=>{
+  const u = (localStorage.getItem('submitUrl')||'').trim();
+  if(!u){ alert('請先設定收卷網址並「載入待覆核」'); return; }
+  const todo = reviewData.filter(r=>String(r['老師覆核級分']||'')==='' && String(r['AI級分']==null?'':r['AI級分'])!=='');
+  if(!todo.length){ alert('沒有「未覆核且已有 AI 初評」的作答可套用。\n（若都還沒 AI 初評，請先跑批改腳本 grade_essays.py。）'); return; }
+  if(!confirm('把 '+todo.length+' 份未覆核的作答，直接採用 AI 級分當你的覆核分數？\n\n之後仍可個別修改；建議至少抽看幾份「低信心」的再放行。')) return;
+  const updates = todo.map(r=>({fileId:r['檔案ID'], level:parseInt(r['AI級分'],10), comment:(r['老師備註']||'')}));
+  const oldCount = el('rvCount').textContent; el('rvCount').textContent = '⏳ 套用中…';
+  try{
+    const j = await (await fetch(u, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({kind:'essay_review', updates})})).json();
+    if(j.ok){ todo.forEach(r=>{ r['老師覆核級分']=parseInt(r['AI級分'],10); });
+      alert('✅ 已套用 '+(j.updated!=null?j.updated:todo.length)+' 份 AI 級分。可再個別調整；學生現在就查得到這些成績。');
+      renderReviewList();
+    } else { el('rvCount').textContent=oldCount; alert('⚠ 套用失敗：'+(j.error||'')); }
+  }catch(e){ el('rvCount').textContent=oldCount; alert('⚠ 套用失敗：'+e); }
+};
+let rvCur = 0;   // 目前聚焦的卡片索引（鍵盤操作用）
+function renderReviewList(){
+  const onlyTodo = el('rvOnlyTodo').checked;
+  let rows = reviewData.slice();
+  if(onlyTodo) rows = rows.filter(r=>String(r['老師覆核級分']||'')==='');
+  const total = reviewData.length, done = reviewData.filter(r=>String(r['老師覆核級分']||'')!=='').length;
+  el('rvCount').textContent = `已覆核 ${done} / ${total}` + (rows.length?`　（顯示 ${rows.length} 份）`:'');
+  const bar = el('rvProgBar'); if(bar) bar.style.width = total ? Math.round(done/total*100)+'%' : '0%';
+  el('reviewOut').innerHTML = rows.length ? rows.map(reviewCard).join('')
+    : '<div class="panel">沒有資料——可能都覆核完了、卷名/班級沒對上、或學生還沒交卷。（記得先跑批改腳本產生 AI 初評。）</div>';
+  rvCur = Math.min(rvCur, Math.max(0, rows.length-1));
+  focusCard(rvCur, false);
+}
+function rvCards(){ return [...document.querySelectorAll('#reviewOut .rvcard')]; }
+function focusCard(i, scroll){
+  const cs = rvCards(); if(!cs.length) return;
+  rvCur = Math.max(0, Math.min(i, cs.length-1));
+  cs.forEach((c,k)=>c.classList.toggle('cur', k===rvCur));
+  if(scroll!==false) cs[rvCur].scrollIntoView({behavior:'smooth', block:'center'});
+}
+// 鍵盤快捷鍵：0~3 給分並存、A 套用AI、J/K 下/上一份
+document.addEventListener('keydown', (e)=>{
+  if(el('reviewView').style.display === 'none') return;
+  const t = e.target.tagName;
+  if(t==='INPUT' || t==='TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const cs = rvCards(); if(!cs.length) return;
+  const card = cs[rvCur]; if(!card) return;
+  const fid = card.id.replace(/^rv-/, '');
+  if('0123'.includes(e.key)){
+    e.preventDefault();
+    const btn = [...card.querySelectorAll('.lvbtn')].find(b=>b.textContent.trim()===e.key);
+    if(btn){ setLv(fid, parseInt(e.key,10), btn); saveReview(fid); }
+  } else if(e.key==='a' || e.key==='A'){
+    e.preventDefault();
+    const b = card.querySelector('button[onclick^="acceptAI"]'); if(b) b.click();
+  } else if(e.key==='j' || e.key==='J' || e.key==='ArrowDown'){
+    e.preventDefault(); focusCard(rvCur+1, true);
+  } else if(e.key==='k' || e.key==='K' || e.key==='ArrowUp'){
+    e.preventDefault(); focusCard(rvCur-1, true);
+  }
+});
+function reviewCard(r){
+  const fid = escR(r['檔案ID']), qid = r['題目ID'], q = QIDX[qid] || {}, rub = ESSAY_RUBRICS[qid];
+  const aiLv = r['AI級分'], aiReason = r['AI理由']||'', aiConf = r['AI信心'], tLv = r['老師覆核級分'], img = escR(r['圖片連結']);
+  const num = (String(qid).split('N')[1]||'');
+  const guide = (rub && rub.guide) ? '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--blue);font-weight:700;font-size:.85rem">📋 官方評分指引（0–3級分）</summary><div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.82rem;white-space:pre-wrap;margin-top:4px">3級分：'+escR(rub.guide.l3)+'\n\n2級分：'+escR(rub.guide.l2)+'\n\n1級分：'+escR(rub.guide.l1)+'\n\n0級分：'+escR(rub.guide.l0)+'</div></details>' : '';
+  const btns = [0,1,2,3].map(lv=>'<button class="lvbtn '+(String(tLv)===String(lv)?'on':'')+'" onclick="setLv(\''+fid+'\','+lv+',this)">'+lv+'</button>').join('');
+  return '<div class="panel rvcard'+(String(tLv||'')!==''?' done':'')+'" id="rv-'+fid+'" onclick="focusCardById(\''+fid+'\')">'
+    +'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline">'
+    +'<b>'+escR(r['班級'])+'-'+escR(r['座號'])+' '+escR(r['姓名']||'')+'</b>'
+    +'<span style="color:var(--sub);font-size:.8rem">'+(q.year||'')+'年 非選第'+num+'題　'+escR(q.topic||'')+(String(tLv||'')!==''?'　✅已覆核 '+escR(tLv)+'級':'')+'</span></div>'
+    +'<div class="rvgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">'
+    +'<div><div class="hint">學生作答（點可放大）</div>'
+    +'<a href="'+img+'" target="_blank" rel="noopener"><img src="'+img+'" loading="lazy" style="width:100%;border:1px solid var(--line);border-radius:8px;background:#fff"></a>'
+    +(r['最後答案']?'<div class="hint" style="margin-top:4px">學生填的最後答案：<b>'+escR(r['最後答案'])+'</b></div>':'')
+    +(r['AI辨識內容']?'<details open style="margin-top:6px"><summary style="cursor:pointer;color:var(--blue);font-weight:700;font-size:.85rem">🔎 AI 讀到的內容（對照左圖，檢查有無讀錯）</summary><div style="background:#fffdf5;border:1px solid #fde68a;border-radius:8px;padding:8px;font-size:.82rem;white-space:pre-wrap;margin-top:4px">'+escR(r['AI辨識內容'])+'</div></details>':'')+'</div>'
+    +'<div><div style="background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.88rem"><b>🤖 AI 初評：'+escR(aiLv)+' 級</b>（信心 '+escR(aiConf)+'）<br><span style="font-size:.82rem;white-space:pre-wrap">'+escR(aiReason)+'</span></div>'
+    +'<div class="hint" style="margin-top:6px">官方參考答案：<b>'+escR(q.answer||'')+'</b></div>'+guide
+    +'<div style="margin-top:10px"><b>你的覆核級分：</b><span class="lvbtns">'+btns+'</span></div>'
+    +'<input type="text" id="note-'+fid+'" placeholder="給學生的評語（選填）" value="'+escR(r['老師備註']||'')+'" style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:8px">'
+    +'<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+    +'<button class="btn btn-green" onclick="saveReview(\''+fid+'\')">✔ 儲存這份</button>'
+    +'<button class="btn btn-ghost" onclick="acceptAI(\''+fid+'\',\''+escR(aiLv)+'\')">套用 AI 級分</button>'
+    +'<span class="hint" id="rvst-'+fid+'"></span></div></div></div></div>';
+}
+function setLv(fid, lv, btn){ rvPick[fid]=lv; btn.parentElement.querySelectorAll('.lvbtn').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+function focusCardById(fid){ const i = rvCards().findIndex(c=>c.id==='rv-'+fid); if(i>=0) focusCard(i, false); }
+function acceptAI(fid, aiLv){
+  if(aiLv===''||aiLv==null){ alert('這份還沒有 AI 初評（先跑批改腳本），請自行點選級分'); return; }
+  const card = el('rv-'+fid); const btn = [...card.querySelectorAll('.lvbtn')].find(b=>b.textContent===String(aiLv));
+  if(btn) setLv(fid, parseInt(aiLv,10), btn);
+  saveReview(fid);
+}
+async function saveReview(fid){
+  const lv = (fid in rvPick) ? rvPick[fid] : null;
+  if(lv===null){ alert('請先點選覆核級分（0–3），或按「套用 AI 級分」'); return; }
+  const comment = (el('note-'+fid)||{}).value || '';
+  const u = (localStorage.getItem('submitUrl')||'').trim();
+  if(!u){ alert('沒有收卷網址'); return; }
+  const st = el('rvst-'+fid); if(st) st.textContent='⏳ 儲存中…';
+  try{
+    const j = await (await fetch(u, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({kind:'essay_review', updates:[{fileId:fid, level:lv, comment}]})})).json();
+    if(j.ok){ if(st) st.textContent='✅ 已存（'+lv+'級）';
+      const row = reviewData.find(r=>String(r['檔案ID'])===String(fid)); if(row){ row['老師覆核級分']=lv; row['老師備註']=comment; }
+      const card = el('rv-'+fid); if(card) card.classList.add('done');
+      // 更新進度列
+      const total = reviewData.length, done = reviewData.filter(r=>String(r['老師覆核級分']||'')!=='').length;
+      el('rvCount').textContent = `已覆核 ${done} / ${total}`;
+      const bar = el('rvProgBar'); if(bar) bar.style.width = total ? Math.round(done/total*100)+'%' : '0%';
+      if(el('rvOnlyTodo').checked) setTimeout(renderReviewList, 700);
+      else setTimeout(()=>focusCard(rvCur+1, true), 300);   // 自動跳下一份，批改更順
+    } else if(st) st.textContent='⚠ '+escR(j.error||'失敗');
+  }catch(e){ if(st) st.textContent='⚠ '+escR(e); }
+}
 
 // ---- 試算表收卷設定與載入 ----
 el('cfgUrl').value = localStorage.getItem('submitUrl') || '';
@@ -1021,31 +1225,58 @@ QUIZ_TEMPLATE = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>__TITLE__</title>
 <style>
-:root{--ink:#1f2937;--sub:#6b7280;--line:#e5e7eb;--blue:#2563eb;--green:#059669;--red:#dc2626}
+:root{--ink:#111827;--sub:#6b7280;--line:#e2e8f0;--blue:#2563eb;--green:#059669;--red:#dc2626;
+      --sh:0 1px 3px rgba(16,24,40,.07);--sh-md:0 4px 14px rgba(16,24,40,.09);--tap:48px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:"Microsoft JhengHei","PingFang TC",system-ui,sans-serif;color:var(--ink);background:#f5f6f8;line-height:1.6}
-header{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:16px 20px}
-header h1{margin:0;font-size:1.15rem}
-.wrap{max-width:860px;margin:0 auto;padding:14px}
-.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"Microsoft JhengHei","PingFang TC",system-ui,-apple-system,sans-serif;color:var(--ink);background:#f1f5f9;line-height:1.6;
+     -webkit-font-smoothing:antialiased}
+header{background:linear-gradient(135deg,#0f2942,#1e40af 55%,#2563eb);color:#fff;padding:16px 20px;box-shadow:var(--sh-md)}
+header h1{margin:0;font-size:1.18rem;letter-spacing:.01em}
+.printpdf{display:inline-block;margin-top:10px;color:#fff;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);border-radius:999px;
+          padding:9px 16px;font-size:.86rem;font-weight:700;text-decoration:none;min-height:40px;line-height:22px}
+.printpdf:active{background:rgba(255,255,255,.3)}
+.wrap{max-width:900px;margin:0 auto;padding:14px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--sh)}
 .idrow{display:flex;gap:10px;flex-wrap:wrap}
 .idrow div{flex:1;min-width:110px}
-.idrow label{display:block;font-size:.8rem;color:var(--sub);margin-bottom:4px}
-.idrow input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:1.05rem}
-.qcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.idrow label{display:block;font-size:.82rem;color:var(--sub);margin-bottom:5px;font-weight:600}
+.idrow input{width:100%;padding:13px;border:1.5px solid var(--line);border-radius:12px;font-size:1.05rem;min-height:var(--tap);transition:border-color .15s}
+.idrow input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.qcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--sh)}
 .qtitle{font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .qtag{font-size:.72rem;color:var(--sub);font-weight:400}
 .qimg{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
 .opts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
-.opt{padding:16px 0;font-size:1.25rem;font-weight:700;text-align:center;border:2px solid var(--line);
-     border-radius:12px;background:#fff;cursor:pointer;user-select:none}
-.opt.sel{background:var(--blue);border-color:var(--blue);color:#fff}
+.opt{padding:18px 0;font-size:1.3rem;font-weight:800;text-align:center;border:2px solid var(--line);
+     border-radius:14px;background:#fff;cursor:pointer;user-select:none;min-height:56px;transition:all .12s}
+.opt:active{transform:scale(.96)}
+.opt.sel{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.18)}
 textarea.essay{width:100%;min-height:110px;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:1rem;margin-top:12px}
-.donebar{position:sticky;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:12px;text-align:center;backdrop-filter:blur(4px)}
-.btn{cursor:pointer;border:none;border-radius:12px;padding:14px 26px;font-size:1.05rem;font-weight:700}
-.btn-blue{background:var(--blue);color:#fff}
-.btn-ghost{background:#fff;border:2px solid var(--blue);color:var(--blue);padding:12px 20px}
-.progress{font-size:.9rem;color:var(--sub);margin-bottom:8px}
+/* ---- 非選手寫作答 ---- */
+.hwwrap{margin-top:12px}
+.hwbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.hwhint{font-size:.82rem;color:var(--sub)}
+.hwbtn{background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:9px 16px;font-size:.88rem;font-weight:700;color:var(--ink);cursor:pointer;
+       min-height:40px;transition:all .12s}
+.hwbtn:active{background:#eef2ff;transform:scale(.96)}
+.hwbtn-cam{border-color:#bfdbfe;color:var(--blue);background:#f8fbff}
+.hwcanvas{width:100%;height:340px;border:1.5px solid #cbd5e1;border-radius:14px;background:#fff;touch-action:none;display:block;cursor:crosshair;
+          box-shadow:inset 0 1px 3px rgba(16,24,40,.05)}
+.hwans{width:100%;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:1rem}
+.hwbtn-cam{border-color:var(--blue);color:var(--blue)}
+.hwphoto{width:100%;max-height:72vh;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff;display:block}
+.scanbusy{margin-top:8px;padding:8px 12px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;font-size:.85rem;text-align:center}
+.donebar{position:sticky;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+         text-align:center;backdrop-filter:blur(10px);box-shadow:0 -4px 16px rgba(16,24,40,.07);z-index:40}
+.btn{cursor:pointer;border:none;border-radius:14px;padding:15px 28px;font-size:1.06rem;font-weight:800;min-height:var(--tap);
+     transition:transform .06s,box-shadow .15s;box-shadow:var(--sh-md)}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff}
+.btn-ghost{background:#fff;border:2px solid #bfdbfe;color:var(--blue);padding:13px 22px;box-shadow:var(--sh)}
+.progress{font-size:.92rem;color:var(--sub);margin-bottom:9px;font-weight:600}
+.pbar{height:7px;border-radius:99px;background:#e2e8f0;overflow:hidden;margin:0 auto 10px;max-width:420px}
+.pbar i{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#3b82f6);width:0;transition:width .3s}
 #result{display:none}
 .score{font-size:2rem;font-weight:800;color:var(--green);text-align:center;margin:6px 0}
 table.res{border-collapse:collapse;width:100%;font-size:.9rem;margin-top:10px}
@@ -1053,7 +1284,7 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 .ok{color:var(--green);font-weight:700}.ng{color:var(--red);font-weight:700}
 #recBox{width:100%;min-height:90px;font-size:.75rem;margin-top:8px;word-break:break-all}
 .hint{font-size:.82rem;color:var(--sub)}
-.locked .opt,.locked textarea{pointer-events:none;opacity:.85}
+.locked .opt,.locked textarea,.locked .hwcanvas,.locked .hwbtn,.locked .hwans{pointer-events:none;opacity:.85}
 /* ---- 交卷後的錯題訂正區 ---- */
 .review{margin-top:12px;border-radius:12px;padding:12px 14px;font-size:.95rem}
 .rv-ok{background:#ecfdf5;border:1px solid #a7f3d0}
@@ -1076,7 +1307,7 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 </style>
 </head>
 <body>
-<header><h1>📝 __TITLE__</h1></header>
+<header><h1>📝 __TITLE__</h1>__PRINTPDF__</header>
 <div class="wrap">
   <div class="panel">
     <div class="idrow">
@@ -1084,11 +1315,17 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
       <div><label>座號（必填）</label><input id="stuSeat" placeholder="例：12" inputmode="numeric"></div>
       <div><label>姓名（選填）</label><input id="stuName" placeholder="可留白"></div>
     </div>
-    <p class="hint" style="margin:10px 0 0">共 <b id="totalQ"></b> 題。選擇題點選 A/B/C/D，非選擇題請將計算過程寫在紙上、把答案輸入文字框。作答完按最下方「交卷」。</p>
+    <p class="hint" style="margin:10px 0 0">共 <b id="totalQ"></b> 題。選擇題點選 A/B/C/D；非選擇題可<b>用 Apple Pencil／手指在框內手寫</b>，或按 <b>「📷 拍照／上傳」把紙上算好的計算過程拍照／掃描繳交</b>，最後答案可另填欄位。作答完按最下方「交卷」。</p>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost" id="btnMyResult" style="padding:8px 16px">🔍 查我的非選批改結果</button>
+      <span class="hint" id="myResultHint">（交卷後、老師批改完可回來查）</span>
+    </div>
   </div>
+  <div id="myResultBox"></div>
   <div id="qwrap"></div>
   <div class="donebar" id="donebar">
-    <div class="progress">已作答 <b id="doneN">0</b> / <span id="doneT"></span></div>
+    <div class="progress">已作答 <b id="doneN">0</b> / <span id="doneT"></span> 題</div>
+    <div class="pbar"><i id="pbarFill"></i></div>
     <button class="btn btn-blue" id="btnSubmit">✅ 交卷</button>
   </div>
   <div class="panel" id="result">
@@ -1113,7 +1350,13 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 const CONFIG = { submitUrl: "__SUBMITURL__" };
 const SUBMIT = (CONFIG.submitUrl && CONFIG.submitUrl.indexOf('http') === 0) ? CONFIG.submitUrl : '';
 const ITEMS = JSON.parse(document.getElementById('qdata').textContent);
-const ans = {};   // id -> 'A'~'D' 或 文字
+const ans = {};        // id -> 'A'~'D'（選擇）或 '[手寫]'（非選）
+const imgs = {};       // 非選 id -> 作答圖 JPEG dataURL（手寫或拍照）
+const essayText = {};  // 非選 id -> 最後答案文字（選填）
+const HW = {};         // 非選 id -> 手寫畫布狀態
+const MODE = {};       // 非選 id -> 'pen'（手寫）或 'photo'（拍照上傳）
+const SCAN = {};       // 非選 id -> {origUrl, scannedUrl, view}
+let _cvPromise = null; // OpenCV.js（文件掃描）延遲載入
 let submitted = false;
 const tsStart = Date.now();
 const LSKEY = 'quiz-__TITLE__';
@@ -1127,8 +1370,24 @@ document.getElementById('qwrap').innerHTML = ITEMS.map((q,i)=>`
     <img class="qimg" src="${q.img}" alt="第${i+1}題">
     ${q.type==='choice'
       ? `<div class="opts">${['A','B','C','D'].map(o=>`<div class="opt" data-q="${q.id}" data-o="${o}" onclick="pick('${q.id}','${o}',this)">${o}</div>`).join('')}</div>`
-      : `<textarea class="essay" placeholder="請輸入你的答案（計算過程寫在紙上）" oninput="essay('${q.id}',this.value)"></textarea>`}
+      : `<div class="hwwrap" data-q="${q.id}">
+           <div class="hwbar">
+             <span class="hwhint" id="hwhint-${q.id}">✍ 手寫作答，或改用拍照／掃描上傳</span>
+             <span style="flex:1"></span>
+             <button type="button" class="hwbtn" data-role="pen" onclick="hwUndo('${q.id}')">↶ 上一步</button>
+             <button type="button" class="hwbtn" data-role="pen" onclick="hwClear('${q.id}')">🗑 清除</button>
+             <button type="button" class="hwbtn scantoggle" style="display:none" onclick="toggleScanView('${q.id}')">🔁 看原圖</button>
+             <button type="button" class="hwbtn" data-role="photo" style="display:none" onclick="backToPen('${q.id}')">✍ 改回手寫</button>
+             <button type="button" class="hwbtn hwbtn-cam" onclick="pickPhoto('${q.id}')">📷 拍照／上傳</button>
+             <input type="file" accept="image/*" id="file-${q.id}" style="display:none" onchange="onPhoto('${q.id}',this)">
+           </div>
+           <canvas class="hwcanvas" id="hw-${q.id}"></canvas>
+           <div class="scanbusy" id="busy-${q.id}" style="display:none"></div>
+           <img class="hwphoto" id="photo-${q.id}" alt="上傳的計算過程" style="display:none">
+           <input class="hwans" id="hwa-${q.id}" placeholder="最後答案（選填，例：(1) 9圈 (2) 第17週星期四）" oninput="essayAns('${q.id}',this.value)">
+         </div>`}
   </div>`).join('');
+document.querySelectorAll('.hwcanvas').forEach(setupCanvas);
 
 function pick(id,o,elm){
   if(submitted) return;
@@ -1137,11 +1396,183 @@ function pick(id,o,elm){
   elm.classList.add('sel');
   refresh(); save();
 }
-function essay(id,v){ if(submitted)return; if(v.trim())ans[id]=v.trim(); else delete ans[id]; refresh(); save(); }
-function refresh(){ document.getElementById('doneN').textContent = Object.keys(ans).length; }
+function essayAns(id,v){ if(submitted) return; if(v.trim()) essayText[id]=v.trim(); else delete essayText[id]; save(); }
+// ---- 手寫畫布 ----
+function setupCanvas(canvas){
+  const id = canvas.id.slice(3);                 // 'hw-<id>' -> <id>
+  const ratio = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 600, cssH = canvas.clientHeight || 340;   // 取實際 CSS 高度，避免筆跡被拉伸
+  canvas.width = Math.round(cssW*ratio); canvas.height = Math.round(cssH*ratio);
+  const ctx = canvas.getContext('2d'); ctx.scale(ratio,ratio);
+  const st = {canvas, ctx, cssW, cssH, strokes:[], cur:null, baseImg:null};
+  HW[id] = st; redraw(st);
+  const pos = e=>{ const r=canvas.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; };
+  canvas.addEventListener('pointerdown', e=>{ if(submitted) return; e.preventDefault();
+    try{ canvas.setPointerCapture(e.pointerId); }catch(_){} st.cur=[pos(e)]; redraw(st); });
+  canvas.addEventListener('pointermove', e=>{ if(submitted||!st.cur) return; e.preventDefault();
+    const co = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
+    const evs = (co && co.length) ? co : [e];
+    for(const ev of evs) st.cur.push(pos(ev)); redraw(st); });
+  const end = ()=>{ if(!st.cur) return; if(st.cur.length) st.strokes.push(st.cur); st.cur=null; commitCanvas(id); };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('pointerleave', end);
+}
+function redraw(st){
+  const {ctx,cssW,cssH} = st;
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,cssW,cssH);
+  // 淡格線：幫助寫整齊（顏色極淡，不影響辨識）
+  ctx.strokeStyle='#eef2f7'; ctx.lineWidth=1;
+  for(let y=34; y<cssH; y+=34){ ctx.beginPath(); ctx.moveTo(8,y+.5); ctx.lineTo(cssW-8,y+.5); ctx.stroke(); }
+  if(st.baseImg) ctx.drawImage(st.baseImg,0,0,cssW,cssH);
+  ctx.strokeStyle='#111827'; ctx.fillStyle='#111827'; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=2.4;
+  const all = st.cur ? st.strokes.concat([st.cur]) : st.strokes;
+  for(const s of all){
+    if(s.length===1){ ctx.beginPath(); ctx.arc(s[0].x,s[0].y,1.3,0,7); ctx.fill(); continue; }
+    ctx.beginPath(); ctx.moveTo(s[0].x,s[0].y);
+    for(let i=1;i<s.length;i++) ctx.lineTo(s[i].x,s[i].y);
+    ctx.stroke();
+  }
+}
+function commitCanvas(id){
+  if(MODE[id]==='photo') return;      // 照片模式不由畫布決定作答
+  const st = HW[id]; if(!st) return;
+  if(st.strokes.length===0 && !st.baseImg){ delete imgs[id]; delete ans[id]; }
+  else { imgs[id] = st.canvas.toDataURL('image/jpeg', 0.72); ans[id] = '[手寫]'; }
+  refresh(); save();
+}
+function hwClear(id){ const st=HW[id]; if(!st||submitted||MODE[id]==='photo') return; st.strokes=[]; st.cur=null; st.baseImg=null; redraw(st); commitCanvas(id); }
+function hwUndo(id){ const st=HW[id]; if(!st||submitted||MODE[id]==='photo') return; st.strokes.pop(); redraw(st); commitCanvas(id); }
+// ---- 拍照／掃描上傳 ----
+function pickPhoto(id){ if(submitted) return; document.getElementById('file-'+id).click(); }
+function setPhotoImage(id, url){ const ph=document.getElementById('photo-'+id); ph.src=url; ph.style.display='block'; }
+function showScanBusy(id, msg){
+  const el = (id!=null) && document.getElementById('busy-'+id); if(!el) return;
+  if(msg){ el.textContent = '⏳ '+msg; el.style.display='block'; } else el.style.display='none';
+}
+function setScanToggle(id, show){
+  const btn = document.querySelector(`.hwwrap[data-q="${id}"] .scantoggle`);
+  if(btn) btn.style.display = show ? '' : 'none';
+}
+// 選了照片：讀圖(套EXIF方向+downscale) → 顯示原圖 → 背景做文件掃描(抓正+增強) → 成功則切成掃描版
+function onPhoto(id, input){
+  if(submitted) return;
+  const f = input.files && input.files[0]; if(!f) return; input.value='';
+  MODE[id]='photo'; ans[id]='[照片]';
+  document.getElementById('hw-'+id).style.display='none';
+  setEssayMode(id,'photo'); setScanToggle(id,false);
+  showScanBusy(id,'讀取照片…');
+  loadPhoto(f, 2048, (origCnv, origUrl)=>{
+    SCAN[id] = {origUrl, scannedUrl:null, view:'orig'};
+    setPhotoImage(id, origUrl); imgs[id]=origUrl; refresh(); save();
+    showScanBusy(id,'掃描抓正中…（首次需載入掃描元件，請稍候）');
+    loadCV().then(()=>{
+      let r=null; try{ r=scanCanvas(origCnv); }catch(e){ r=null; }
+      if(r && r.ok){
+        SCAN[id].scannedUrl=r.url; SCAN[id].view='scan'; imgs[id]=r.url;
+        setPhotoImage(id, r.url); setScanToggle(id,true);
+        const btn=document.querySelector(`.hwwrap[data-q="${id}"] .scantoggle`); if(btn) btn.textContent='🔁 看原圖';
+      }
+      showScanBusy(id,false); save();
+    }).catch(()=>{ showScanBusy(id,false); });   // 掃描元件載不到 → 保留原圖（一樣可交卷）
+  });
+}
+// 讀圖到 canvas：<img> 會自動套 EXIF 方向；downscale 到 maxEdge 並避開 iOS canvas 面積上限(16.7MP)
+function loadPhoto(file, maxEdge, cb){
+  const img = new Image(); img.decoding='async';
+  img.onload = ()=>{
+    const sw=img.naturalWidth, sh=img.naturalHeight;
+    const AREA=16000000;
+    let s=Math.min(1, maxEdge/Math.max(sw,sh));
+    if(sw*s*sh*s>AREA) s=Math.sqrt(AREA/(sw*sh));
+    const cw=Math.max(1,Math.round(sw*s)), ch=Math.max(1,Math.round(sh*s));
+    const cnv=document.createElement('canvas'); cnv.width=cw; cnv.height=ch;
+    cnv.getContext('2d').drawImage(img,0,0,cw,ch);
+    URL.revokeObjectURL(img.src);
+    cb(cnv, cnv.toDataURL('image/jpeg',0.85));
+  };
+  img.onerror=()=>{ alert('讀取照片失敗，請再試一次'); showScanBusy(null,false); };
+  img.src=URL.createObjectURL(file);
+}
+// 延遲載入 OpenCV.js(~8MB) + jscanify，只在第一次拍照時載
+function loadCV(){
+  if(_cvPromise) return _cvPromise;
+  _cvPromise = new Promise((resolve,reject)=>{
+    setTimeout(()=>reject(new Error('timeout')), 30000);   // 逾時退場（用原圖）
+    const loadJscanify=()=>{
+      if(window.jscanify) return resolve();
+      const j=document.createElement('script');
+      j.src='https://cdn.jsdelivr.net/npm/jscanify@1.3.0/src/jscanify.min.js';
+      j.onload=()=>resolve(); j.onerror=reject; document.body.appendChild(j);
+    };
+    if(window.cv && cv.Mat) return loadJscanify();
+    const s=document.createElement('script');
+    s.src='https://docs.opencv.org/4.8.0/opencv.js'; s.async=true;
+    s.onload=()=>{ if(window.cv && cv.Mat) loadJscanify(); else cv['onRuntimeInitialized']=loadJscanify; };
+    s.onerror=reject; document.body.appendChild(s);
+  });
+  return _cvPromise;
+}
+// 用 jscanify 偵測紙張四角 → 透視校正 → adaptiveThreshold 增強對比；回 {ok,url}
+function scanCanvas(srcCnv){
+  const scanner=new jscanify();
+  let mat; try{ mat=cv.imread(srcCnv); }catch(e){ return {ok:false}; }
+  let corners=null;
+  try{ corners=scanner.getCornerPoints(scanner.findPaperContour(mat)); }
+  catch(e){ mat.delete(); return {ok:false}; }
+  mat.delete();
+  const c=corners||{}, tl=c.topLeftCorner, tr=c.topRightCorner, bl=c.bottomLeftCorner, br=c.bottomRightCorner;
+  if(!tl||!tr||!bl||!br) return {ok:false};
+  const D=(a,b)=>Math.hypot(a.x-b.x, a.y-b.y);
+  const wTop=D(tl,tr), wBot=D(bl,br), hL=D(tl,bl), hR=D(tr,br);
+  if(Math.max(wTop,wBot) < srcCnv.width*0.35 || Math.max(hL,hR) < srcCnv.height*0.35) return {ok:false}; // 框太小＝沒抓到
+  const outW=1240, outH=Math.max(1, Math.round(outW*((hL+hR)/(wTop+wBot))));
+  let warped; try{ warped=scanner.extractPaper(srcCnv, outW, outH, corners); }catch(e){ return {ok:false}; }
+  let enhanced; try{ enhanced=enhance(warped); }catch(e){ enhanced=warped; }
+  return {ok:true, url: enhanced.toDataURL('image/jpeg',0.85)};
+}
+function enhance(canvas){
+  const src=cv.imread(canvas), gray=new cv.Mat(), dst=new cv.Mat();
+  cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+  cv.adaptiveThreshold(gray,dst,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,25,12);
+  const out=document.createElement('canvas'); cv.imshow(out,dst);
+  src.delete(); gray.delete(); dst.delete();
+  return out;
+}
+function toggleScanView(id){
+  const s=SCAN[id]; if(!s||!s.scannedUrl) return;
+  s.view = s.view==='scan' ? 'orig' : 'scan';
+  const url = s.view==='scan' ? s.scannedUrl : s.origUrl;
+  imgs[id]=url; setPhotoImage(id,url); save();
+  const btn=document.querySelector(`.hwwrap[data-q="${id}"] .scantoggle`);
+  if(btn) btn.textContent = s.view==='scan' ? '🔁 看原圖' : '🔁 看掃描版';
+}
+function setEssayMode(id, mode){
+  MODE[id] = mode;
+  const wrap = document.querySelector(`.hwwrap[data-q="${id}"]`); if(!wrap) return;
+  wrap.querySelectorAll('[data-role="pen"]').forEach(b=>b.style.display = mode==='pen' ? '' : 'none');
+  wrap.querySelectorAll('[data-role="photo"]').forEach(b=>b.style.display = mode==='photo' ? '' : 'none');
+  const hint = document.getElementById('hwhint-'+id);
+  if(hint) hint.textContent = mode==='photo' ? '📷 已上傳計算過程照片（可改回手寫）' : '✍ 手寫作答，或改用拍照／掃描上傳';
+}
+function backToPen(id){
+  if(submitted) return;
+  const ph = document.getElementById('photo-'+id); ph.style.display = 'none'; ph.src = '';
+  document.getElementById('hw-'+id).style.display = 'block';
+  setScanToggle(id, false); showScanBusy(id, false); delete SCAN[id];
+  setEssayMode(id, 'pen');
+  commitCanvas(id);   // 依畫布現況重算（無筆跡則清空該題作答）
+}
+function refresh(){
+  const n = Object.keys(ans).length;
+  document.getElementById('doneN').textContent = n;
+  const bar = document.getElementById('pbarFill');
+  if(bar) bar.style.width = ITEMS.length ? Math.round(n/ITEMS.length*100)+'%' : '0%';
+}
 function save(){
-  try{ localStorage.setItem(LSKEY, JSON.stringify({ans,
-    cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName')})); }catch(e){}
+  const base = {ans, essayText, mode:MODE, cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName')};
+  try{ localStorage.setItem(LSKEY, JSON.stringify({...base, imgs})); }
+  catch(e){ try{ localStorage.setItem(LSKEY, JSON.stringify(base)); }catch(_){} }  // 作答圖太大存不下時，至少保住文字與選擇
 }
 function val(id){ return document.getElementById(id).value.trim(); }
 // 還原草稿
@@ -1149,12 +1580,26 @@ try{
   const d = JSON.parse(localStorage.getItem(LSKEY)||'null');
   if(d){
     Object.assign(ans, d.ans||{});
+    Object.assign(imgs, d.imgs||{});
+    Object.assign(essayText, d.essayText||{});
+    Object.assign(MODE, d.mode||{});
     ['stuClass','stuSeat','stuName'].forEach((k,i)=>{ document.getElementById(k).value = [d.cls,d.seat,d.name][i]||''; });
     for(const [id,a] of Object.entries(ans)){
       const btn = document.querySelector(`.opt[data-q="${id}"][data-o="${a}"]`);
-      if(btn) btn.classList.add('sel');
-      else { const ta = document.querySelector(`#q-${CSS.escape(id)} textarea`); if(ta) ta.value = a; }
+      if(btn){ btn.classList.add('sel'); continue; }
+      if(!imgs[id]) continue;
+      if(MODE[id]==='photo'){                      // 還原拍照上傳
+        const ph = document.getElementById('photo-'+id);
+        if(ph){ ph.src = imgs[id]; ph.style.display = 'block'; }
+        const cv = document.getElementById('hw-'+id); if(cv) cv.style.display = 'none';
+        setEssayMode(id, 'photo');
+      } else if(HW[id]){                            // 還原手寫圖到畫布
+        const im = new Image();
+        im.onload = ()=>{ HW[id].baseImg = im; redraw(HW[id]); };
+        im.src = imgs[id];
+      }
     }
+    for(const [id,t] of Object.entries(essayText)){ const inp=document.getElementById('hwa-'+id); if(inp) inp.value=t; }
     refresh();
   }
 }catch(e){}
@@ -1173,24 +1618,32 @@ document.getElementById('btnSubmit').onclick = () => {
   document.body.classList.add('locked');
   const rows = ITEMS.map((q,i)=>{
     const ok = grade(q);
-    return {id:q.id, n:i+1, a:ans[q.id]||'', ok};
+    let a = ans[q.id]||'';
+    if(q.type!=='choice') a = essayText[q.id] || (imgs[q.id] ? (ans[q.id]||'[手寫]') : '');
+    return {id:q.id, n:i+1, a, ok};
   });
   const auto = rows.filter(r=>r.ok!==null);
   const score = auto.filter(r=>r.ok).length;
+  const essay_imgs = ITEMS.filter(q=>q.type!=='choice' && imgs[q.id])
+    .map(q=>({id:q.id, img:imgs[q.id], ans:essayText[q.id]||''}));
   const rec = {
     v:1, quiz:"__TITLE__", cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName'),
     ts_start:new Date(tsStart).toISOString(), ts_submit:new Date().toISOString(),
     dur_s:Math.round((Date.now()-tsStart)/1000),
-    score, total_auto:auto.length,
+    score, total_auto:auto.length, n_essay:essay_imgs.length,
     answers:rows.map(r=>({id:r.id, a:r.a, ok:r.ok}))
   };
-  document.getElementById('scoreLine').textContent = `選擇題 ${score} / ${auto.length}`;
+  const parts = [];
+  if(auto.length) parts.push(`選擇題 ${score} / ${auto.length}`);
+  if(essay_imgs.length) parts.push(`非選 ${essay_imgs.length} 題已送出（待批改）`);
+  document.getElementById('scoreLine').textContent = parts.join('　｜　') || '已交卷';
   document.getElementById('resTable').innerHTML = '<table class="res"><tr><th>題</th>'+rows.map(r=>`<th>${r.n}</th>`).join('')+'</tr>'+
     '<tr><td>結果</td>'+rows.map(r=>`<td class="${r.ok===null?'':(r.ok?'ok':'ng')}">${r.ok===null?'—':(r.ok?'○':'✕')}</td>`).join('')+'</tr></table>';
   renderReview(rows);
-  const json = JSON.stringify(rec);
-  const b64 = btoa(unescape(encodeURIComponent(json)));
-  window._rec = {json, b64, fname:`作答紀錄_${rec.cls}_${rec.seat}_${rec.name}.json`};
+  const showJson = JSON.stringify(rec);                    // 給學生複製/下載（不含大圖）
+  const postJson = JSON.stringify({...rec, essay_imgs});   // 上傳用（含手寫圖，後端存 Drive）
+  const b64 = btoa(unescape(encodeURIComponent(showJson)));
+  window._rec = {json: showJson, b64, fname:`作答紀錄_${rec.cls}_${rec.seat}_${rec.name}.json`};
   document.getElementById('recBox').value = b64;
   document.getElementById('result').style.display = 'block';
   document.getElementById('donebar').style.display = 'none';
@@ -1200,9 +1653,9 @@ document.getElementById('btnSubmit').onclick = () => {
     const st = document.getElementById('postStatus');
     st.textContent = '⏳ 紀錄上傳中…';
     // Apps Script 需用 text/plain 避免預檢請求
-    fetch(SUBMIT, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:json})
+    fetch(SUBMIT, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:postJson})
       .then(r=>r.json())
-      .then(j=>{ st.textContent = j.ok ? '✅ 紀錄已自動上傳老師的試算表（仍建議保留上方紀錄以備援）' : '⚠ 上傳失敗：'+(j.error||'')+'，請改用複製/分享交給老師'; })
+      .then(j=>{ st.textContent = j.ok ? '✅ 已自動上傳老師的試算表（含手寫作答；仍建議保留上方紀錄以備援）' : '⚠ 上傳失敗：'+(j.error||'')+'，請改用複製/分享交給老師'; })
       .catch(()=>{ st.textContent = '⚠ 自動上傳失敗（可能沒有網路），請用「複製紀錄」交給老師'; });
   }
 };
@@ -1246,8 +1699,9 @@ function renderReview(rows){
         <div class="rv-body" style="display:none">${detail}</div>`;
     }else{
       div.className = 'review rv-na';
-      div.innerHTML = `<div class="rv-head">— 非選擇題（請自行對照）</div>
-        <div class="rv-ansline">你的答案：<b>${esc(mine)}</b>${correct?`　→　參考答案：<b style="color:var(--green)">${esc(correct)}</b>`:''}</div>${detail}`;
+      const mineTxt = (mine==='[手寫]'||mine==='[照片]') ? '（已'+(mine==='[照片]'?'上傳照片':'手寫')+'作答，等待老師／AI 批改）' : mine;
+      div.innerHTML = `<div class="rv-head">✍ 非選擇題（作答已送出，待批改）</div>
+        <div class="rv-ansline">你的作答：<b>${esc(mineTxt)}</b>${correct?`　→　參考答案：<b style="color:var(--green)">${esc(correct)}</b>`:''}</div>${detail}`;
     }
     card.appendChild(div);
   });
@@ -1278,6 +1732,47 @@ function dlRec(){
   a.href = URL.createObjectURL(new Blob([window._rec.json], {type:'application/json'}));
   a.download = window._rec.fname; a.click();
 }
+// ---- 查我的非選批改結果（只顯示老師覆核完的級分；沒批到＝批改中）----
+document.getElementById('btnMyResult').onclick = async ()=>{
+  const cls = val('stuClass'), seat = val('stuSeat');
+  const hint = document.getElementById('myResultHint');
+  if(!cls || !seat){ alert('請先填「班級、座號」再查'); return; }
+  if(!SUBMIT){ hint.textContent = '（此卷沒有設定收卷網址，無法查詢）'; return; }
+  const box = document.getElementById('myResultBox');
+  box.innerHTML = '<div class="panel">⏳ 查詢中…</div>';
+  const url = SUBMIT + (SUBMIT.indexOf('?')>=0?'&':'?') + 'myresult=1&quiz=' + encodeURIComponent("__TITLE__") + '&cls=' + encodeURIComponent(cls) + '&seat=' + encodeURIComponent(seat);
+  try{ const rows = await (await fetch(url)).json(); renderMyResult(Array.isArray(rows)?rows:[]); }
+  catch(e){ box.innerHTML = '<div class="panel">查詢失敗，請稍後再試。</div>'; }
+};
+function renderMyResult(rows){
+  const box = document.getElementById('myResultBox');
+  if(!rows.length){ box.innerHTML = '<div class="panel review rv-na">查不到你的非選作答紀錄——確認班級座號正確、而且已經交卷。</div>'; return; }
+  const byId = {}; ITEMS.forEach(q=>byId[q.id]=q);
+  const cards = rows.map(r=>{
+    const q = byId[r.qid] || {}, ex = b64json(q.e);
+    const graded = String(r.level==null?'':r.level)!=='';
+    const num = (String(r.qid).split('N')[1]||'');
+    const lvHtml = graded ? '<b style="color:var(--green);font-size:1.25rem">'+esc(r.level)+' 級</b><span style="color:var(--sub)"> / 3</span>'
+                          : '<b style="color:#b45309">批改中…</b>';
+    let detail = '';
+    if(graded){
+      const cleanReason = String(r.reason||'').replace(/^\[[^\]]*\]\s*/,'').trim();  // 去掉 [AI初評…] 內部標籤
+      if(r.transcript) detail += '<div class="rv-sec"><h4>AI 讀到你的作答（若讀錯，跟老師說）</h4><div class="rv-sol" style="white-space:pre-wrap">'+esc(r.transcript)+'</div></div>';
+      if(r.comment) detail += '<div class="rv-sec"><h4>老師評語</h4><div class="rv-trap">'+esc(r.comment)+'</div></div>';
+      // 為什麼得這個分數：老師採用AI級分時才顯示AI判讀（改過分又沒留言就不顯示，避免對不上）
+      if(cleanReason && String(r.level)===String(r.ai_level))
+        detail += '<div class="rv-sec"><h4>為什麼得這個分數（依官方評分規準）</h4><div class="rv-sol">'+esc(cleanReason)+'</div></div>';
+      if(ex.a) detail += '<div class="rv-sec"><h4>參考答案</h4><div class="rv-sol">'+esc(ex.a)+'</div></div>';
+      if(ex.s) detail += '<div class="rv-sec"><h4>詳解</h4><div class="rv-sol">'+esc(ex.s)+'</div></div>';
+    }
+    return '<div class="review rv-na" style="margin-top:10px"><div class="rv-head">'+(q.year||'')+'年 非選第'+num+'題　'+lvHtml+'</div>'
+      + (r.img?'<div style="margin:4px 0"><a href="'+esc(r.img)+'" target="_blank" rel="noopener" class="hint">🖼 看我當初交的作答</a></div>':'')
+      + detail + '</div>';
+  }).join('');
+  box.innerHTML = '<div class="panel"><h3 style="margin:0 0 4px">📋 我的非選批改結果</h3>'
+    + '<p class="hint" style="margin:0">「批改中」＝老師還沒批到，晚點再回來查；級分 0–3（會考制），最終以老師為準。</p>' + cards + '</div>';
+  box.scrollIntoView({behavior:'smooth'});
+}
 </script>
 </body>
 </html>"""
@@ -1296,15 +1791,17 @@ q_embed = json.loads(json.dumps(questions, ensure_ascii=False))
 for q in q_embed:
     img_path = BASE / q["img"]
     q["img"] = "data:image/png;base64," + base64.b64encode(img_path.read_bytes()).decode()
-payload2 = json.dumps({"questions": q_embed, "curriculum": curr, "concepts": concepts}, ensure_ascii=False)
+payload2 = json.dumps({"questions": q_embed, "curriculum": curr, "concepts": concepts,
+                       "essay_rubrics": essay_rubrics}, ensure_ascii=False)
 html2 = TEMPLATE.replace("__PAYLOAD__", payload2.replace("</", "<\\/")).replace("__QUIZB64__", quiz_b64)
 out2 = BASE / "會考題庫單檔版.html"
 out2.write_text(html2, encoding="utf-8")
 print("written", out2, f"{out2.stat().st_size/1024/1024:.1f} MB")
 
 
-def make_quiz(question_ids, title, out_path, submit_url=""):
-    """由 Python 端直接產生線上試卷（與網頁匯出功能同一模板）"""
+def make_quiz(question_ids, title, out_path, submit_url="", print_pdf=""):
+    """由 Python 端直接產生線上試卷（與網頁匯出功能同一模板）
+    print_pdf：紙本作答卷 PDF 的相對路徑（放同一部署資料夾），空字串＝不顯示下載鈕"""
     idx = {q["id"]: q for q in questions}
     items = []
     for qid in question_ids:
@@ -1321,8 +1818,11 @@ def make_quiz(question_ids, title, out_path, submit_url=""):
             }, ensure_ascii=False).encode("utf-8")).decode(),
         })
     data = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
+    pdf_html = (f'<a class="printpdf" href="{print_pdf}" download>🖨 下載紙本作答卷（PDF，可印出來寫再拍照上傳）</a>'
+                if print_pdf else "")
     html = (QUIZ_TEMPLATE.replace("__TITLE__", title)
             .replace("__SUBMITURL__", submit_url)
+            .replace("__PRINTPDF__", pdf_html)
             .replace("__QUIZDATA__", data))
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     Path(out_path).write_text(html, encoding="utf-8")
@@ -1334,6 +1834,16 @@ def make_quiz(question_ids, title, out_path, submit_url=""):
 # （2026-07-15 曾把已上架的複習卷B1蓋掉）；示範卷固定輸出到 backup/，要上架時再手動複製過去
 sample_ids = [q["id"] for q in questions if q["year"] >= 111 and q["type"] == "choice" and q["num"] <= 10]
 make_quiz(sample_ids, "會考數學示範卷（最近5屆 第1-10題）", BASE / "backup" / "示範卷_最近5屆1-10題_index.html")
+
+# ---- 非選練習卷：104–115 全部非選題（手寫作答卷，收卷網址已烤入，可直接部署測試）----
+ESSAY_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809"
+essay_ids = [q["id"] for q in questions if q["type"] == "essay"]
+# 同步產生紙本作答卷 PDF（放 backup/，部署時一起複製到 essay_deploy/）
+import subprocess as _sp, sys as _sys
+_sp.run([_sys.executable, str(Path(__file__).resolve().parent / "make_essay_print.py"),
+         "--out", str(BASE / "backup" / "非選練習卷_紙本.pdf")], check=False)
+make_quiz(essay_ids, "會考數學非選題練習卷（104-115）", BASE / "backup" / "非選練習卷_index.html",
+          submit_url=ESSAY_SUBMIT_URL, print_pdf="非選練習卷_紙本.pdf")
 
 # =====================================================================
 # 學生端觀念補強練習頁：netlify_deploy/practice.html
