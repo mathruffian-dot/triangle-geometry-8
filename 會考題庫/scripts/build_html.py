@@ -321,6 +321,9 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
 <script>
 const DB = JSON.parse(document.getElementById('bank-data').textContent);
 const QS = DB.questions, CURR = DB.curriculum;
+// 收卷網址：預設值內建（換網域／換電腦都免再設定）；老師若在設定頁另存，以其為準
+const DEFAULT_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809";
+function submitUrl(){ return ((localStorage.getItem('submitUrl')||'').trim()) || DEFAULT_SUBMIT_URL; }
 const CONCEPTS = DB.concepts || [];                    // 觀念補強單元
 const CONCEPT_PERF = {};                               // 學習表現代碼 -> 單元索引
 CONCEPTS.forEach((c,i)=>(c.perf||[]).forEach(p=>{ if(!(p in CONCEPT_PERF)) CONCEPT_PERF[p]=i; }));
@@ -570,7 +573,7 @@ function updAssignedInfo(){
 function logAssign(quiz, mode, ids){
   ids.forEach(id=>mergeAssigned(id, [quiz]));
   saveAssignedLocal();
-  const su = (localStorage.getItem('submitUrl')||'').trim();
+  const su = submitUrl();
   if(su){
     fetch(su, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({kind:'assign', quiz:quiz, mode:mode, ids:ids})}).catch(()=>{});
@@ -579,7 +582,7 @@ function logAssign(quiz, mode, ids){
 }
 // 開頁時從試算表把出題紀錄同步回來（換裝置／換瀏覽器也不漏）
 function syncAssigned(){
-  const su = (localStorage.getItem('submitUrl')||'').trim();
+  const su = submitUrl();
   if(!su) return;
   fetch(su + (su.includes('?')?'&':'?') + 'assigned=1')
     .then(r=>r.json())
@@ -900,7 +903,7 @@ async function exportQuiz(){
                    }))))});
   }
   const safeTitle = title.replace(/[<>&"]/g,'');
-  const su = (localStorage.getItem('submitUrl')||'').trim();
+  const su = submitUrl();
   const html = QUIZ_TPL.split('__TITLE__').join(safeTitle)
       .split('__SUBMITURL__').join(su)
       .split('__PRINTPDF__').join('')
@@ -959,7 +962,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   el('statsView').style.display = t.dataset.view==='stats'?'':'none';
   el('aboutView').style.display = t.dataset.view==='about'?'':'none';
   if(t.dataset.view==='ana') updPickN();
-  if(t.dataset.view==='review' && el('rvQuiz') && !el('rvQuiz').value){ const su=localStorage.getItem('submitUrl'); if(!su) el('reviewOut').innerHTML='<div class="panel">請先到「錯題分析」頁貼上並儲存收卷網址，再回來載入。</div>'; }
+  if(t.dataset.view==='review' && el('rvQuiz') && !el('rvQuiz').value){ const su=submitUrl(); if(!su) el('reviewOut').innerHTML='<div class="panel">請先到「錯題分析」頁貼上並儲存收卷網址，再回來載入。</div>'; }
 });
 el('btnAnalyze').onclick = analyze;
 el('btnQuizFromAna').onclick = ()=>exportQuiz();
@@ -970,7 +973,7 @@ function escR(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;
 const ESSAY_RUBRICS = (DB.essay_rubrics && DB.essay_rubrics.questions) || {};
 let reviewData = [], rvPick = {};
 el('btnLoadReview').onclick = async ()=>{
-  const u = (localStorage.getItem('submitUrl')||'').trim();
+  const u = submitUrl();
   if(!u){ alert('請先到「錯題分析」頁貼上並儲存收卷網址（含 ?token=…）'); return; }
   const quiz = el('rvQuiz').value.trim(), cls = el('rvCls').value.trim();
   const url = u + (u.includes('?')?'&':'?') + 'essays=1' + (quiz?('&quiz='+encodeURIComponent(quiz)):'') + (cls?('&cls='+encodeURIComponent(cls)):'');
@@ -980,7 +983,7 @@ el('btnLoadReview').onclick = async ()=>{
 };
 if(el('rvOnlyTodo')) el('rvOnlyTodo').onchange = renderReviewList;
 el('btnApplyAllAI').onclick = async ()=>{
-  const u = (localStorage.getItem('submitUrl')||'').trim();
+  const u = submitUrl();
   if(!u){ alert('請先設定收卷網址並「載入待覆核」'); return; }
   const todo = reviewData.filter(r=>String(r['老師覆核級分']||'')==='' && String(r['AI級分']==null?'':r['AI級分'])!=='');
   if(!todo.length){ alert('沒有「未覆核且已有 AI 初評」的作答可套用。\n（若都還沒 AI 初評，請先跑批改腳本 grade_essays.py。）'); return; }
@@ -1073,7 +1076,7 @@ async function saveReview(fid){
   const lv = (fid in rvPick) ? rvPick[fid] : null;
   if(lv===null){ alert('請先點選覆核級分（0–3），或按「套用 AI 級分」'); return; }
   const comment = (el('note-'+fid)||{}).value || '';
-  const u = (localStorage.getItem('submitUrl')||'').trim();
+  const u = submitUrl();
   if(!u){ alert('沒有收卷網址'); return; }
   const st = el('rvst-'+fid); if(st) st.textContent='⏳ 儲存中…';
   try{
@@ -1093,7 +1096,7 @@ async function saveReview(fid){
 }
 
 // ---- 試算表收卷設定與載入 ----
-el('cfgUrl').value = localStorage.getItem('submitUrl') || '';
+el('cfgUrl').value = localStorage.getItem('submitUrl') || DEFAULT_SUBMIT_URL;
 el('btnSaveUrl').onclick = ()=>{
   localStorage.setItem('submitUrl', el('cfgUrl').value.trim());
   alert('已儲存收卷網址。之後「匯出線上試卷」會自動內嵌，學生交卷即自動上傳試算表。');

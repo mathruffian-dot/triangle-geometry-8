@@ -81,7 +81,7 @@ def build_user_text(r, student_ans):
     L.append("""
 請依附圖的手寫作答，輸出 JSON（不要多餘文字）：
 {
- "transcript": "你讀到的學生解題內容（簡述）",
+ "transcript": "把學生手寫內容**逐行忠實轉成文字**（不是摘要、不要補上他沒寫的東西；分數寫 a/b、根號寫 √、次方寫 ^、角度寫 °；看不清的字用 ? 標記）。這會顯示給學生對照，用來檢查有沒有讀錯他的字",
  "checkpoints": [{"id":"c1","met":"yes|no|uncertain","evidence":"引用學生作答中的關鍵一行或式子","note":"簡短理由"}],
  "level": 0到3的整數,
  "reason": "綜合判定理由，引用規準與學生作答；影像看不清請明說",
