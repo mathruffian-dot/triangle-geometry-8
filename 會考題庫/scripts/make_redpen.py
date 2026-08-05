@@ -174,6 +174,15 @@ def render(img_bytes, anns, out_path):
         except Exception: pass
 
 
+def upload_redpen(url, items):
+    """把紅筆圖上傳後端（存 Drive、回寫『紅筆圖ID』），供覆核頁與學生端顯示。"""
+    if not items:
+        return {"ok": True, "updated": 0}
+    r = requests.post(url, headers={"Content-Type": "text/plain;charset=utf-8"},
+                      data=json.dumps({"kind": "essay_redpen", "items": items}), timeout=300)
+    return r.json()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default=DEFAULT_URL)
@@ -183,6 +192,7 @@ def main():
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--outdir", default=str(ROOT / "redpen_out"))
     ap.add_argument("--force", action="store_true", help="已存在也重做")
+    ap.add_argument("--no-upload", action="store_true", help="只存本機，不上傳到 Drive")
     args = ap.parse_args()
 
     key = load_key()
@@ -196,13 +206,17 @@ def main():
     recs = [x for x in recs if str(x.get("老師覆核級分", "")).strip() != "" or str(x.get("AI級分", "")).strip() != ""]
     print(f"取得 {len(recs)} 份已批改作答　模型={args.model}")
 
-    done, failed = 0, []
+    done, failed, pending = 0, [], []
     for i, x in enumerate(recs, 1):
         who = f'{x.get("班級","")}-{x.get("座號","")}'
         qid = x.get("題目ID", "")
         out = outdir / f"{who}_{qid}.png"
         if out.exists() and not args.force:
-            print(f"[{i}/{len(recs)}] {who} {qid} 已存在，略過"); done += 1; continue
+            print(f"[{i}/{len(recs)}] {who} {qid} 已存在，略過（仍會補上傳）"); done += 1
+            if not str(x.get("紅筆圖ID", "")).strip():
+                pending.append({"fileId": str(x.get("檔案ID", "")),
+                                "img": "data:image/png;base64," + base64.b64encode(out.read_bytes()).decode()})
+            continue
         # 注意：0 級分是合法值，不可用 `or` 串接（0 在 Python 為 falsy 會被跳過）
         _t, _a = x.get("老師覆核級分"), x.get("AI級分")
         lv = str(_t) if str(_t or "").strip() != "" or _t == 0 else (str(_a) if str(_a or "").strip() != "" or _a == 0 else "")
@@ -219,12 +233,23 @@ def main():
             if ok:
                 print(f"[{i}/{len(recs)}] {who} {qid} ✓ {lv}級　標註{len(anns)}個　原圖{'未被更動✓' if verified else '⚠未驗證'}")
                 done += 1
+                pending.append({"fileId": str(x.get("檔案ID", "")),
+                                "img": "data:image/png;base64," + base64.b64encode(out.read_bytes()).decode()})
                 (outdir / f"{who}_{qid}.json").write_text(json.dumps(anns, ensure_ascii=False, indent=1), encoding="utf-8")
             else:
                 print(f"[{i}/{len(recs)}] {who} {qid} 繪製失敗 {err}"); failed.append(f"{who} {qid} 繪製失敗")
         except Exception as e:
             print(f"[{i}/{len(recs)}] {who} {qid} 失敗：{e}"); failed.append(f"{who} {qid} {e}")
         time.sleep(0.3)
+
+    if pending and not args.no_upload:
+        print(f"上傳紅筆圖到 Drive（{len(pending)} 份，分批）…")
+        okn = 0
+        for k in range(0, len(pending), 6):          # 分批避免 request 過大
+            res = upload_redpen(args.url, pending[k:k + 6])
+            okn += res.get("updated", 0)
+            print(f"  批次 {k//6+1}: {res}")
+        print(f"已上傳 {okn} 份（覆核頁與學生端即可看到紅筆版）")
 
     print("-" * 60)
     print(f"完成 {done} 份 → {outdir}")

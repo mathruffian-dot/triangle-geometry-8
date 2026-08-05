@@ -1042,7 +1042,13 @@ document.addEventListener('keydown', (e)=>{
 });
 function reviewCard(r){
   const fid = escR(r['檔案ID']), qid = r['題目ID'], q = QIDX[qid] || {}, rub = ESSAY_RUBRICS[qid];
-  const aiLv = r['AI級分'], aiReason = r['AI理由']||'', aiConf = r['AI信心'], tLv = r['老師覆核級分'], img = escR(r['圖片連結']);
+  const aiLv = r['AI級分'], aiReason = r['AI理由']||'', aiConf = r['AI信心'], tLv = r['老師覆核級分'];
+  // Drive 存的是「檢視頁」網址，不能直接放進 <img>；用檔案ID組直連縮圖網址才顯示得出來
+  const fid0 = String(r['檔案ID']||'');
+  const rpid = String(r['紅筆圖ID']||'');
+  const link = escR(r['圖片連結']);                                   // 點擊放大用（檢視頁）
+  const dImg = (id)=> 'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1600';
+  const img = rpid ? dImg(rpid) : (fid0 ? dImg(fid0) : link);        // 有紅筆版就先顯示紅筆版
   const num = (String(qid).split('N')[1]||'');
   const guide = (rub && rub.guide) ? '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--blue);font-weight:700;font-size:.85rem">📋 官方評分指引（0–3級分）</summary><div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.82rem;white-space:pre-wrap;margin-top:4px">3級分：'+escR(rub.guide.l3)+'\n\n2級分：'+escR(rub.guide.l2)+'\n\n1級分：'+escR(rub.guide.l1)+'\n\n0級分：'+escR(rub.guide.l0)+'</div></details>' : '';
   const btns = [0,1,2,3].map(lv=>'<button class="lvbtn '+(String(tLv)===String(lv)?'on':'')+'" onclick="setLv(\''+fid+'\','+lv+',this)">'+lv+'</button>').join('');
@@ -1051,8 +1057,11 @@ function reviewCard(r){
     +'<b>'+escR(r['班級'])+'-'+escR(r['座號'])+' '+escR(r['姓名']||'')+'</b>'
     +'<span style="color:var(--sub);font-size:.8rem">'+(q.year||'')+'年 非選第'+num+'題　'+escR(q.topic||'')+(String(tLv||'')!==''?'　✅已覆核 '+escR(tLv)+'級':'')+'</span></div>'
     +'<div class="rvgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">'
-    +'<div><div class="hint">學生作答（點可放大）</div>'
-    +'<a href="'+img+'" target="_blank" rel="noopener"><img src="'+img+'" loading="lazy" style="width:100%;border:1px solid var(--line);border-radius:8px;background:#fff"></a>'
+    +'<div><div class="hint">'+(rpid?'紅筆批改版（原圖未被更動）':'學生作答')+'（點可放大）'
+    +(rpid?' <button class="hwbtn" style="padding:2px 10px;font-size:.78rem" onclick="event.preventDefault();toggleRedpen(this,''+fid0+'',''+rpid+'')">看原圖</button>':'')+'</div>'
+    +'<a href="'+(link||img)+'" target="_blank" rel="noopener"><img src="'+img+'" loading="lazy" referrerpolicy="no-referrer" '
+    +'onerror="this.onerror=null;this.src=\'https://lh3.googleusercontent.com/d/'+encodeURIComponent(fid0)+'=w1600\'" '
+    +'style="width:100%;border:1px solid var(--line);border-radius:8px;background:#fff"></a>'
     +(r['最後答案']?'<div class="hint" style="margin-top:4px">學生填的最後答案：<b>'+escR(r['最後答案'])+'</b></div>':'')
     +(r['AI辨識內容']?'<details open style="margin-top:6px"><summary style="cursor:pointer;color:var(--blue);font-weight:700;font-size:.85rem">🔎 AI 讀到的內容（對照左圖，檢查有無讀錯）</summary><div style="background:#fffdf5;border:1px solid #fde68a;border-radius:8px;padding:8px;font-size:.82rem;white-space:pre-wrap;margin-top:4px">'+escR(r['AI辨識內容'])+'</div></details>':'')+'</div>'
     +'<div><div style="background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.88rem"><b>🤖 AI 初評：'+escR(aiLv)+' 級</b>（信心 '+escR(aiConf)+'）<br><span style="font-size:.82rem;white-space:pre-wrap">'+escR(aiReason)+'</span></div>'
@@ -1065,6 +1074,14 @@ function reviewCard(r){
     +'<span class="hint" id="rvst-'+fid+'"></span></div></div></div></div>';
 }
 function setLv(fid, lv, btn){ rvPick[fid]=lv; btn.parentElement.querySelectorAll('.lvbtn').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+function toggleRedpen(btn, fid, rpid){
+  const im = btn.closest('.rvcard').querySelector('img'); if(!im) return;
+  const D = (id)=>'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1600';
+  const showingRed = im.dataset.mode !== 'orig';
+  im.src = showingRed ? D(fid) : D(rpid);
+  im.dataset.mode = showingRed ? 'orig' : 'red';
+  btn.textContent = showingRed ? '看紅筆版' : '看原圖';
+}
 function focusCardById(fid){ const i = rvCards().findIndex(c=>c.id==='rv-'+fid); if(i>=0) focusCard(i, false); }
 function acceptAI(fid, aiLv){
   if(aiLv===''||aiLv==null){ alert('這份還沒有 AI 初評（先跑批改腳本），請自行點選級分'); return; }
@@ -1765,6 +1782,10 @@ function renderMyResult(rows){
     let detail = '';
     if(graded){
       const cleanReason = String(r.reason||'').replace(/^\[[^\]]*\]\s*/,'').trim();  // 去掉 [AI初評…] 內部標籤
+      if(r.redpen) detail += '<div class="rv-sec"><h4>老師批改（紅筆為批改標註，你的原作答沒有被更動）</h4>'
+        + '<a href="https://drive.google.com/file/d/'+encodeURIComponent(r.redpen)+'/view" target="_blank" rel="noopener">'
+        + '<img src="https://drive.google.com/thumbnail?id='+encodeURIComponent(r.redpen)+'&sz=w1600" referrerpolicy="no-referrer" '
+        + 'style="width:100%;border:1px solid var(--line);border-radius:10px;background:#fff"></a></div>';
       if(r.transcript) detail += '<div class="rv-sec"><h4>AI 讀到你的作答（若讀錯，跟老師說）</h4><div class="rv-sol" style="white-space:pre-wrap">'+esc(r.transcript)+'</div></div>';
       if(r.comment) detail += '<div class="rv-sec"><h4>老師評語</h4><div class="rv-trap">'+esc(r.comment)+'</div></div>';
       // 為什麼得這個分數：老師採用AI級分時才顯示AI判讀（改過分又沒留言就不顯示，避免對不上）

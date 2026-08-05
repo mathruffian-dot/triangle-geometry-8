@@ -146,6 +146,37 @@ function doPost(e) {
       }
       return _json({ ok: true, updated: n });
     }
+    if (rec.kind === 'essay_redpen') {
+      // 批改腳本上傳「紅筆批改圖」：存 Drive → 回寫「紅筆圖ID」欄（依檔案ID對應列）
+      const s = ss.getSheetByName('非選作答');
+      if (!s) return _json({ ok: false, error: '尚無非選作答表' });
+      const rpCol = _ensureCol(s, '紅筆圖ID');
+      const vals = s.getDataRange().getValues();
+      const head = vals[0];
+      const idCol = head.indexOf('檔案ID');
+      const quizCol = head.indexOf('試卷');
+      const rows = {};
+      for (let i = 1; i < vals.length; i++) rows[String(vals[i][idCol])] = { i: i, quiz: vals[i][quizCol] };
+      let n = 0;
+      (rec.items || []).forEach(function (it) {
+        const row = rows[String(it.fileId)];
+        if (!row) return;
+        try {
+          const m = String(it.img || '').match(/^data:(image\/\w+);base64,(.*)$/);
+          if (!m) return;
+          const folder = _quizFolder((row.quiz || '未命名卷') + '_紅筆批改');
+          const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], 'redpen_' + it.fileId + '.png');
+          // 同名檔先刪，避免重批後留下多份
+          const old = folder.getFilesByName(blob.getName());
+          while (old.hasNext()) old.next().setTrashed(true);
+          const f = folder.createFile(blob);
+          f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          s.getRange(row.i + 1, rpCol + 1).setValue(f.getId());
+          n++;
+        } catch (err) {}
+      });
+      return _json({ ok: true, updated: n });
+    }
     if (rec.kind === 'essay_review') {
       // 老師覆核定分：依「檔案ID」回寫 老師覆核級分／老師備註（學生查成績只看這個）
       const s = ss.getSheetByName('非選作答');
@@ -236,6 +267,7 @@ function doGet(e) {
       qid: r['題目ID'], img: r['圖片連結'], myans: r['最後答案'],
       level: r['老師覆核級分'], comment: r['老師備註'],
       ai_level: r['AI級分'], reason: r['AI理由'], transcript: r['AI辨識內容'],
+      redpen: r['紅筆圖ID'],
     }));
     return _json(out);
   }

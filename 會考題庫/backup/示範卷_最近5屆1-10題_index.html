@@ -537,6 +537,10 @@ function renderMyResult(rows){
     let detail = '';
     if(graded){
       const cleanReason = String(r.reason||'').replace(/^\[[^\]]*\]\s*/,'').trim();  // 去掉 [AI初評…] 內部標籤
+      if(r.redpen) detail += '<div class="rv-sec"><h4>老師批改（紅筆為批改標註，你的原作答沒有被更動）</h4>'
+        + '<a href="https://drive.google.com/file/d/'+encodeURIComponent(r.redpen)+'/view" target="_blank" rel="noopener">'
+        + '<img src="https://drive.google.com/thumbnail?id='+encodeURIComponent(r.redpen)+'&sz=w1600" referrerpolicy="no-referrer" '
+        + 'style="width:100%;border:1px solid var(--line);border-radius:10px;background:#fff"></a></div>';
       if(r.transcript) detail += '<div class="rv-sec"><h4>AI 讀到你的作答（若讀錯，跟老師說）</h4><div class="rv-sol" style="white-space:pre-wrap">'+esc(r.transcript)+'</div></div>';
       if(r.comment) detail += '<div class="rv-sec"><h4>老師評語</h4><div class="rv-trap">'+esc(r.comment)+'</div></div>';
       // 為什麼得這個分數：老師採用AI級分時才顯示AI判讀（改過分又沒留言就不顯示，避免對不上）
