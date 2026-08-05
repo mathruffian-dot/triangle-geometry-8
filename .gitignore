@@ -31,3 +31,7 @@ __pycache__/
 
 # ⚠ 學生作答與批改圖（含姓名座號，屬個資，一律不上傳）
 會考題庫/redpen_out/
+
+# wrangler（Cloudflare CLI）本機快取
+.wrangler/
+會考題庫/.wrangler/

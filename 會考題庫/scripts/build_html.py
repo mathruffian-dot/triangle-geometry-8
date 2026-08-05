@@ -9,6 +9,11 @@ DATA = BASE / "data"
 questions = []
 for y in range(103, 116):
     questions += json.loads((DATA / f"questions_{y}.json").read_text(encoding="utf-8"))
+# 非歷屆來源（模擬卷等），year 為非數字字串（如 "HL1"）；檔案不存在則略過
+for extra in ["HL1"]:
+    _f = DATA / f"questions_{extra}.json"
+    if _f.exists():
+        questions += json.loads(_f.read_text(encoding="utf-8"))
 curr = json.loads((DATA / "curriculum_108.json").read_text(encoding="utf-8"))
 # 觀念補強單元（學習表現補強題庫，與歷屆試題分開維護；檔案不存在則為空）
 _concepts_file = DATA / "concepts.json"
@@ -332,7 +337,7 @@ document.getElementById('totalN').textContent = QS.length;
 // ---- 篩選器（全面複選）----
 function el(id){return document.getElementById(id);}
 const years = [...new Set(QS.map(q=>q.year))].sort();
-const MAXYEAR = Math.max(...years);
+const MAXYEAR = Math.max(...years.map(Number).filter(y=>!isNaN(y)));
 const fKw=el('fKw'), fNum=el('fNum');
 // F：各條件的已選集合；空集合＝該項不限
 const F = { year:new Set(), book:new Set(), chap:new Set(), code:new Set(), perf:new Set(), diff:new Set(), type:new Set() };
@@ -637,7 +642,7 @@ function masteryHTML(q){
   let html = '';
   q.perf.forEach(p=>{
     const pool = QS.filter(o=>!used.has(o.id) && o.perf.includes(p))
-      .sort((a,b)=> DR[a.difficulty]-DR[b.difficulty] || b.year-a.year)
+      .sort((a,b)=> DR[a.difficulty]-DR[b.difficulty] || ((Number(b.year)||0)-(Number(a.year)||0)))
       .slice(0,4);
     pool.forEach(o=>used.add(o.id));
     html += `<div class="mfhead" style="font-size:.86rem;margin-top:10px">🎯 ${p}｜${CURR['學習表現'][p]||''}<span style="font-weight:400">（由易到難 ${pool.length} 題）</span></div>`
@@ -1832,7 +1837,8 @@ def make_quiz(question_ids, title, out_path, submit_url="", print_pdf=""):
 # ---- 示範卷：最近5屆（111–115）第1–10題 ----
 # 注意：netlify_deploy/index.html 是「目前上架中的學生卷」，build 不得覆蓋
 # （2026-07-15 曾把已上架的複習卷B1蓋掉）；示範卷固定輸出到 backup/，要上架時再手動複製過去
-sample_ids = [q["id"] for q in questions if q["year"] >= 111 and q["type"] == "choice" and q["num"] <= 10]
+sample_ids = [q["id"] for q in questions
+               if isinstance(q["year"], int) and q["year"] >= 111 and q["type"] == "choice" and q["num"] <= 10]
 make_quiz(sample_ids, "會考數學示範卷（最近5屆 第1-10題）", BASE / "backup" / "示範卷_最近5屆1-10題_index.html")
 
 # ---- 非選練習卷：104–115 全部非選題（手寫作答卷，收卷網址已烤入，可直接部署測試）----

@@ -117,6 +117,8 @@ def main():
     ap.add_argument("--deploy", choices=["netlify", "cloudflare"], default="")
     ap.add_argument("--site-id", default="", help="Netlify site id")
     ap.add_argument("--project", default="math809-quiz", help="Cloudflare Pages 專案名")
+    ap.add_argument("--site-url", default="https://math809-quiz.pages.dev",
+                    help="站台網址（用來產生紙本封面的 QR code）")
     args = ap.parse_args()
 
     if not REG.exists():
@@ -136,8 +138,11 @@ def main():
         B.make_quiz(q["qids"], q["title"], d / "index.html",
                     submit_url=SUBMIT_URL, print_pdf=pdf_name)
         if pdf_name:
+            # 紙本含全部題目（選擇題流排＋非選題附作答框），封面帶該卷網址的 QR code
+            quiz_url = f"{args.site_url.rstrip('/')}/q/{q['code']}/" if args.site_url else ""
             subprocess.run([sys.executable, str(HERE / "make_essay_print.py"),
-                            "--ids", *[i for i in q["qids"] if "N" in i],
+                            "--ids", *q["qids"],
+                            "--title", q["title"], "--url", quiz_url,
                             "--out", str(d / pdf_name)], check=False,
                            capture_output=True)
         made += 1
