@@ -24,13 +24,14 @@
 | 第三冊（八上） | 乘法公式與多項式／平方根與畢氏定理／因式分解／一元二次方程式／統計資料處理 | 71 | https://math809-review3.pages.dev |
 | 第四冊（八下） | 數列與級數／函數／三角形的基本性質／平行與四邊形 | 67 | https://math809-review.pages.dev |
 | 第五冊（九上） | 相似形／圓／幾何與證明 | 42 | https://math809-review5.pages.dev |
+| 第六冊（九下） | 二次函數／統計與機率／立體圖形 | 39 | https://math809-review6.pages.dev |
 
 **備援網址（Netlify，同內容）**：把上表網址的 `.pages.dev` 換成 `.netlify.app` 即可
 （`math809-review1.netlify.app`⋯⋯）。兩邊都會保留，Netlify 版本仍可用。
 
-> 五冊**各自獨立網址**，可單獨發給學生。全部同一套規格：一頁一重點、視覺化演示＋範例、
+> 六冊**各自獨立網址**，可單獨發給學生。全部同一套規格：一頁一重點、視覺化演示＋範例、
 > 一頁一螢幕自動縮放、範例／圖解可放大成整頁（HTML 內容會等比放大字級）、
-> 授課教具（雷射筆＋畫筆）。合計 **325 頁、約 145 頁互動**。
+> 授課教具（雷射筆＋畫筆）。合計 **364 頁、約 169 頁互動**。
 
 ### 🔒 老師專用（⚠️ 勿發學生）
 | 用途 | 網址 |
@@ -56,7 +57,7 @@ npx wrangler pages deploy "複習網站二" --project-name math809-review2 --bra
 
 | Pages 專案 | 網址 |
 |------|------|
-| math809-review1 / 2 / 3 / review / review5 | `https://<專案名>.pages.dev` |
+| math809-review1 / 2 / 3 / review / review5 / review6 | `https://<專案名>.pages.dev` |
 | math809-quiz、math809-bank | 同上（由非選題批改系統維護） |
 
 > ⚠️ 若 wrangler 報 **Project not found** 或帳號不對，先確認環境變數
@@ -76,6 +77,7 @@ npx wrangler pages deploy "複習網站二" --project-name math809-review2 --bra
 | math809-review3（第三冊複習） | `6f56bec2-f044-424e-9dc2-6e11a2542a29` |
 | math809-review（第四冊複習） | `3f28584a-030d-4f9f-8ef7-bea8c71e9235` |
 | math809-review5（第五冊複習） | `67ac2ec1-45ba-476f-b0d4-15327819ef26` |
+| math809-review6（第六冊複習） | `fdd55719-e0d0-4d40-9b44-b94a3f3beace` |
 
 > 複習簡報改版後重新部署（`--prod` 自 2026-07-16 起回 403，一律兩段式）：
 > ```bash
@@ -121,6 +123,7 @@ npx wrangler pages deploy "複習網站二" --project-name math809-review2 --bra
 | 第三冊複習簡報 | 八上全冊複習互動簡報（複習網站三/） | [`複習網站三/README.md`](複習網站三/README.md) |
 | 第四冊複習簡報 | 八下全冊複習互動簡報（複習網站/） | [`複習網站/README.md`](複習網站/README.md) |
 | 第五冊複習簡報 | 九上全冊複習互動簡報（複習網站五/） | [`複習網站五/README.md`](複習網站五/README.md) |
+| 第六冊複習簡報 | 九下全冊複習互動簡報（複習網站六/） | [`複習網站六/README.md`](複習網站六/README.md) |
 | 複習簡報製作規格 | chN.js 撰寫規格（欄位、SV 工具、互動、版面） | [`複習網站五/SLIDE_SPEC.md`](複習網站五/SLIDE_SPEC.md) |
 | 康軒 B1–B3 單元藍圖 | 第1~3冊章節／節次／學習目標／課綱代碼與邊界 | [`康軒版B1-B3單元藍圖.md`](康軒版B1-B3單元藍圖.md) |
 | 4-1 平行互動簡報 | 根目錄 `index.html`（單元教學簡報，見下） | 本檔下方 |

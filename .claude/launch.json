@@ -4,44 +4,112 @@
     {
       "name": "bank",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8940", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8940",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 8940
     },
     {
       "name": "review-site",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8787", "--bind", "127.0.0.1", "--directory", "複習網站"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8787",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "複習網站"
+      ],
       "port": 8787
     },
     {
       "name": "review1",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8881", "--bind", "127.0.0.1", "--directory", "複習網站一"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8881",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "複習網站一"
+      ],
       "port": 8881
     },
     {
       "name": "review2",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8882", "--bind", "127.0.0.1", "--directory", "複習網站二"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8882",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "複習網站二"
+      ],
       "port": 8882
     },
     {
       "name": "review3",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8883", "--bind", "127.0.0.1", "--directory", "複習網站三"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8883",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "複習網站三"
+      ],
       "port": 8883
     },
     {
       "name": "review5",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8891", "--bind", "127.0.0.1", "--directory", "複習網站五"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8891",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "複習網站五"
+      ],
       "port": 8891
     },
     {
       "name": "quiztest",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8899", "--bind", "127.0.0.1", "--directory", "C:/Users/user/AppData/Local/Temp/claude/G---------2026--809/66af5313-7986-49ff-9562-0f52e98ee0ec/scratchpad/quiztest"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8899",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "C:/Users/user/AppData/Local/Temp/claude/G---------2026--809/66af5313-7986-49ff-9562-0f52e98ee0ec/scratchpad/quiztest"
+      ],
       "port": 8899
+    },
+    {
+      "name": "review6",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8886",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "複習網站六"
+      ],
+      "port": 8886
     }
   ]
 }
