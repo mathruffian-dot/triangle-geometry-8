@@ -985,7 +985,7 @@ if(el('rvOnlyTodo')) el('rvOnlyTodo').onchange = renderReviewList;
 el('btnApplyAllAI').onclick = async ()=>{
   const u = submitUrl();
   if(!u){ alert('請先設定收卷網址並「載入待覆核」'); return; }
-  const todo = reviewData.filter(r=>String(r['老師覆核級分']||'')==='' && String(r['AI級分']==null?'':r['AI級分'])!=='');
+  const todo = reviewData.filter(r=>!hasLv(r['老師覆核級分']) && hasLv(r['AI級分']));
   if(!todo.length){ alert('沒有「未覆核且已有 AI 初評」的作答可套用。\n（若都還沒 AI 初評，請先跑批改腳本 grade_essays.py。）'); return; }
   if(!confirm('把 '+todo.length+' 份未覆核的作答，直接採用 AI 級分當你的覆核分數？\n\n之後仍可個別修改；建議至少抽看幾份「低信心」的再放行。')) return;
   const updates = todo.map(r=>({fileId:r['檔案ID'], level:parseInt(r['AI級分'],10), comment:(r['老師備註']||'')}));
@@ -999,12 +999,14 @@ el('btnApplyAllAI').onclick = async ()=>{
     } else { el('rvCount').textContent=oldCount; alert('⚠ 套用失敗：'+(j.error||'')); }
   }catch(e){ el('rvCount').textContent=oldCount; alert('⚠ 套用失敗：'+e); }
 };
+// 級分 0 是合法值：不可用 (v||'') 判空，否則 0 級會被當成「未覆核」
+function hasLv(v){ return v === 0 || (v != null && String(v).trim() !== ''); }
 let rvCur = 0;   // 目前聚焦的卡片索引（鍵盤操作用）
 function renderReviewList(){
   const onlyTodo = el('rvOnlyTodo').checked;
   let rows = reviewData.slice();
-  if(onlyTodo) rows = rows.filter(r=>String(r['老師覆核級分']||'')==='');
-  const total = reviewData.length, done = reviewData.filter(r=>String(r['老師覆核級分']||'')!=='').length;
+  if(onlyTodo) rows = rows.filter(r=>!hasLv(r['老師覆核級分']));
+  const total = reviewData.length, done = reviewData.filter(r=>hasLv(r['老師覆核級分'])).length;
   el('rvCount').textContent = `已覆核 ${done} / ${total}` + (rows.length?`　（顯示 ${rows.length} 份）`:'');
   const bar = el('rvProgBar'); if(bar) bar.style.width = total ? Math.round(done/total*100)+'%' : '0%';
   el('reviewOut').innerHTML = rows.length ? rows.map(reviewCard).join('')
@@ -1052,10 +1054,10 @@ function reviewCard(r){
   const num = (String(qid).split('N')[1]||'');
   const guide = (rub && rub.guide) ? '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--blue);font-weight:700;font-size:.85rem">📋 官方評分指引（0–3級分）</summary><div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.82rem;white-space:pre-wrap;margin-top:4px">3級分：'+escR(rub.guide.l3)+'\n\n2級分：'+escR(rub.guide.l2)+'\n\n1級分：'+escR(rub.guide.l1)+'\n\n0級分：'+escR(rub.guide.l0)+'</div></details>' : '';
   const btns = [0,1,2,3].map(lv=>'<button class="lvbtn '+(String(tLv)===String(lv)?'on':'')+'" onclick="setLv(\''+fid+'\','+lv+',this)">'+lv+'</button>').join('');
-  return '<div class="panel rvcard'+(String(tLv||'')!==''?' done':'')+'" id="rv-'+fid+'" onclick="focusCardById(\''+fid+'\')">'
+  return '<div class="panel rvcard'+(hasLv(tLv)?' done':'')+'" id="rv-'+fid+'" onclick="focusCardById(\''+fid+'\')">'
     +'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline">'
     +'<b>'+escR(r['班級'])+'-'+escR(r['座號'])+' '+escR(r['姓名']||'')+'</b>'
-    +'<span style="color:var(--sub);font-size:.8rem">'+(q.year||'')+'年 非選第'+num+'題　'+escR(q.topic||'')+(String(tLv||'')!==''?'　✅已覆核 '+escR(tLv)+'級':'')+'</span></div>'
+    +'<span style="color:var(--sub);font-size:.8rem">'+(q.year||'')+'年 非選第'+num+'題　'+escR(q.topic||'')+(hasLv(tLv)?'　✅已覆核 '+escR(tLv)+'級':'')+'</span></div>'
     +'<div class="rvgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">'
     +'<div><div class="hint">'+(rpid?'紅筆批改版（原圖未被更動）':'學生作答')+'（點可放大）'
     +(rpid?' <button class="hwbtn" style="padding:2px 10px;font-size:.78rem" data-fid="'+fid0+'" data-rp="'+rpid+'" onclick="toggleRedpen(this)">看原圖</button>':'')+'</div>'
@@ -1104,7 +1106,7 @@ async function saveReview(fid){
       const row = reviewData.find(r=>String(r['檔案ID'])===String(fid)); if(row){ row['老師覆核級分']=lv; row['老師備註']=comment; }
       const card = el('rv-'+fid); if(card) card.classList.add('done');
       // 更新進度列
-      const total = reviewData.length, done = reviewData.filter(r=>String(r['老師覆核級分']||'')!=='').length;
+      const total = reviewData.length, done = reviewData.filter(r=>hasLv(r['老師覆核級分'])).length;
       el('rvCount').textContent = `已覆核 ${done} / ${total}`;
       const bar = el('rvProgBar'); if(bar) bar.style.width = total ? Math.round(done/total*100)+'%' : '0%';
       if(el('rvOnlyTodo').checked) setTimeout(renderReviewList, 700);
@@ -1777,10 +1779,11 @@ document.getElementById('btnMyResult').onclick = async ()=>{
   const box = document.getElementById('myResultBox');
   box.innerHTML = '<div class="panel">⏳ 查詢中…</div>';
   const url = SUBMIT + (SUBMIT.indexOf('?')>=0?'&':'?') + 'myresult=1&quiz=' + encodeURIComponent("__TITLE__") + '&cls=' + encodeURIComponent(cls) + '&seat=' + encodeURIComponent(seat);
-  try{ const rows = await (await fetch(url)).json(); renderMyResult(Array.isArray(rows)?rows:[]); }
+  try{ const j = await (await fetch(url)).json();
+        renderMyResult(Array.isArray(j)?j:(j.items||[]), Array.isArray(j)?null:(j.choice||null)); }
   catch(e){ box.innerHTML = '<div class="panel">查詢失敗，請稍後再試。</div>'; }
 };
-function renderMyResult(rows){
+function renderMyResult(rows, choice){
   const box = document.getElementById('myResultBox');
   if(!rows.length){ box.innerHTML = '<div class="panel review rv-na">查不到你的非選作答紀錄——確認班級座號正確、而且已經交卷。</div>'; return; }
   const byId = {}; ITEMS.forEach(q=>byId[q.id]=q);
@@ -1809,8 +1812,29 @@ function renderMyResult(rows){
       + (r.img?'<div style="margin:4px 0"><a href="'+esc(r.img)+'" target="_blank" rel="noopener" class="hint">🖼 看我當初交的作答</a></div>':'')
       + detail + '</div>';
   }).join('');
-  box.innerHTML = '<div class="panel"><h3 style="margin:0 0 4px">📋 我的非選批改結果</h3>'
-    + '<p class="hint" style="margin:0">「批改中」＝老師還沒批到，晚點再回來查；級分 0–3（會考制），最終以老師為準。</p>' + cards + '</div>';
+  // 會考加權換算：非選(級分和/總級分)×15 ＋ 選擇(答對/題數)×85，滿分 100
+  let weighted = '';
+  const gradedRows = rows.filter(r=>r.level===0 || (r.level!=null && String(r.level).trim()!==''));
+  if(rows.length && gradedRows.length === rows.length){
+    const eGot = gradedRows.reduce((a,r)=>a+Number(r.level||0),0), eMax = rows.length*3;
+    const ePart = eMax ? (eGot/eMax)*15 : 0;
+    if(choice && Number(choice.total)>0){
+      const cPart = (Number(choice.score)/Number(choice.total))*85;
+      weighted = '<div style="background:linear-gradient(135deg,#eff6ff,#e0f2fe);border:1px solid #bfdbfe;border-radius:14px;padding:14px 16px;margin:4px 0 12px">'
+        + '<div style="font-size:.85rem;color:var(--sub);font-weight:700">會考加權總分（滿分 100）</div>'
+        + '<div style="font-size:2.1rem;font-weight:800;color:var(--blue);line-height:1.25">'+(ePart+cPart).toFixed(1)
+        + '<span style="font-size:1rem;color:var(--sub);font-weight:600"> / 100</span></div>'
+        + '<div class="hint" style="margin-top:4px">選擇題 '+choice.score+'/'+choice.total+' × 85% ＝ '+cPart.toFixed(1)+' 分'
+        + '　＋　非選 '+eGot+'/'+eMax+' 級分 × 15% ＝ '+ePart.toFixed(1)+' 分</div>'
+        + '<div class="hint" style="margin-top:2px">＊依國中教育會考計分方式換算（選擇佔 85%、非選佔 15%）</div></div>';
+    } else {
+      weighted = '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:12px 14px;margin:4px 0 12px">'
+        + '<b>非選得分：'+eGot+' / '+eMax+' 級分</b><div class="hint">占會考加權 15%，換算 '+ePart.toFixed(1)+' 分</div></div>';
+    }
+  }
+  box.innerHTML = '<div class="panel"><h3 style="margin:0 0 4px">📋 我的批改結果</h3>'
+    + '<p class="hint" style="margin:0 0 8px">「批改中」＝老師還沒批到，晚點再回來查；級分 0–3（會考制），最終以老師為準。</p>'
+    + weighted + cards + '</div>';
   box.scrollIntoView({behavior:'smooth'});
 }
 </script>

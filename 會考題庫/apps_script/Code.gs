@@ -99,8 +99,10 @@ function _ensureCol(s, name) {
 // 自動去重：同 班+座+題目ID 只留「上傳時間」最新的一筆（學生重交只算最後一次）
 function _dedupeLatest(rows) {
   const best = {};
+  // 班級／座號可能有補零（"09" vs "9"），正規化後才不會把同一人當成兩人
+  const norm = function (v) { return String(v == null ? '' : v).trim().replace(/^0+(?=\d)/, ''); };
   rows.forEach(r => {
-    const k = String(r['班級']) + '|' + String(r['座號']) + '|' + String(r['題目ID']);
+    const k = norm(r['班級']) + '|' + norm(r['座號']) + '|' + String(r['題目ID']);
     let t = 0; try { t = new Date(r['上傳時間']).getTime() || 0; } catch (e) {}
     if (!best[k] || t >= best[k]._t) { r._t = t; best[k] = r; }
   });
@@ -151,6 +153,7 @@ function doPost(e) {
       const s = ss.getSheetByName('非選作答');
       if (!s) return _json({ ok: false, error: '尚無非選作答表' });
       const rpCol = _ensureCol(s, '紅筆圖ID');
+      const rlCol = _ensureCol(s, '紅筆圖連結');   // 老師在試算表可直接點開
       const vals = s.getDataRange().getValues();
       const head = vals[0];
       const idCol = head.indexOf('檔案ID');
@@ -172,6 +175,7 @@ function doPost(e) {
           const f = folder.createFile(blob);
           f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
           s.getRange(row.i + 1, rpCol + 1).setValue(f.getId());
+          s.getRange(row.i + 1, rlCol + 1).setValue(f.getUrl());
           n++;
         } catch (err) {}
       });
@@ -260,16 +264,33 @@ function doGet(e) {
     if (!s) return _json([]);
     const vals = s.getDataRange().getValues();
     const head = vals[0];
+    const nz = function (v) { return String(v == null ? '' : v).trim().replace(/^0+(?=\d)/, ''); };
     const objs = vals.slice(1).map(r => { const o = {}; head.forEach((h, i) => o[h] = r[i]); return o; })
       .filter(r => (!p.quiz || String(r['試卷']) === String(p.quiz)) &&
-                   String(r['班級']) === String(p.cls) && String(r['座號']) === String(p.seat));
+                   nz(r['班級']) === nz(p.cls) && nz(r['座號']) === nz(p.seat));
     const out = _dedupeLatest(objs).map(r => ({
       qid: r['題目ID'], img: r['圖片連結'], myans: r['最後答案'],
       level: r['老師覆核級分'], comment: r['老師備註'],
       ai_level: r['AI級分'], reason: r['AI理由'], transcript: r['AI辨識內容'],
       redpen: r['紅筆圖ID'],
     }));
-    return _json(out);
+    // 一併回傳該生此卷的選擇題成績（供學生端換算「會考加權 100 分」）
+    let choice = null;
+    try {
+      const rs = ss.getSheetByName('作答紀錄').getDataRange().getValues().slice(1);
+      let best = null;
+      rs.forEach(function (row) {
+        const rec = JSON.parse(row[10] || '{}');
+        // 座號可能有補零（"09" vs "9"），一律去空白＋去前導零再比
+        const norm = function (v) { return String(v == null ? '' : v).trim().replace(/^0+(?=\d)/, ''); };
+        if ((!p.quiz || String(rec.quiz) === String(p.quiz)) &&
+            norm(rec.cls) === norm(p.cls) && norm(rec.seat) === norm(p.seat)) {
+          if (!best || new Date(row[0]) >= new Date(best.t)) best = { t: row[0], s: rec.score, n: rec.total_auto };
+        }
+      });
+      if (best) choice = { score: best.s, total: best.n };
+    } catch (err) {}
+    return _json({ items: out, choice: choice });
   }
   const vals = ss.getSheetByName('作答紀錄').getDataRange().getValues().slice(1);
   let recs = vals.map(r => { try { return JSON.parse(r[10]); } catch (err) { return null; } }).filter(Boolean);
