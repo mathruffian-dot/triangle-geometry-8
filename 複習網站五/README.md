@@ -45,7 +45,8 @@ Esc 關閉雷射筆／畫筆；畫筆支援觸控螢幕。
 要新增 / 修改某一頁，只要編輯對應的 `chN.js` 內該投影片物件即可。
 
 ## 線上網址（可發給學生）
-**https://math809-review5.netlify.app**
+**https://math809-review5.pages.dev**（Cloudflare Pages，主要）
+備援：https://math809-review5.netlify.app
 （Netlify 站台 `math809-review5`，Project ID `67ac2ec1-45ba-476f-b0d4-15327819ef26`，2026-07-21 上線）
 
 ### 改版後重新部署
@@ -57,3 +58,10 @@ netlify deploy --dir "複習網站五" --site 67ac2ec1-45ba-476f-b0d4-15327819ef
 netlify api restoreSiteDeploy --data '{"site_id":"67ac2ec1-45ba-476f-b0d4-15327819ef26","deploy_id":"<deploy_id>"}'
 ```
 （專案根目錄 link 的是 math809-quiz，務必帶 `--site` 指定本站台。）
+
+## Cloudflare Pages（主要部署）
+改版後重新部署，在**專案根目錄**執行：
+```bash
+npx wrangler pages deploy "複習網站五" --project-name math809-review5 --branch main --commit-dirty=true
+```
+Netlify 版本仍保留為備援，兩邊內容相同。

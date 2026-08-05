@@ -4,7 +4,8 @@
 每個重點都有**視覺化演示**與**範例**。規格比照第五冊（`../複習網站五`）。
 
 ## 線上網址（可發給學生）
-**https://math809-review1.netlify.app**
+**https://math809-review1.pages.dev**（Cloudflare Pages，主要）
+備援：https://math809-review1.netlify.app
 （Netlify 站台 `math809-review1`，Project ID `f4af3cbd-9a75-49cf-bfe5-220f74b4e639`，2026-07-23 上線）
 
 ### 改版後重新部署
@@ -25,7 +26,7 @@ netlify api restoreSiteDeploy --data '{"site_id":"f4af3cbd-9a75-49cf-bfe5-220f74
 ## 操作
 - **← →** 或**空白鍵**：上／下一頁；**Home / End**：最前／最後
 - 左側**目錄**依章節跳頁；右上「☰ 目錄」在手機版可收合
-- **23 頁有滑桿互動**：數線上拖動看相反數與絕對值、加減法在數線上走路、
+- **29 頁有滑桿互動**：數線上拖動看相反數與絕對值、加減法在數線上走路、
   負負得正的水位模型、10 的次方與小數點移動、質因數分解短除法逐步、
   短除法求 GCD／LCM 逐步、分數通分、指數律的展開對照、等量公理天平、移項法則逐步、
   應用問題的線段圖…
@@ -48,7 +49,7 @@ netlify api restoreSiteDeploy --data '{"site_id":"f4af3cbd-9a75-49cf-bfe5-220f74
 | 第 2 章 分數的運算 | 2-1 因數與倍數、2-2 最大公因數與最小公倍數、2-3 分數的四則運算、2-4 指數律 |
 | 第 3 章 一元一次方程式 | 3-1 代數式的化簡、3-2 一元一次方程式、3-3 應用問題 |
 
-共 3 張章名頁 + 56 張重點頁（合計 59 頁）。
+共 3 張章名頁 + 57 張重點頁（合計 60 頁）。
 
 > 📌 **與暑輔複習細項表的對照**：細項表寫的「第 2 章＝分數加減／分數乘除／科學記號」
 > 是 **99 課綱舊版康軒**的分節。108 課綱版已把分數加減與乘除合併為單一節 **2-3**，
@@ -70,3 +71,10 @@ netlify api restoreSiteDeploy --data '{"site_id":"f4af3cbd-9a75-49cf-bfe5-220f74
 
 要新增／修改某一頁，只要編輯對應 `chN.js` 內該投影片物件即可。
 撰寫規格見 `../複習網站五/SLIDE_SPEC.md`，單元藍圖見 `../康軒版B1-B3單元藍圖.md`。
+
+## Cloudflare Pages（主要部署）
+改版後重新部署，在**專案根目錄**執行：
+```bash
+npx wrangler pages deploy "複習網站一" --project-name math809-review1 --branch main --commit-dirty=true
+```
+Netlify 版本仍保留為備援，兩邊內容相同。

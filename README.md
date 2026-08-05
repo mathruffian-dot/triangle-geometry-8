@@ -14,16 +14,23 @@
 | 觀念補強・學生練習頁（56 單元、即時回饋） | https://math809-quiz.netlify.app/practice.html |
 
 ### 📖 全冊複習簡報（可發學生）
+
+**主要網址（Cloudflare Pages，建議發這一組）**
+
 | 冊別 | 內容 | 頁數 | 網址 |
 |------|------|------|------|
-| 第一冊（七上） | 整數的運算／分數的運算／一元一次方程式 | 59 | https://math809-review1.netlify.app |
-| 第二冊（七下） | 聯立方程式／直角坐標／比與比例式／不等式／統計／生活中的幾何 | 75 | https://math809-review2.netlify.app |
-| 第三冊（八上） | 乘法公式與多項式／平方根與畢氏定理／因式分解／一元二次方程式／統計資料處理 | 71 | https://math809-review3.netlify.app |
-| 第四冊（八下） | 數列與級數／函數／三角形的基本性質／平行與四邊形 | 67 | https://math809-review.netlify.app |
-| 第五冊（九上） | 相似形／圓／幾何與證明 | 42 | https://math809-review5.netlify.app |
+| 第一冊（七上） | 整數的運算／分數的運算／一元一次方程式 | 60 | https://math809-review1.pages.dev |
+| 第二冊（七下） | 聯立方程式／直角坐標／比與比例式／不等式／統計／生活中的幾何 | 85 | https://math809-review2.pages.dev |
+| 第三冊（八上） | 乘法公式與多項式／平方根與畢氏定理／因式分解／一元二次方程式／統計資料處理 | 71 | https://math809-review3.pages.dev |
+| 第四冊（八下） | 數列與級數／函數／三角形的基本性質／平行與四邊形 | 67 | https://math809-review.pages.dev |
+| 第五冊（九上） | 相似形／圓／幾何與證明 | 42 | https://math809-review5.pages.dev |
+
+**備援網址（Netlify，同內容）**：把上表網址的 `.pages.dev` 換成 `.netlify.app` 即可
+（`math809-review1.netlify.app`⋯⋯）。兩邊都會保留，Netlify 版本仍可用。
 
 > 五冊**各自獨立網址**，可單獨發給學生。全部同一套規格：一頁一重點、視覺化演示＋範例、
-> 一頁一螢幕自動縮放、範例／圖解可放大成整頁、授課教具（雷射筆＋畫筆）。合計 **314 頁、112 頁互動**。
+> 一頁一螢幕自動縮放、範例／圖解可放大成整頁（HTML 內容會等比放大字級）、
+> 授課教具（雷射筆＋畫筆）。合計 **325 頁、約 145 頁互動**。
 
 ### 🔒 老師專用（⚠️ 勿發學生）
 | 用途 | 網址 |
@@ -39,7 +46,27 @@
 
 > ⚠️ **題庫系統 `math809-bank` 含所有詳解，是公開連結——請只留給老師，勿轉發學生。**
 
-### Netlify 站台 ID（部署用）
+### Cloudflare Pages（主要，部署用）
+Cloudflare 帳號 `mathruffian@gmail.com`（Account ID `b87e54acd78dd4acfbdc96e3bfa8d230`），
+用 wrangler OAuth 登入，專案名即網址前綴。**改版後重新部署**（在專案根目錄）：
+
+```bash
+npx wrangler pages deploy "複習網站二" --project-name math809-review2 --branch main --commit-dirty=true
+```
+
+| Pages 專案 | 網址 |
+|------|------|
+| math809-review1 / 2 / 3 / review / review5 | `https://<專案名>.pages.dev` |
+| math809-quiz、math809-bank | 同上（由非選題批改系統維護） |
+
+> ⚠️ 若 wrangler 報 **Project not found** 或帳號不對，先確認環境變數
+> `CLOUDFLARE_API_TOKEN` 沒有指向別的帳號；wrangler 的 OAuth 憑證在
+> `%APPDATA%\xdg.config\.wrangler\config\default.toml`。
+>
+> ⚠️ 首次部署後約 20～60 秒內 `*.pages.dev` 可能回 **522**（邊緣節點還在傳播），
+> 稍候重整即可；瀏覽器若已快取錯誤頁，加上 `?r=1` 之類參數強制重取。
+
+### Netlify 站台 ID（備援，部署用）
 | 站台 | Site ID |
 |------|---------|
 | math809-quiz（學生作答卷） | `05be96f6-da95-4687-b3d5-39329a05220d` |

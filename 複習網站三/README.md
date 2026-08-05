@@ -4,7 +4,8 @@
 每個重點都有**視覺化演示**與**範例**。規格比照第五冊（`../複習網站五`）。
 
 ## 線上網址（可發給學生）
-**https://math809-review3.netlify.app**
+**https://math809-review3.pages.dev**（Cloudflare Pages，主要）
+備援：https://math809-review3.netlify.app
 （Netlify 站台 `math809-review3`，Project ID `6f56bec2-f044-424e-9dc2-6e11a2542a29`，2026-07-23 上線）
 
 ### 改版後重新部署
@@ -75,3 +76,10 @@ netlify api restoreSiteDeploy --data '{"site_id":"6f56bec2-f044-424e-9dc2-6e11a2
 
 要新增／修改某一頁，只要編輯對應 `chN.js` 內該投影片物件即可。
 撰寫規格見 `../複習網站五/SLIDE_SPEC.md`，單元藍圖見 `../康軒版B1-B3單元藍圖.md`。
+
+## Cloudflare Pages（主要部署）
+改版後重新部署，在**專案根目錄**執行：
+```bash
+npx wrangler pages deploy "複習網站三" --project-name math809-review3 --branch main --commit-dirty=true
+```
+Netlify 版本仍保留為備援，兩邊內容相同。

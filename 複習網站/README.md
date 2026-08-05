@@ -4,7 +4,8 @@
 每個重點都有**視覺化演示**與**範例**。規格與第一～五冊一致（見專案根目錄 `README.md`）。
 
 ## 線上網址（可發給學生）
-**https://math809-review.netlify.app**
+**https://math809-review.pages.dev**（Cloudflare Pages，主要）
+備援：https://math809-review.netlify.app
 （Netlify 站台 `math809-review`，Project ID `3f28584a-030d-4f9f-8ef7-bea8c71e9235`）
 
 ### 改版後重新部署
@@ -75,3 +76,10 @@ netlify api restoreSiteDeploy --data '{"site_id":"3f28584a-030d-4f9f-8ef7-bea8c7
 |------|------|
 | 2026-07-15 | 首次上線，63 張重點頁 |
 | 2026-07-23 | 升級為第五冊規格：一頁一螢幕自動縮放、範例／圖解放大成整頁、雷射筆淡出拖尾、滑桿改置圖下方不擋圖 |
+
+## Cloudflare Pages（主要部署）
+改版後重新部署，在**專案根目錄**執行：
+```bash
+npx wrangler pages deploy "複習網站" --project-name math809-review --branch main --commit-dirty=true
+```
+Netlify 版本仍保留為備援，兩邊內容相同。
