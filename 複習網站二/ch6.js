@@ -91,6 +91,56 @@ window.DECK = window.DECK || [];
 
       {
         sec: '6-1', secName: '簡單幾何圖形',
+        title: '三角形 △ABC：三個頂點、三個邊、三個內角',
+        points: [
+          '三個<b>頂點</b> \\(A\\)、\\(B\\)、\\(C\\) 圍成的圖形，記作 \\(\\triangle ABC\\)。',
+          '三個邊都是<b>線段</b>：\\(\\overline{AB}\\)、\\(\\overline{BC}\\)、\\(\\overline{CA}\\)。',
+          '三個內角記作 \\(\\angle A\\)（＝\\(\\angle BAC\\)）——<b>中間的字母是頂點</b>。'
+        ],
+        formula: { label: '三組元素', tex: '\\triangle ABC:\\ \\overline{AB},\\overline{BC},\\overline{CA}\\ ;\\ \\angle A,\\angle B,\\angle C' },
+        visual: (h) => {
+          h.innerHTML = `<div style="width:100%"><div id="tri"></div>
+            <div class="ictrl"><label>高亮 <span class="ival" id="tv">三頂點</span></label>
+            <input type="range" id="ts" min="0" max="2" step="1" value="0"></div></div>`;
+          const A = [220, 76], B = [86, 244], Cc = [354, 244];
+          const NM = ['三頂點', '三邊', '三內角'];
+          const draw = () => {
+            const m = Math.round(+h.querySelector('#ts').value);
+            h.querySelector('#tv').textContent = NM[m];
+            let s = SV.poly([A, B, Cc], 'rgba(8,145,178,0.07)', m === 1 ? '#c6cedb' : '#7c8797', 2.4);
+            if (m === 1) {
+              s += SV.seg(A[0], A[1], B[0], B[1], RED, 5.5);
+              s += SV.seg(B[0], B[1], Cc[0], Cc[1], GRN, 5.5);
+              s += SV.seg(Cc[0], Cc[1], A[0], A[1], BLU, 5.5);
+            }
+            if (m === 2) {
+              const an = (V, P1, P2, col, lab) => SV.angle(V[0], V[1], 34,
+                SV.angleOf(V[0], V[1], P1[0], P1[1]), SV.angleOf(V[0], V[1], P2[0], P2[1]),
+                col, lab, { w: 3, fs: 15, lr: 20 });
+              s += an(A, B, Cc, RED, '∠A') + an(B, Cc, A, GRN, '∠B') + an(Cc, A, B, BLU, '∠C');
+            }
+            const vc = (m === 0) ? [RED, GRN, BLU] : ['#172033', '#172033', '#172033'];
+            const vr = (m === 0) ? 7.5 : 5;
+            s += SV.dot(A[0], A[1], vc[0], vr) + SV.dot(B[0], B[1], vc[1], vr) + SV.dot(Cc[0], Cc[1], vc[2], vr);
+            s += SV.vlabel(A[0] - 6, A[1] - 14, 'A', vc[0]) + SV.vlabel(B[0] - 26, B[1] + 10, 'B', vc[1]) + SV.vlabel(Cc[0] + 12, Cc[1] + 10, 'C', vc[2]);
+            if (m === 1) s += txt(120, 154, 'AB', RED, 15) + txt(220, 272, 'BC', GRN, 15) + txt(320, 154, 'CA', BLU, 15);
+            if (m === 2) s += txt(220, 272, '∠A 也可以寫成 ∠BAC（中間字母是頂點）', '#657187', 13);
+            s += txt(220, 30, (m === 0) ? '三個頂點 A、B、C → 記作 △ABC'
+              : (m === 1) ? '三個邊：線段 AB、BC、CA' : '三個內角：∠A、∠B、∠C', C, 16);
+            h.querySelector('#tri').innerHTML = svg('0 0 440 288', s);
+          };
+          h.querySelector('#ts').oninput = draw; draw();
+        },
+        caption: '同一個三角形有三組元素：頂點、邊、角——名稱與符號要一一對得起來。',
+        example: {
+          q: '\\(\\triangle ABC\\) 中，\\(\\angle ABC\\) 的頂點是哪一點？它的兩邊是哪兩條線段？',
+          steps: ['角的<b>中間</b>字母就是頂點 \\(\\Rightarrow\\) 頂點是 \\(B\\)。', '兩邊由頂點 \\(B\\) 分別連向 \\(A\\) 與 \\(C\\)。'],
+          ans: '頂點 \\(B\\)；兩邊為 \\(\\overline{BA}\\)、\\(\\overline{BC}\\)'
+        }
+      },
+
+      {
+        sec: '6-1', secName: '簡單幾何圖形',
         title: '中點：把線段切成等長的兩段',
         points: [
           '\\(M\\) 是 \\(\\overline{AB}\\) 的<span class="k">中點</span> \\(\\Longleftrightarrow\\overline{AM}=\\overline{MB}=\\dfrac12\\overline{AB}\\)。',
@@ -338,7 +388,7 @@ window.DECK = window.DECK || [];
         caption: '摺到 100% 時橘色完全蓋住藍色，這才叫線對稱。',
         example: {
           q: '英文字母 A、B、H、N 之中，哪些是線對稱圖形？',
-          steps: ['A 有一條鉛直對稱軸；B 有一條水平對稱軸；H 兩條都有。', 'N 要轉半圈才重合，對摺不會疊合。'],
+          steps: ['A 有一條鉛直對稱軸；B 有一條水平對稱軸；H 兩條都有。', 'N <b>不論沿哪一條直線對摺都疊不起來</b>，所以不是線對稱。<span style="color:#94a3b8">（它要轉半圈才重合，屬八下內容）</span>'],
           ans: 'A、B、H（N 不是）'
         }
       },
@@ -380,11 +430,66 @@ window.DECK = window.DECK || [];
 
       {
         sec: '6-2', secName: '線對稱',
+        title: '三步驟在方格上作出對稱點 A′',
+        points: [
+          '① 先數 \\(A\\) 到對稱軸 \\(L\\) <b>相差幾格</b>，這是唯一要量的東西。',
+          '② 從 \\(A\\) 向 \\(L\\) 畫<b>垂線</b>，交點 \\(M\\) 標上直角記號。',
+          '③ 沿同一條垂線，往 \\(L\\) <b>另一側同樣格數</b>描出 \\(A\'\\)。',
+          '檢查：\\(\\overline{AM}=\\overline{MA\'}\\) 且 \\(\\overline{AA\'}\\perp L\\) 就完成了。'
+        ],
+        formula: { label: '作對稱點的依據', tex: 'L\\perp\\overline{AA\'}\\ \\text{且}\\ \\overline{AM}=\\overline{MA\'}' },
+        visual: (h) => {
+          const gx = 40, gy = 40, g = 36, gc = 10, gr = 6;
+          const gx1 = gx + gc * g, gy1 = gy + gr * g;
+          const A = [148, 148], M = [256, 148], A2 = [364, 148];
+          const base = () => {
+            let s = `<rect x="${gx}" y="${gy}" width="${gc * g}" height="${gr * g}" fill="#fbfdff"/>`;
+            for (let i = 0; i <= gc; i++) s += SV.seg(gx + i * g, gy, gx + i * g, gy1, '#e2e8f0', 1);
+            for (let j = 0; j <= gr; j++) s += SV.seg(gx, gy + j * g, gx1, gy + j * g, '#e2e8f0', 1);
+            s += SV.seg(M[0], gy - 10, M[0], gy1 + 10, C, 3.2);
+            s += txt(M[0] + 20, gy + 6, 'L', C, 16);
+            s += SV.dot(A[0], A[1], RED, 6) + SV.vlabel(A[0] - 10, A[1] - 14, 'A', RED);
+            return s;
+          };
+          const cnt = (x0, col) => [0, 1, 2].map(i => txt(x0 + 18 + i * g, A[1] - 12, String(i + 1), col, 13)).join('');
+          const perp = () => SV.seg(A[0], A[1], M[0], M[1], GRN, 3.6) +
+            SV.rightAngle(M[0], M[1], 180, 90, 13, GRN) +
+            SV.dot(M[0], M[1], GRN, 5.5) + SV.vlabel(M[0] + 8, M[1] + 24, 'M', GRN);
+          SV.stepper(h, '0 0 440 288', [
+            {
+              t: '在方格上畫出對稱軸 L 與點 A，數出 A 到 L 差幾格。',
+              d: () => base() + cnt(A[0], BLU) + txt(220, 278, '① A 在 L 左邊 3 格', BLU, 15)
+            },
+            {
+              t: '由 A 向 L 畫垂線，垂足記作 M，標上直角記號。',
+              d: () => base() + cnt(A[0], BLU) + perp() + txt(220, 278, '② 垂直過去，垂足是 M', GRN, 15)
+            },
+            {
+              t: '在 L 另一側同樣 3 格描出 A′，兩段等長（紅色刻度）。',
+              d: () => base() + cnt(A[0], BLU) + perp() + cnt(M[0], RED) +
+                SV.seg(M[0], M[1], A2[0], A2[1], RED, 3.6) +
+                SV.ticks(A[0], A[1], M[0], M[1], 2, RED, 7) + SV.ticks(M[0], M[1], A2[0], A2[1], 2, RED, 7) +
+                SV.dot(A2[0], A2[1], RED, 6) + SV.vlabel(A2[0] + 8, A2[1] - 14, "A'", RED) +
+                txt(220, 278, '③ 同樣 3 格 → 對稱點 A′ 完成', RED, 15)
+            }
+          ], { acc: false });
+        },
+        caption: '方格紙上只要數格子：<b>垂直過去、同樣格數回來</b>，對稱點就出來了。',
+        example: {
+          q: '\\(A\\) 到對稱軸 \\(L\\) 的距離為 \\(5\\)，\\(A\'\\) 是 \\(A\\) 的對稱點，求 \\(\\overline{AA\'}\\)。',
+          steps: ['\\(L\\) 垂直平分 \\(\\overline{AA\'}\\)，垂足 \\(M\\) 是中點。', '\\(\\overline{AM}=\\overline{MA\'}=5\\)，所以 \\(\\overline{AA\'}=5+5\\)。'],
+          ans: '\\(\\overline{AA\'}=10\\)'
+        }
+      },
+
+      {
+        sec: '6-2', secName: '線對稱',
         title: '常見圖形各有幾條對稱軸',
         points: [
           '<b>正 \\(n\\) 邊形有 \\(n\\) 條</b>對稱軸；<b>圓</b>有<b>無限多</b>條（每條直徑所在的直線）。',
-          '三角形：一般 0 條、等腰 1 條、正三角形 3 條。',
-          '四邊形：正方形 4 條、長方形 2 條、菱形 2 條、箏形 1 條、等腰梯形 1 條、<b>平行四邊形 0 條</b>。'
+          '三角形：<b>等腰 1 條</b>、正三角形 3 條、一般三角形 0 條。',
+          '四邊形：<b>正方形 4 條、菱形 2 條、箏形 1 條</b>。',
+          '<span style="color:#94a3b8">課本補充：長方形 2 條、等腰梯形 1 條、平行四邊形 0 條。</span>'
         ],
         formula: { label: '正多邊形', tex: '\\text{正 }n\\text{ 邊形恰有 }n\\text{ 條對稱軸}' },
         visual: (h) => {
@@ -419,34 +524,71 @@ window.DECK = window.DECK || [];
 
       {
         sec: '6-2', secName: '線對稱',
-        title: '6-2 易錯：對角線不是對稱軸',
+        title: '6-2 易錯：長方形的對角線不是對稱軸',
         points: [
-          '✗ 以為長方形的<b>對角線</b>是對稱軸；✓ 沿對角線摺會歪掉，長方形只有 <b>2 條</b>。',
-          '✗ 把平行四邊形當成線對稱；✓ 它要<b>轉半圈</b>才重合，對稱軸 <b>0 條</b>。',
-          '✗ 只想到左右對摺；✓ 對稱軸也可能是<b>水平</b>或<b>斜的</b>（如字母 B、D）。'
+          '<b>長方形</b>沿對角線摺會歪掉，它的 2 條對稱軸各過一組<b>對邊中點</b>。',
+          '但<b>菱形、正方形、箏形</b>的對稱軸<b>就是</b>對角線，別一起否定。',
+          '<b>平行四邊形</b>不論沿哪條直線對摺都疊不起來，對稱軸 <b>0</b> 條。<span style="color:#94a3b8">（要轉半圈才重合，屬八下）</span>',
+          '拖滑桿比較六個圖形：<b>綠虛線＝對稱軸</b>、<b>紫線＝對角線</b>。'
         ],
         visual: (h) => {
-          let s = '';
-          s += SV.poly([[42, 46], [186, 46], [186, 140], [42, 140]], 'rgba(8,145,178,0.08)', C, 2.4);
-          s += SV.seg(114, 38, 114, 148, GRN, 2, '7 5') + SV.seg(34, 93, 194, 93, GRN, 2, '7 5');
-          s += txt(114, 168, '✓ 長方形：2 條', GRN, 14);
-          s += txt(114, 188, '（各過一組對邊中點）', '#657187', 12);
-          s += SV.poly([[252, 46], [396, 46], [396, 140], [252, 140]], 'rgba(8,145,178,0.08)', C, 2.4);
-          s += SV.seg(252, 46, 396, 140, RED, 2, '7 5') + SV.seg(252, 140, 396, 46, RED, 2, '7 5');
-          s += txt(324, 168, '✗ 對角線不是對稱軸', RED, 14);
-          s += txt(324, 188, '（摺過去角會歪掉）', '#657187', 12);
-          s += SV.poly([[62, 288], [182, 288], [230, 222], [110, 222]], 'rgba(124,58,237,0.08)', VIO, 2.4);
-          s += SV.seg(110, 222, 182, 288, RED, 2, '7 5') + SV.seg(62, 288, 230, 222, RED, 2, '7 5');
-          s += txt(340, 248, '✗ 平行四邊形', RED, 15);
-          s += txt(340, 270, '0 條對稱軸', RED, 14);
-          s += txt(340, 292, '轉半圈才會重合', '#657187', 12);
-          h.innerHTML = svg('0 0 440 306', s);
+          h.innerHTML = `<div style="width:100%"><div id="sym"></div>
+            <div class="ictrl"><label>圖形 <span class="ival" id="gv">正方形</span></label>
+            <input type="range" id="gs" min="0" max="5" step="1" value="0"></div></div>`;
+          const FIG = [
+            {
+              n: '正方形', ax: 4, p: [[155, 66], [285, 66], [285, 196], [155, 196]],
+              a: [[220, 54, 220, 208], [143, 131, 297, 131], [143, 54, 297, 208], [143, 208, 297, 54]],
+              d: [[155, 66, 285, 196], [155, 196, 285, 66]],
+              m: '兩條對角線都是對稱軸 ✓', mc: GRN
+            },
+            {
+              n: '長方形', ax: 2, p: [[130, 76], [310, 76], [310, 186], [130, 186]],
+              a: [[220, 64, 220, 198], [118, 131, 322, 131]],
+              d: [[130, 76, 310, 186], [130, 186, 310, 76]],
+              m: '對角線不是對稱軸 ✗（摺過去會歪掉）', mc: RED
+            },
+            {
+              n: '菱形', ax: 2, p: [[130, 131], [220, 69], [310, 131], [220, 193]],
+              a: [[118, 131, 322, 131], [220, 57, 220, 205]],
+              d: [[130, 131, 310, 131], [220, 69, 220, 193]],
+              m: '對稱軸就是兩條對角線 ✓', mc: GRN
+            },
+            {
+              n: '箏形', ax: 1, p: [[220, 58], [152, 126], [220, 208], [288, 126]],
+              a: [[220, 46, 220, 220]],
+              d: [[220, 58, 220, 208], [152, 126, 288, 126]],
+              m: '只有鉛直那條對角線是對稱軸 ✓', mc: GRN
+            },
+            {
+              n: '等腰三角形', ax: 1, p: [[220, 66], [140, 196], [300, 196]],
+              a: [[220, 54, 220, 210]], d: [],
+              m: '三角形沒有對角線', mc: '#657187'
+            },
+            {
+              n: '平行四邊形', ax: 0, p: [[120, 190], [240, 190], [320, 80], [200, 80]],
+              a: [], d: [[120, 190, 320, 80], [240, 190, 200, 80]],
+              m: '對角線不是對稱軸 ✗（怎麼摺都疊不起來）', mc: RED
+            }
+          ];
+          const draw = () => {
+            const F = FIG[Math.round(+h.querySelector('#gs').value)];
+            h.querySelector('#gv').textContent = F.n;
+            let s = txt(220, 22, '綠虛線＝對稱軸　紫線＝對角線', '#8b94a6', 12);
+            s += SV.poly(F.p, 'rgba(8,145,178,0.07)', C, 2.6);
+            s += F.d.map(v => SV.seg(v[0], v[1], v[2], v[3], VIO, 3)).join('');
+            s += F.a.map(v => SV.seg(v[0], v[1], v[2], v[3], GRN, 2.6, '9 6')).join('');
+            s += txt(220, 244, F.n + '：對稱軸 ' + F.ax + ' 條', F.ax ? C : RED, 17);
+            s += txt(220, 272, F.m, F.mc, 14);
+            h.querySelector('#sym').innerHTML = svg('0 0 440 288', s);
+          };
+          h.querySelector('#gs').oninput = draw; draw();
         },
-        caption: '紅色虛線都不是對稱軸；判斷方法一律回到「摺起來會不會完全疊合」。',
+        caption: '判準只有一個：沿這條線對摺，兩側能不能<b>完全疊合</b>。',
         example: {
-          q: '長方形（非正方形）與平行四邊形各有幾條對稱軸？',
-          steps: ['長方形：各過一組對邊中點，共 2 條。', '平行四邊形：怎麼摺都無法疊合。'],
-          ans: '長方形 2 條；平行四邊形 0 條'
+          q: '長方形（非正方形）與菱形各有幾條對稱軸？對角線是不是對稱軸？',
+          steps: ['長方形：過兩組對邊中點各 1 條，共 2 條；沿對角線摺會歪掉。', '菱形四邊等長，沿兩條對角線摺都能完全疊合。'],
+          ans: '各 2 條；長方形的對角線不是、菱形的就是'
         }
       },
 
@@ -456,25 +598,51 @@ window.DECK = window.DECK || [];
         title: '三視圖：從三個方向正對著看',
         points: [
           '<span class="k">三視圖</span>＝把立體分別從<b>正前方、正上方、右側</b>看到的<b>平面形狀</b>。',
-          '每個方向都要<b>正對著看</b>，看到的是<b>平面形狀</b>，不是斜斜地看那種立體感。',
-          '<b>前視圖</b>看左右與高低、<b>上視圖</b>看左右與前後、<b>右視圖</b>看前後與高低。'
+          '每個方向都要<b>正對著看</b>，看到的是平面形狀，不是斜斜看的立體感。',
+          '<b>前視圖</b>看左右與高低、<b>上視圖</b>看左右與前後、<b>右視圖</b>看前後與高低。',
+          '拖滑桿切換方向，右半邊會即時畫出<b>那個方向</b>看到的平面圖。'
         ],
         formula: { label: '三個方向', tex: '\\text{前視圖}\\;/\\;\\text{上視圖}\\;/\\;\\text{右視圖}' },
         visual: (h) => {
-          const P = ISO(200, 170, 30, 16, 33);
-          let s = isoStack([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1]], P);
-          s += `<defs><marker id="c6v11" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="${RED}"/></marker></defs>`;
-          const arw = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${RED}" stroke-width="2.4" marker-end="url(#c6v11)"/>`;
-          s += arw(200, 44, 200, 92) + txt(200, 32, '① 從正上方看 → 上視圖', RED, 13);
-          s += arw(92, 248, 152, 216) + txt(6, 276, '② 從正前方看 → 前視圖', RED, 13, 'start');
-          s += arw(322, 254, 252, 216) + txt(434, 276, '③ 從右邊看 → 右視圖', RED, 13, 'end');
-          h.innerHTML = svg('0 0 440 288', s);
+          h.innerHTML = `<div style="width:100%"><div id="tv3"></div>
+            <div class="ictrl"><label>看的方向 <span class="ival" id="dv">前視圖</span></label>
+            <input type="range" id="ds" min="0" max="2" step="1" value="0"></div></div>`;
+          const P = ISO(120, 140, 28, 15, 31);
+          const cubes = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1]];
+          const NM = ['前視圖', '上視圖', '右視圖'];
+          const COL = [C, GRN, AMB], FILL = ['#d8f2f8', '#dcf2ea', '#fbeed8'];
+          const CELLS = [[[0, 0], [0, 1], [1, 0]], fullCells(2, 2), [[0, 0], [1, 0], [1, 1]]];
+          const NOTE = [['左行最高 2 層', '右行最高 1 層'], ['底面 2×2', '四格全滿'], ['左＝前排 1 層', '右＝後排 2 層']];
+          const draw = () => {
+            const m = Math.round(+h.querySelector('#ds').value);
+            h.querySelector('#dv').textContent = NM[m];
+            const act = COL[m], gry = '#c3ccdb';
+            let s = `<defs>
+              <marker id="c6t1" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="${act}"/></marker>
+              <marker id="c6t0" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="${gry}"/></marker>
+            </defs>`;
+            s += isoStack(cubes, P);
+            const arw = (x1, y1, x2, y2, on) =>
+              `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on ? act : gry}" stroke-width="${on ? 4 : 2}" marker-end="url(#${on ? 'c6t1' : 'c6t0'})"/>`;
+            s += arw(120, 30, 120, 66, m === 1);
+            s += arw(30, 232, 78, 202, m === 0);
+            s += arw(218, 232, 166, 202, m === 2);
+            s += txt(120, 22, '上方', m === 1 ? act : gry, 14);
+            s += txt(22, 256, '前方', m === 0 ? act : gry, 14, 'start');
+            s += txt(226, 256, '右方', m === 2 ? act : gry, 14, 'end');
+            s += SV.seg(246, 34, 246, 262, '#dbe2ec', 1.6, '7 6');
+            s += txt(344, 78, NM[m], act, 17);
+            s += vgrid(304, 96, 2, CELLS[m], 40, act, FILL[m]);
+            s += txt(344, 210, NOTE[m][0], '#657187', 12.5) + txt(344, 230, NOTE[m][1], '#657187', 12.5);
+            h.querySelector('#tv3').innerHTML = svg('0 0 440 288', s);
+          };
+          h.querySelector('#ds').oninput = draw; draw();
         },
-        caption: '同一個堆疊體，三個方向看到的平面形狀通常不一樣。',
+        caption: '箭頭指哪個方向，右半邊就畫出那個方向<b>正對著看</b>到的平面圖。',
         example: {
-          q: '把 2 個小正方體<b>左右並排</b>，前視圖與右視圖各是什麼形狀？',
-          steps: ['正前方看：左右各一格 → 1 列 2 格的長方形。', '右邊看：右邊的方塊把左邊的擋住 → 只看到 1 個正方形。'],
-          ans: '前視圖 1×2 長方形；右視圖 1 個正方形'
+          q: '（如圖）左後方那一疊有 2 層、其餘 3 疊各 1 層。它的前視圖與右視圖各有幾個小方格？',
+          steps: ['前視圖看左右：左行最高 2 層、右行最高 1 層 \\(\\Rightarrow 2+1=3\\)。', '右視圖看前後：後排最高 2 層、前排最高 1 層 \\(\\Rightarrow 2+1=3\\)。'],
+          ans: '前視圖 3 格；右視圖 3 格'
         }
       },
 

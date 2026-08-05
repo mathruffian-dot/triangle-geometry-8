@@ -79,17 +79,54 @@ window.DECK = window.DECK || [];
         points: [
           '✗ \\(3x+2y=5xy\\)　✓ \\(3x\\) 與 \\(2y\\) <b>不是同類項</b>，已經最簡、不能再合併。',
           '✗ \\((2x+3y)-(x-4y)=x-y\\)（只變第一項）　✓ 括號內<b>每一項</b>都變號，\\(=x+7y\\)。',
-          '✗ 代 \\(y=-2\\) 寫成 \\(-3y=-3\\times2\\)　✓ 代負數<b>一定加括號</b>：\\(-3\\times(-2)=6\\)。'
+          '✗ 代 \\(y=-2\\) 寫成 \\(-3y=-3\\times2\\)　✓ 代負數<b>一定加括號</b>：\\(-3\\times(-2)=6\\)。',
+          '拖滑桿讓「−」掃過括號，看漏掉一項會錯在哪。'
         ],
         formula: { label: '減號括號', tex: '(2x+3y)-(x-4y)=2x+3y-x+4y=x+7y' },
         visual: (h) => {
-          h.innerHTML = `<div style="width:100%">
-            <div style="text-align:center;font-size:13px;font-weight:900;color:${C};margin-bottom:9px">同類項才能合併：x 歸 x、y 歸 y、常數歸常數</div>
-            ${xoRows([
-            { bad: '\\(3x+2y=5xy\\)', good: '\\(3x\\) 與 \\(2y\\) 不是同類項，<b>不能合併</b>' },
-            { bad: '\\((2x+3y)-(x-4y)=x-y\\)', good: '\\((2x+3y)-(x-4y)=x+7y\\)' },
-            { bad: '\\(x=1,y=-2\\) 代 \\(2x-3y\\)：\\(2-3\\times2=-4\\)', good: '\\(2\\times1-3\\times(-2)=2+6=8\\)' }
-          ])}</div>`;
+          h.innerHTML = `<div style="width:100%"><div id="flip"></div>
+            <div class="ictrl"><label>「−」掃過的進度 t <span class="ival" id="fv">0.00</span></label>
+            <input type="range" id="fs" min="0" max="1" step="0.01" value="0"></div></div>`;
+          // 掃描起點／終點，與兩張卡片的中心 x
+          const XS = 152, XE = 376, K1 = 219, K2 = 304;
+          const T1 = (K1 - XS) / (XE - XS), T2 = (K2 - XS) / (XE - XS);
+          // 一張可翻面的色塊卡片
+          const card = (x, w, txt, col, fill) =>
+            BOX(x, 100, w, 44, { r: 10, fill: fill, stroke: col, sw: 2.2 }) +
+            TX(x + w / 2, 130, txt, { fs: 20, c: col, anchor: 'middle' });
+          const draw = () => {
+            const t = +h.querySelector('#fs').value;
+            h.querySelector('#fv').textContent = t.toFixed(2);
+            const sx = XS + (XE - XS) * t;            // 減號目前掃到哪
+            const f1 = t >= T1, f2 = t >= T2;         // 兩張卡片是否已翻面
+            const st = f2 ? 2 : (f1 ? 1 : 0);
+            let s = TX(220, 24, '括號前的「−」，要掃過括號內的每一項', { fs: 14.5, c: C, anchor: 'middle' });
+            s += `<rect x="${XS}" y="96" width="${Math.max(0, sx - XS)}" height="52" rx="8" fill="${RED}" opacity="0.10"/>`;
+            s += TX(24, 130, '(2x + 3y)', { fs: 19, c: BLU });
+            s += TX(XS, 130, '−', { fs: 20, c: '#c8cfdb', anchor: 'middle' });
+            s += TX(172, 130, '(', { fs: 21, c: '#657187', anchor: 'middle' });
+            s += card(190, 58, f1 ? '−x' : 'x', f1 ? GRN : '#172033', f1 ? '#eef7f2' : '#f5f8ff');
+            s += card(266, 76, f2 ? '＋4y' : '−4y', f2 ? GRN : '#172033', f2 ? '#eef7f2' : '#f5f8ff');
+            s += TX(352, 130, ')', { fs: 21, c: '#657187', anchor: 'middle' });
+            if (st === 1) s += TX(304, 90, '✗ 這張還沒變號', { fs: 12, c: RED, anchor: 'middle' });
+            // 掃描頭（紅色減號）
+            s += `<line x1="${sx}" y1="66" x2="${sx}" y2="152" stroke="${RED}" stroke-width="2" stroke-dasharray="5 4"/>`;
+            s += `<circle cx="${sx}" cy="52" r="15" fill="${RED}"/>`;
+            s += TX(sx, 59, '−', { fs: 22, c: '#fff', anchor: 'middle' });
+            const bx = [['#f5f8ff', '#c9d8f5'], ['#fdeef2', '#f3c4d0'], ['#eef7f2', '#bfe0d1']][st];
+            const col = [C, RED, GRN][st];
+            const l1 = ['2x + 3y − ( x − 4y )', '2x + 3y − x − 4y', '2x + 3y − x + 4y'][st];
+            const l2 = ['（還沒去括號）', '＝ x − y', '＝ x + 7y'][st];
+            const msg = ['把滑桿往右拖，讓「−」掃過括號內的兩項',
+              '✗ 只變了第一項，第二項的 −4y 沒變號 ⇒ 錯',
+              '✓ 括號內每一項都變號，這才是正確答案'][st];
+            s += BOX(24, 168, 392, 100, { fill: bx[0], stroke: bx[1] });
+            s += TX(220, 196, l1, { fs: 18, anchor: 'middle' });
+            s += TX(220, 226, l2, { fs: 18, c: col, anchor: 'middle' });
+            s += TX(220, 254, msg, { fs: 13, c: col, fw: 700, anchor: 'middle' });
+            h.querySelector('#flip').innerHTML = svg('0 0 440 282', s);
+          };
+          h.querySelector('#fs').oninput = draw; draw();
         },
         caption: '減號後面那個括號，是全班共同的失分點——<b>每一項</b>都要變號。',
         example: {
@@ -492,6 +529,61 @@ window.DECK = window.DECK || [];
           q: '一艘船順流 60 公里要 2 小時，逆流同樣距離要 3 小時，求船速與水速。',
           steps: ['順流速率 \\(=30\\)、逆流速率 \\(=20\\)（公里/小時）。', '設船速 \\(x\\)、水速 \\(y\\)：\\(x+y=30\\)、\\(x-y=20\\)。', '兩式相加 \\(2x=50\\Rightarrow x=25\\)，\\(y=5\\)。'],
           ans: '船速 25、水速 5 公里/小時'
+        }
+      },
+
+      {
+        sec: '1-3', secName: '應用問題',
+        title: '濃度問題：混合前後溶質總量不變',
+        points: [
+          '濃度 ＝ 溶質 ÷ 溶液，所以 <b>溶質 ＝ 溶液 × 濃度</b>。',
+          '混合題永遠有兩式：<b>重量一式、溶質一式</b>。',
+          '百分比先化成<b>小數</b>再列式，20% 要寫成 0.2。'
+        ],
+        formula: { label: '溶質公式', tex: '\\text{溶質}=\\text{溶液重}\\times\\text{濃度}' },
+        visual: (h) => {
+          h.innerHTML = `<div style="width:100%"><div id="mix"></div>
+            <div class="ictrl"><label>乙杯濃度 <span class="ival" id="bv">5</span> %</label>
+            <input type="range" id="bs" min="0" max="25" step="1" value="5"></div></div>`;
+          const BASE = 170, HH = 84;   // 液面底線、液柱高（杯寬＝重量，色塊高＝濃度）
+          const cup = (x, w, conc, l1, l2, col) => {
+            const hs = Math.max(0, conc) * HH;
+            return `<path d="M${x - 5},${BASE - HH - 26} L${x - 5},${BASE + 5} L${x + w + 5},${BASE + 5} L${x + w + 5},${BASE - HH - 26}" fill="none" stroke="#9aa4b6" stroke-width="2.6" stroke-linejoin="round"/>`
+              + `<rect x="${x}" y="${BASE - HH}" width="${w}" height="${HH}" fill="#e8f0fe"/>`
+              + `<rect x="${x}" y="${BASE - hs}" width="${w}" height="${hs}" fill="${col}" opacity="0.88"/>`
+              + TX(x + w / 2, BASE + 22, l1, { fs: 13, anchor: 'middle' })
+              + TX(x + w / 2, BASE + 39, l2, { fs: 13, c: col, anchor: 'middle' });
+          };
+          const draw = () => {
+            const b = +h.querySelector('#bs').value;
+            h.querySelector('#bv').textContent = b;
+            const sol = 100 * 0.2 + 200 * b / 100;      // 混合後的溶質總重（公克）
+            const cm = sol / 300;                        // 混合後的濃度
+            const pct = Math.round(cm * 1000) / 10;
+            const ok = (b === 5);
+            let s = TX(220, 22, '深色色塊的面積 ＝ 溶質重（寬＝重量、高＝濃度）', { fs: 14, c: C, anchor: 'middle' });
+            s += cup(56, 44, 0.2, '甲 100 公克', '濃度 20%', BLU);
+            s += TX(118, 132, '＋', { fs: 24, c: '#657187', anchor: 'middle' });
+            s += cup(132, 88, b / 100, '乙 200 公克', `濃度 ${b}%`, VIO);
+            s += TX(238, 132, '→', { fs: 24, c: '#657187', anchor: 'middle' });
+            s += cup(252, 132, cm, '混合 300 公克', `濃度 ${pct}%`, ok ? GRN : AMB);
+            s += BOX(24, 216, 392, 56, { fill: ok ? '#eef7f2' : '#fff7ed', stroke: ok ? '#bfe0d1' : '#f2d5ab' });
+            s += TX(220, 238, `溶質：100×0.2 ＋ 200×${(b / 100).toFixed(2)} ＝ ${sol} 公克`, { fs: 14, anchor: 'middle' });
+            s += TX(220, 260, ok ? `${sol} ÷ 300 ＝ 10%　★ 正好是題目要的濃度` : `${sol} ÷ 300 ＝ ${pct}%`,
+              { fs: 14, c: ok ? GRN : AMB, anchor: 'middle' });
+            h.querySelector('#mix').innerHTML = svg('0 0 440 282', s);
+          };
+          h.querySelector('#bs').oninput = draw; draw();
+        },
+        caption: '深色色塊的<b>面積</b>就是溶質重——兩杯加起來，剛好等於混合後那一杯。',
+        example: {
+          q: '20% 食鹽水與 5% 食鹽水混合成 300 公克的 10% 食鹽水，各需幾公克？',
+          steps: [
+            '設 20% 用 \\(x\\) 公克、5% 用 \\(y\\) 公克，重量式：\\(x+y=300\\)。',
+            '溶質式：\\(0.2x+0.05y=300\\times0.1=30\\)。',
+            '溶質式 \\(\\times20\\) 得 \\(4x+y=600\\)，減去 \\(x+y=300\\) 得 \\(3x=300\\)。'
+          ],
+          ans: '20% 用 \\(x=100\\) 公克、5% 用 \\(y=200\\) 公克'
         }
       },
 

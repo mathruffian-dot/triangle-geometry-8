@@ -152,7 +152,8 @@ window.DECK = window.DECK || [];
         points: [
           '<span class="k">同類項</span>＝所含<b>文字與次數完全相同</b>的項：\\(3x\\) 與 \\(-5x\\) 是，\\(3x\\) 與 \\(3x^2\\) 不是。',
           '合併時只把<b>係數相加減</b>，文字部分整個照抄：\\(3x+5x=8x\\)、\\(7a-a=6a\\)。',
-          '<b>常數項自成一類</b>，只能跟常數項合併。拖滑桿改變 \\(x\\)，兩排長度永遠一樣。'
+          '只含<b>一次項</b>與<b>常數項</b>的式子叫<span class="k">一次式</span>，如 \\(6x-4\\)。',
+          '<b>常數項自成一類</b>；拖滑桿改變 \\(x\\)，兩排長度永遠一樣。'
         ],
         formula: { label: '合併同類項', tex: '3x+5x=(3+5)x=8x' },
         visual: (h) => {
@@ -179,9 +180,12 @@ window.DECK = window.DECK || [];
         },
         caption: '\\(3x\\) 是「3 個 x」、\\(5x\\) 是「5 個 x」，合起來當然是 8 個 x。',
         example: {
-          q: '化簡 \\(4x-7+2x+3\\)。',
-          steps: ['\\(x\\) 項：\\(4x+2x=6x\\)。', '常數項：\\(-7+3=-4\\)。'],
-          ans: '\\(6x-4\\)'
+          q: '化簡 \\(\\dfrac{x}{2}+\\dfrac{x}{3}-1\\)。',
+          steps: [
+            '係數通分 \\(\\dfrac{1}{2}+\\dfrac{1}{3}=\\dfrac{5}{6}\\)。',
+            '\\(x\\) 項合併成 \\(\\dfrac{5x}{6}\\)，常數 \\(-1\\) 沒有同類項可併。'
+          ],
+          ans: '\\(\\dfrac{5x}{6}-1\\)'
         }
       },
 
@@ -195,13 +199,67 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '去括號', tex: '-(a-b)=-a+b,\\qquad -3(x-2)=-3x+6' },
         visual: (h) => {
-          h.innerHTML = badGood([
-            { bad: '(5x+3)-(2x-4)=5x+3-2x-4', good: '(5x+3)-(2x-4)=5x+3-2x+4', tip: '括號內第二項 \\(-4\\) 也要變號，答案是 \\(3x+7\\)' },
-            { bad: '-3(x-2)=-3x-6', good: '-3(x-2)=-3x+6', tip: '\\((-3)\\times(-2)=+6\\)，負負得正' },
-            { bad: '2-(x+1)=2-x+1', good: '2-(x+1)=2-x-1', tip: '括號前是減號，\\(+1\\) 要變成 \\(-1\\)' }
-          ]);
+          // 四個圓角色塊固定不動（5x、+3、2x、−4），只換文字與顏色；
+          // 第二個括號外的大紅減號一步一步分配到括號內的每一項。
+          const yb = 76, bw = 60, bh = 48;
+          const XA = 50, XB = 124, XC = 254, XD = 328;
+          const mid = x => x + bw / 2;
+          const blk = (x, t, col, fill, ring) => {
+            let s = `<rect x="${x}" y="${yb}" width="${bw}" height="${bh}" rx="12" fill="${fill}" stroke="${col}" stroke-width="2.2"/>`;
+            s += `<text x="${mid(x)}" y="${yb + 32}" text-anchor="middle" font-size="20" font-weight="900" fill="${col}">${t}</text>`;
+            if (ring) s += `<rect x="${x - 6}" y="${yb - 6}" width="${bw + 12}" height="${bh + 12}" rx="16" fill="none" stroke="${RED}" stroke-width="2.6" stroke-dasharray="6 4" opacity="${ring}"/>`;
+            return s;
+          };
+          const paren = (x, t) => `<text x="${x}" y="${yb + 40}" text-anchor="middle" font-size="40" font-weight="700" fill="#8a94a6">${t}</text>`;
+          // 固定框架：課綱 N-7-4 的規則橫幅 ＋ 兩組括號 ＋ 中間的大紅減號
+          const frame = (hot) =>
+            `<rect x="106" y="12" width="228" height="36" rx="12" fill="#fdeef2" stroke="#f3c3ce" stroke-width="1.6"/>` +
+            `<text x="220" y="37" text-anchor="middle" font-size="17" font-weight="900" fill="${RED}">− ( a − b ) ＝ − a ＋ b</text>` +
+            paren(38, '(') + paren(196, ')') + paren(244, '(') + paren(402, ')') +
+            `<text x="220" y="${yb + 36}" text-anchor="middle" font-size="44" font-weight="900" fill="${RED}">−</text>` +
+            (hot ? `<circle cx="220" cy="${yb + 24}" r="25" fill="none" stroke="${RED}" stroke-width="2.6" stroke-dasharray="5 4" opacity="${hot}"/>` : '');
+          const foot = (main, col, sub) =>
+            `<text x="220" y="200" text-anchor="middle" font-size="19" font-weight="900" fill="${col}">${main}</text>` +
+            `<text x="220" y="232" text-anchor="middle" font-size="13" fill="#657187">${sub}</text>`;
+          const A = blk(XA, '5x', BLU, '#eef4ff'), B = blk(XB, '+3', BLU, '#eef4ff');
+          const op = k => (0.2 + 0.8 * k).toFixed(2);
+          SV.stepper(h, '0 0 440 280', [
+            {
+              t: '原式 <b>(5x + 3) − (2x − 4)</b>，括號前有一個減號在等著。',
+              d: k => frame(op(k)) + A + B +
+                blk(XC, '2x', '#5b6478', '#f1f4f9') + blk(XD, '−4', '#5b6478', '#f1f4f9') +
+                foot('(5x ＋ 3) − (2x − 4)', '#172033', '紅色減號會管到括號內的每一項，不是只有第一項')
+            },
+            {
+              t: '減號先分配到<b>第一項</b>：2x 變成 <b>−2x</b>。',
+              d: k => SV.arrowDefs(RED, 'dbr1') + frame(1) + A + B +
+                blk(XC, '−2x', RED, '#fdeef2') + blk(XD, '−4', '#5b6478', '#f1f4f9') +
+                `<path d="M216,128 Q250,166 280,132" fill="none" stroke="${RED}" stroke-width="2.6" marker-end="url(#dbr1)" opacity="${op(k)}"/>` +
+                foot('＝ 5x ＋ 3 − 2x', RED, '第一項變號完成，但括號裡還有一項沒處理')
+            },
+            {
+              t: '減號也要分配到<b>第二項</b>：−4 變成 <b>+4</b>，這裡最常漏。',
+              d: k => SV.arrowDefs(RED, 'dbr2') + frame(1) + A + B +
+                blk(XC, '−2x', RED, '#fdeef2') + blk(XD, '+4', RED, '#fdeef2', op(k)) +
+                `<path d="M218,128 Q290,182 356,132" fill="none" stroke="${RED}" stroke-width="2.6" marker-end="url(#dbr2)"/>` +
+                `<text x="358" y="64" text-anchor="middle" font-size="12.5" font-weight="900" fill="${RED}">最常漏這一項！</text>` +
+                foot('＝ 5x ＋ 3 − 2x ＋ 4', RED, '負負得正：括號裡的 −4 變成 ＋4')
+            },
+            {
+              t: '最後<b>合併同類項</b>：5x − 2x = 3x、3 + 4 = 7。',
+              d: k => frame(0) +
+                blk(XA, '5x', BLU, '#eef4ff') + blk(XC, '−2x', BLU, '#eef4ff') +
+                blk(XB, '+3', GRN, '#eef7f2') + blk(XD, '+4', GRN, '#eef7f2') +
+                `<path d="M80,128 Q182,166 284,128" fill="none" stroke="${BLU}" stroke-width="2.4"/>` +
+                `<path d="M154,128 Q256,190 358,128" fill="none" stroke="${GRN}" stroke-width="2.4"/>` +
+                `<text x="132" y="200" text-anchor="middle" font-size="16" font-weight="900" fill="${BLU}">5x − 2x ＝ 3x</text>` +
+                `<text x="322" y="200" text-anchor="middle" font-size="16" font-weight="900" fill="${GRN}">3 ＋ 4 ＝ 7</text>` +
+                `<rect x="140" y="216" width="160" height="48" rx="14" fill="#eef7f2" stroke="${C}" stroke-width="2.4" opacity="${op(k)}"/>` +
+                `<text x="220" y="248" text-anchor="middle" font-size="25" font-weight="900" fill="${C}" opacity="${op(k)}">3x ＋ 7</text>`
+            }
+          ], { acc: false });
         },
-        caption: '一句話記：<b>括號前是減號，裡面全部翻牌</b>。',
+        caption: '一句話記：<b>括號前是減號，裡面全部翻牌</b>——拖滑桿看它一項一項翻。',
         example: {
           q: '化簡 \\(2(3x-1)-(x-5)\\)。',
           steps: ['\\(2(3x-1)=6x-2\\)。', '\\(-(x-5)=-x+5\\)。', '合併：\\(6x-2-x+5=5x+3\\)。'],
@@ -378,14 +436,63 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '去分母', tex: '\\dfrac{x}{2}+\\dfrac{x-1}{3}=3\\;\\xrightarrow{\\;\\times 6\\;}\\;3x+2(x-1)=18' },
         visual: (h) => {
-          h.innerHTML = SV.fbox([
-            { label: '① 原式', tex: '\\dfrac{x}{2}+\\dfrac{x-1}{3}=3', color: C, fill: '#eef7f2', border: C, size: 18 },
-            { label: '② 兩邊同乘 6（2 與 3 的最小公倍數）', tex: '6\\times\\dfrac{x}{2}+6\\times\\dfrac{x-1}{3}=6\\times 3', color: BLU, border: '#cfe0f5', size: 15 },
-            { label: '③ 去分母、去括號', tex: '3x+2(x-1)=18\\;\\Rightarrow\\;5x-2=18', color: AMB, border: '#f0dcc0', size: 16 },
-            { label: '④ 移項、係數化為 1', tex: '5x=20\\;\\Rightarrow\\;x=4', color: VIO, border: '#ddd0f2', size: 16, note: '右邊的 3 也被乘成 18，最容易漏掉' }
-          ], { gap: 8 });
+          // 原式 x/2 + (x−1)/3 = 3 固定在上方（分數線自己畫），下方隨步驟演進
+          const frac = (cx, num, den, hw, hi) => {
+            let s = `<text x="${cx}" y="86" text-anchor="middle" font-size="20" font-weight="800" fill="#172033">${num}</text>`;
+            s += `<line x1="${cx - hw}" y1="96" x2="${cx + hw}" y2="96" stroke="#172033" stroke-width="2.4"/>`;
+            s += `<text x="${cx}" y="122" text-anchor="middle" font-size="20" font-weight="800" fill="${hi ? BLU : '#172033'}">${den}</text>`;
+            if (hi) s += `<circle cx="${cx}" cy="115" r="17" fill="none" stroke="${BLU}" stroke-width="2.6" stroke-dasharray="5 4" opacity="${hi}"/>`;
+            return s;
+          };
+          const eq = (hi, red3) =>
+            frac(104, 'x', '2', 20, hi) +
+            `<text x="154" y="104" text-anchor="middle" font-size="22" font-weight="800" fill="#172033">＋</text>` +
+            frac(218, 'x − 1', '3', 36, hi) +
+            `<text x="288" y="104" text-anchor="middle" font-size="22" font-weight="800" fill="#172033">＝</text>` +
+            `<text x="342" y="105" text-anchor="middle" font-size="24" font-weight="900" fill="${red3 ? RED : '#172033'}">3</text>` +
+            (red3 ? `<rect x="318" y="82" width="48" height="40" rx="10" fill="none" stroke="${RED}" stroke-width="2.6" stroke-dasharray="6 4" opacity="${red3}"/>` : '');
+          // ×6 徽章：落在某一項的正上方
+          const badge = (x, col, alert, y2) =>
+            (alert ? `<circle cx="${x}" cy="38" r="25" fill="none" stroke="${RED}" stroke-width="2.4" stroke-dasharray="5 4"/>` : '') +
+            `<circle cx="${x}" cy="38" r="18" fill="#fff" stroke="${col}" stroke-width="2.4"/>` +
+            `<text x="${x}" y="44" text-anchor="middle" font-size="14" font-weight="900" fill="${col}">×6</text>` +
+            `<line x1="${x}" y1="${alert ? 64 : 57}" x2="${x}" y2="${y2}" stroke="${col}" stroke-width="2" stroke-dasharray="4 3"/>`;
+          const op = k => (0.2 + 0.8 * k).toFixed(2);
+          SV.stepper(h, '0 0 440 280', [
+            {
+              t: '先找<b>分母的最小公倍數</b>：2 與 3 的最小公倍數是 <b>6</b>。',
+              d: k => eq(op(k), 0) +
+                `<rect x="100" y="168" width="240" height="52" rx="14" fill="#eef4ff" stroke="${BLU}" stroke-width="2.4" opacity="${op(k)}"/>` +
+                `<text x="220" y="201" text-anchor="middle" font-size="18" font-weight="900" fill="${BLU}" opacity="${op(k)}">2、3 的最小公倍數 ＝ 6</text>` +
+                `<text x="220" y="252" text-anchor="middle" font-size="13" fill="#657187">兩邊同乘 6，分母就會被約掉</text>`
+            },
+            {
+              t: '<b>6 要乘到每一項</b>，共三項——右邊的常數 3 最常被漏乘。',
+              d: k => eq(0, op(k)) +
+                badge(104, BLU, 0, 70) + badge(218, BLU, 0, 70) + badge(342, RED, 1, 80) +
+                `<text x="220" y="180" text-anchor="middle" font-size="18" font-weight="900" fill="#172033">左邊兩項 ＋ 右邊一項 ＝ 三項</text>` +
+                `<text x="220" y="212" text-anchor="middle" font-size="15" font-weight="900" fill="${RED}">右邊的常數 3 也要乘 6 → 18</text>` +
+                `<text x="220" y="248" text-anchor="middle" font-size="13" fill="#657187">只乘有分母的那兩項，是最常見的失分點</text>`
+            },
+            {
+              t: '約分後分母都不見了：<b>3x + 2(x − 1) = 18</b>。',
+              d: k => eq(0, 0) +
+                `<text x="220" y="162" text-anchor="middle" font-size="18" font-weight="900" fill="#a9b2c2">↓ 約分</text>` +
+                `<text x="220" y="206" text-anchor="middle" font-size="21" font-weight="900" fill="${C}" opacity="${op(k)}">3x ＋ 2(x − 1) ＝ 18</text>` +
+                `<text x="220" y="246" text-anchor="middle" font-size="13" fill="#657187">6÷2＝3、6÷3＝2，係數全變成整數</text>`
+            },
+            {
+              t: '去括號、移項、合併：<b>5x = 20</b>，所以 <b>x = 4</b>。',
+              d: k => eq(0, 0) +
+                `<text x="220" y="160" text-anchor="middle" font-size="17" font-weight="800" fill="#172033">3x ＋ 2x − 2 ＝ 18</text>` +
+                `<text x="220" y="188" text-anchor="middle" font-size="17" font-weight="800" fill="${VIO}">5x ＝ 18 ＋ 2 ＝ 20</text>` +
+                `<rect x="146" y="204" width="148" height="46" rx="14" fill="#eef7f2" stroke="${C}" stroke-width="2.4" opacity="${op(k)}"/>` +
+                `<text x="220" y="236" text-anchor="middle" font-size="25" font-weight="900" fill="${C}" opacity="${op(k)}">x ＝ 4</text>` +
+                `<text x="220" y="270" text-anchor="middle" font-size="12.5" fill="#657187">驗算：4÷2 ＋ (4−1)÷3 ＝ 2 ＋ 1 ＝ 3 ✓</text>`
+            }
+          ], { acc: false });
         },
-        caption: '先把分數與括號清乾淨，剩下的只是移項和除法。',
+        caption: '拖步驟滑桿，看 6 怎麼乘到<b>三個項</b>上，分母一個一個消失。',
         example: {
           q: '解 \\(\\dfrac{x+1}{2}-\\dfrac{x}{3}=1\\)。',
           steps: ['兩邊同乘 6：\\(3(x+1)-2x=6\\)。', '去括號：\\(3x+3-2x=6\\)。', '合併同類項：\\(x+3=6\\Rightarrow x=3\\)。'],

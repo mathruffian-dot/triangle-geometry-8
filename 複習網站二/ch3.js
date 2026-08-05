@@ -45,7 +45,8 @@ window.DECK = window.DECK || [];
         points: [
           '\\(a:b\\) 讀作「a 比 b」，\\(a\\) 是<b>前項</b>、\\(b\\) 是<b>後項</b>，順序不能對調。',
           '<span class="k">比值</span>＝前項 ÷ 後項＝\\(\\dfrac{a}{b}\\)（\\(b\\neq0\\)）——比是「兩個數」，比值是「一個數」。',
-          '比之前<b>單位一定要先化成一樣</b>；單位不同就直接比，是本節最常見的失分點。'
+          '比之前<b>單位一定要先化成一樣</b>；單位不同就直接比，是本節最常見的失分點。',
+          '除不盡時（如 \\(5:7\\)）可用<b>計算機</b>求近似值比大小，但答案仍寫 \\(\\dfrac57\\)。'
         ],
         formula: { label: '比值', tex: 'a:b\\ \\text{的比值}=a\\div b=\\dfrac{a}{b}\\quad(b\\neq0)' },
         visual: (h) => {
@@ -70,7 +71,7 @@ window.DECK = window.DECK || [];
           };
           h.querySelector('#rs').oninput = draw; draw();
         },
-        caption: '拖滑桿改前項：<b>比會跟著變，化簡後的最簡比與比值也一起變</b>。',
+        caption: '拖滑桿改前項：<b>比會跟著變，最簡比與比值也一起變</b>；除不盡時可用<b>計算機</b>估近似值幫忙判斷大小，但寫近似值要用 \\(\\approx\\)，<b>不能寫 \\(=\\)</b>。',
         example: {
           q: '甲繩長 \\(150\\) 公分、乙繩長 \\(2\\) 公尺，求甲比乙的比值。',
           steps: ['先統一單位：乙 \\(2\\) 公尺 \\(=200\\) 公分。', '甲:乙 \\(=150:200=3:4\\)，比值 \\(=\\dfrac34\\)。'],
@@ -83,22 +84,58 @@ window.DECK = window.DECK || [];
         title: '化簡比：前後項同乘同除，比值不變',
         points: [
           '前項與後項<b>同乘</b>或<b>同除</b>同一個<b>非零</b>的數，比值<b>完全不變</b>。',
-          '整數比 → 兩項<b>同除最大公因數</b>，就得最簡整數比。',
-          '分數比 → 同乘<b>分母的最小公倍數</b>；小數比 → 同乘 \\(10\\)、\\(100\\) 先變整數，再化簡。'
+          '整數比 → 兩項<b>同除最大公因數</b>；只有<b>公因數</b>才能把兩項同時除盡。',
+          '小數比 → 先同乘 \\(10\\)、\\(100\\) 變整數；分數比 → 同乘分母的最小公倍數。',
+          '兩分數比大小或求<b>比值</b>，直接用<b>分數相除</b>（乘倒數），不寫繁分數。'
         ],
         formula: { label: '化簡的依據', tex: 'a:b=(a\\times m):(b\\times m)=(a\\div m):(b\\div m)\\quad(m\\neq0)' },
         visual: (h) => {
-          h.innerHTML = SV.fbox([
-            { label: '整數比：同除最大公因數', tex: '12:18\\;\\xrightarrow{\\ \\div\\,6\\ }\\;2:3', color: C, fill: '#eefaf5', border: C, size: 18 },
-            { label: '分數比：同乘分母最小公倍數', tex: '\\tfrac23:\\tfrac35\\;\\xrightarrow{\\ \\times\\,15\\ }\\;10:9', color: BLU, border: '#cfe0f8', size: 18 },
-            { label: '小數比：同乘 10 或 100', tex: '0.4:1.5\\;\\xrightarrow{\\ \\times\\,10\\ }\\;4:15', color: AMB, border: '#f0dcc0', size: 18 }
-          ], { gap: 11 });
+          h.innerHTML = `<div style="width:100%"><div id="cg"></div>
+            <div class="ictrl"><label>每組幾格 m <span class="ival" id="mv">3</span></label>
+            <input type="range" id="ms" min="1" max="6" step="1" value="3"></div></div>`;
+          const u = 20, x0 = 52, CW = u - 3, CH = 34;
+          // 畫一排 n 個方格，並依「每 m 格一組」框起完整組，剩餘的格子畫斜線
+          const row = (n, y, fill, m, boxCol) => {
+            let s = '';
+            for (let i = 0; i < n; i++)
+              s += `<rect x="${x0 + i * u}" y="${y}" width="${CW}" height="${CH}" rx="4" fill="${fill}" opacity="0.85"/>`;
+            const full = Math.floor(n / m), rem = n % m;
+            for (let g = 0; g < full; g++)
+              s += `<rect x="${x0 + g * m * u - 2}" y="${y - 4}" width="${m * u + 1}" height="${CH + 8}" rx="6" fill="none" stroke="${boxCol}" stroke-width="2.2" stroke-dasharray="5 4"/>`;
+            for (let i = n - rem; i < n; i++)
+              s += `<line x1="${x0 + i * u}" y1="${y + CH}" x2="${x0 + i * u + CW}" y2="${y}" stroke="${RED}" stroke-width="2.2"/>`;
+            return s;
+          };
+          const draw = () => {
+            const m = +h.querySelector('#ms').value;
+            h.querySelector('#mv').textContent = m;
+            const r1 = 12 % m, r2 = 18 % m, ok = (r1 === 0 && r2 === 0);
+            const bc = ok ? C : '#94a3b8';
+            let s = `<text x="220" y="22" text-anchor="middle" font-size="13" font-weight="800" fill="#657187">上排 12 格、下排 18 格，每 ${m} 格框成一組</text>`;
+            s += row(12, 38, C, m, bc) + row(18, 100, '#94a3b8', m, bc);
+            s += `<text x="44" y="62" text-anchor="end" font-size="16" font-weight="900" fill="${C}">12</text>`;
+            s += `<text x="44" y="124" text-anchor="end" font-size="16" font-weight="900" fill="#64748b">18</text>`;
+            if (ok) {
+              s += `<text x="220" y="188" text-anchor="middle" font-size="18" font-weight="900" fill="${C}">12 : 18 = (12÷${m}) : (18÷${m}) = ${12 / m} : ${18 / m}</text>`;
+              s += `<text x="220" y="224" text-anchor="middle" font-size="14.5" font-weight="800" fill="#172033">${m} 是公因數 → 上排 ${12 / m} 組、下排 ${18 / m} 組，剛好分完</text>`;
+            } else {
+              s += `<text x="220" y="188" text-anchor="middle" font-size="18" font-weight="900" fill="${RED}">${m} 不是 12 與 18 的公因數</text>`;
+              s += `<text x="220" y="224" text-anchor="middle" font-size="14.5" font-weight="800" fill="#172033">上排${r1 ? `剩 ${r1} 格` : '剛好分完'}、下排${r2 ? `剩 ${r2} 格` : '剛好分完'} → 分不乾淨</text>`;
+            }
+            s += `<text x="220" y="258" text-anchor="middle" font-size="12.5" fill="#657187">12 與 18 的公因數：1、2、3、6；最大公因數 6 → 最簡比 2 : 3</text>`;
+            h.querySelector('#cg').innerHTML = svg('0 0 440 285', s);
+          };
+          h.querySelector('#ms').oninput = draw; draw();
         },
-        caption: '三種長相、同一招：<b>先變成整數，再同除最大公因數</b>。',
+        caption: '拖滑桿選「每組幾格」：<b>只有公因數才能把兩排同時分乾淨</b>，斜線格就是分不掉的零頭。',
         example: {
-          q: '把 \\(\\dfrac23:\\dfrac35\\) 化成最簡整數比。',
-          steps: ['分母 \\(3\\) 與 \\(5\\) 的最小公倍數是 \\(15\\)，兩項同乘 \\(15\\)。', '得 \\(10:9\\)；\\(10\\) 與 \\(9\\) 互質，已最簡。'],
-          ans: '\\(10:9\\)'
+          q: '(1) 把 \\(\\dfrac23:\\dfrac35\\) 化成最簡整數比。　(2) 求 \\(\\dfrac23:\\dfrac35\\) 的比值。',
+          steps: [
+            '(1) 分母 \\(3\\) 與 \\(5\\) 的最小公倍數是 \\(15\\)，兩項同乘 \\(15\\) 得 \\(10:9\\)（互質，已最簡）。',
+            '(2) 比值＝前項 ÷ 後項，<b>兩個分數就用分數相除</b>：\\(\\dfrac23\\div\\dfrac35=\\dfrac23\\times\\dfrac53\\)。',
+            '\\(\\dfrac23\\times\\dfrac53=\\dfrac{10}{9}\\)，與最簡整數比 \\(10:9\\) 一致（<b>不必寫成繁分數</b>）。'
+          ],
+          ans: '(1) \\(10:9\\)　(2) 比值 \\(=\\dfrac{10}{9}\\)'
         }
       },
 
@@ -131,6 +168,48 @@ window.DECK = window.DECK || [];
           q: '地圖比例尺為 \\(1:25000\\)，圖上量得 \\(4\\) 公分，實際距離是幾公里？',
           steps: ['設實際 \\(x\\) 公分，列 \\(1:25000=4:x\\)。', '交叉相乘：\\(x=25000\\times4=100000\\)（公分）。', '\\(100000\\) 公分 \\(=1000\\) 公尺 \\(=1\\) 公里。'],
           ans: '\\(1\\) 公里'
+        }
+      },
+
+      {
+        sec: '3-1', secName: '比例式',
+        title: '解比例式：交叉相乘後就是一元一次方程式',
+        points: [
+          '比例式裡的未知數 \\(x\\)，<b>不管站在哪一項</b>，解法完全一樣。',
+          '第一步永遠是<b>交叉相乘</b>：外項積＝內項積，把它變成一元一次方程式。',
+          '解完把 \\(x\\) <b>代回原式</b>，檢查兩邊的比值是不是真的相等。',
+          '列式時注意<b>對應順序</b>：糖:水＝糖:水，不可以一邊糖水、一邊水糖。'
+        ],
+        formula: { label: '解法示範', tex: '3:x=12:20\\;\\Longrightarrow\\;3\\times20=12x\\;\\Longrightarrow\\;x=5' },
+        visual: (h) => {
+          const bx = (cx, t, col) =>
+            `<rect x="${cx - 26}" y="34" width="52" height="44" rx="10" fill="#fff" stroke="${col}" stroke-width="2.2"/>` +
+            `<text x="${cx}" y="64" text-anchor="middle" font-size="21" font-weight="900" fill="${col}">${t}</text>`;
+          const sym = (cx, t) => `<text x="${cx}" y="64" text-anchor="middle" font-size="22" font-weight="900" fill="#657187">${t}</text>`;
+          SV.stepper(h, '0 0 440 275', [
+            {
+              t: '先把外項、內項認出來：<b>頭尾是外項、中間是內項</b>。',
+              d: () => bx(62, '3', RED) + sym(106, ':') + bx(150, 'x', BLU) + sym(212, '=') +
+                bx(275, '12', BLU) + sym(320, ':') + bx(365, '20', RED) +
+                `<text x="220" y="108" text-anchor="middle" font-size="14" font-weight="800" fill="#172033">紅框是外項（3、20），藍框是內項（x、12）</text>`
+            },
+            {
+              t: '交叉相乘：外項積＝內項積，變成一元一次方程式。',
+              d: () => `<text x="220" y="150" text-anchor="middle" font-size="17" font-weight="800" fill="#172033">外項積 ＝ 內項積</text>` +
+                `<text x="220" y="186" text-anchor="middle" font-size="19" font-weight="900" fill="${BLU}">3 × 20 ＝ 12 × x　⇒　60 ＝ 12x</text>`
+            },
+            {
+              t: '解出 x，再代回原式驗算兩邊的比值。',
+              d: () => `<text x="220" y="226" text-anchor="middle" font-size="20" font-weight="900" fill="${RED}">x ＝ 60 ÷ 12 ＝ 5</text>` +
+                `<text x="220" y="260" text-anchor="middle" font-size="13" font-weight="800" fill="#657187">檢查：3 : 5 與 12 : 20 的比值都是 0.6 ✓</text>`
+            }
+          ]);
+        },
+        caption: '不管 \\(x\\) 落在外項還是內項，<b>先交叉相乘</b>，題目就變回熟悉的一元一次方程式。',
+        example: {
+          q: '糖水中 糖 : 水 \\(=2:9\\)。若用了 \\(63\\) 公克的水，要加幾公克的糖？',
+          steps: ['設糖 \\(x\\) 公克，依「糖:水」順序列 \\(2:9=x:63\\)。', '交叉相乘：\\(9x=2\\times63=126\\)。', '\\(x=14\\)；代回檢查 \\(14:63=2:9\\) ✓。'],
+          ans: '\\(14\\) 公克'
         }
       },
 
@@ -174,9 +253,66 @@ window.DECK = window.DECK || [];
         },
         caption: '紅框把「\\(a\\) 份＋\\(b\\) 份」框成<b>總量</b>——這就是比例分配裡的「總份數」。',
         example: {
-          q: '把 \\(480\\) 元按 \\(3:5\\) 分給甲、乙，兩人各得多少？',
-          steps: ['總份數 \\(3+5=8\\)，每份 \\(480\\div8=60\\) 元。', '甲 \\(60\\times3=180\\)，乙 \\(60\\times5=300\\)。'],
-          ans: '甲 \\(180\\) 元、乙 \\(300\\) 元'
+          q: '班上男生 : 女生 \\(=4:5\\)，全班共 \\(45\\) 人，女生有幾人？',
+          steps: ['用變形性質把前項換成總量：全班 : 女 \\(=(4+5):5=9:5\\)。', '列 \\(45:x=9:5\\)，交叉相乘 \\(9x=225\\)。', '\\(x=25\\)；男生 \\(45-25=20\\)，且 \\(20:25=4:5\\) ✓。'],
+          ans: '女生 \\(25\\) 人'
+        }
+      },
+
+      {
+        sec: '3-1', secName: '比例式',
+        title: '比例分配：先算總份數，再算每份多少',
+        points: [
+          '按比分配時，先算<b>總份數</b>：比是 \\(a:b\\)，總份數就是 \\(a+b\\) 份。',
+          '再算<b>每份</b>＝總量 ÷ 總份數；每人所得＝每份 × 自己的份數。',
+          '\\(3:5\\) 是<b>份數比</b>，不是「甲得 3 元、乙得 5 元」——一定要先算每份。',
+          '檢查法：<b>兩人所得相加要等於總量</b>，加不回去就是算錯了。'
+        ],
+        formula: { label: '比例分配', tex: '\\text{每份}=\\dfrac{\\text{總量}}{a+b}\\;,\\qquad \\text{甲}=\\text{每份}\\times a' },
+        visual: (h) => {
+          h.innerHTML = `<div style="width:100%"><div id="pa"></div>
+            <div class="ictrl">
+              <label>總量 <span class="ival" id="tv">480</span> 元</label>
+              <input type="range" id="ts" min="0" max="3" step="1" value="2">
+              <label>比 <span class="ival" id="rv">3:5</span></label>
+              <input type="range" id="rs" min="0" max="2" step="1" value="2">
+            </div></div>`;
+          const TOT = [240, 360, 480, 600], RAT = [[1, 2], [2, 3], [3, 5]];
+          const x0 = 40, BW = 360, by = 58, bh = 46;
+          const draw = () => {
+            const T = TOT[+h.querySelector('#ts').value];
+            const r = RAT[+h.querySelector('#rs').value], a = r[0], b = r[1];
+            h.querySelector('#tv').textContent = T;
+            h.querySelector('#rv').textContent = `${a}:${b}`;
+            const n = a + b, per = T / n, ga = per * a, gb = per * b;
+            const wa = BW * a / n, wb = BW * b / n, cut = x0 + wa;
+            let s = `<text x="220" y="30" text-anchor="middle" font-size="16" font-weight="900" fill="#172033">${T} 元　按 ${a} : ${b} 分給甲、乙</text>`;
+            s += `<rect x="${x0}" y="${by}" width="${wa}" height="${bh}" rx="8" fill="${C}" opacity="0.88"/>`;
+            s += `<rect x="${cut}" y="${by}" width="${wb}" height="${bh}" rx="8" fill="${BLU}" opacity="0.82"/>`;
+            // 每一份的分隔虛線，讓「總份數」看得見
+            for (let i = 1; i < n; i++) {
+              const x = x0 + BW * i / n;
+              s += `<line x1="${x}" y1="${by}" x2="${x}" y2="${by + bh}" stroke="#fff" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+            }
+            s += `<rect x="${x0}" y="${by}" width="${BW}" height="${bh}" rx="8" fill="none" stroke="#657187" stroke-width="1.6"/>`;
+            s += `<text x="${x0 + wa / 2}" y="${by + 30}" text-anchor="middle" font-size="16" font-weight="900" fill="#fff">甲 ${a} 份</text>`;
+            s += `<text x="${cut + wb / 2}" y="${by + 30}" text-anchor="middle" font-size="16" font-weight="900" fill="#fff">乙 ${b} 份</text>`;
+            s += `<text x="${x0 + wa / 2}" y="${by + bh + 24}" text-anchor="middle" font-size="15" font-weight="900" fill="${C}">${ga} 元</text>`;
+            s += `<text x="${cut + wb / 2}" y="${by + bh + 24}" text-anchor="middle" font-size="15" font-weight="900" fill="${BLU}">${gb} 元</text>`;
+            s += `<text x="220" y="176" text-anchor="middle" font-size="16" font-weight="900" fill="#172033">總份數 ${a}＋${b} = ${n} 份</text>`;
+            s += `<text x="220" y="212" text-anchor="middle" font-size="16" font-weight="900" fill="${RED}">每份 = ${T} ÷ ${n} = ${per} 元</text>`;
+            s += `<text x="220" y="248" text-anchor="middle" font-size="15" font-weight="800" fill="#172033">甲 = ${per}×${a} = ${ga}　乙 = ${per}×${b} = ${gb}　（合計 ${T} ✓）</text>`;
+            h.querySelector('#pa').innerHTML = svg('0 0 440 275', s);
+          };
+          h.querySelector('#ts').oninput = draw;
+          h.querySelector('#rs').oninput = draw;
+          draw();
+        },
+        caption: '拖兩條滑桿換總量與比：<b>總量 ÷ 總份數 ＝ 每份</b>永遠是第一步，白色虛線就是一份一份的界線。',
+        example: {
+          q: '一條 \\(72\\) 公分的緞帶，依 \\(5:4\\) 剪成兩段，兩段各長多少？',
+          steps: ['總份數 \\(5+4=9\\) 份。', '每份 \\(72\\div9=8\\) 公分。', '長段 \\(8\\times5=40\\)，短段 \\(8\\times4=32\\)；\\(40+32=72\\) ✓。'],
+          ans: '\\(40\\) 公分與 \\(32\\) 公分'
         }
       },
 

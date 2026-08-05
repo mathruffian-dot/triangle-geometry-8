@@ -47,15 +47,18 @@ window.DECK = window.DECK || [];
         title: '平面上定位置，要用一組「有序數對」',
         points: [
           '數線上一個點只要<b>一個數</b>；平面上要<b>兩個數</b>才鎖得住位置。',
-          '兩軸互相垂直：橫的是 <span class="k">x 軸</span>、直的是 <span class="k">y 軸</span>，交點是<b>原點</b> \\(O(0,0)\\)。',
+          '兩軸垂直：橫的 <span class="k">x 軸</span>（又叫<b>橫軸</b>）、直的 <span class="k">y 軸</span>（又叫<b>縱軸</b>），交點 \\(O(0,0)\\)。',
           '記法 \\((a,b)\\)：<b>先橫走 \\(a\\)、再直走 \\(b\\)</b>；順序一換就是<b>另一個點</b>。'
         ],
         formula: { label: '有序數對', tex: 'P(a,b)\\;:\\;a=x\\text{ 坐標（橫）},\\quad b=y\\text{ 坐標（縱）}' },
         visual: (h) => {
           const R = { xmin: -1, xmax: 7, ymin: -1, ymax: 7 };
-          const P = SV.plane({ x0: 50, y0: 12, w: 264, h: 264, xmin: R.xmin, xmax: R.xmax, ymin: R.ymin, ymax: R.ymax });
+          const P = SV.plane({ x0: 76, y0: 26, w: 250, h: 250, xmin: R.xmin, xmax: R.xmax, ymin: R.ymin, ymax: R.ymax });
           let g = P.defs + P.svg;
           const ox = P.X(0), oy = P.Y(0);
+          // 課綱 G-7-1 術語：兩軸的別名「橫軸／縱軸」直接標在軸上
+          g += txt(P.X(7) + 8, oy - 6, 'x 軸（橫軸）', C, 13, 'start');
+          g += txt(ox, 18, 'y 軸（縱軸）', C, 13);
           // A(3,5) 的走法：先橫走 3、再上走 5
           g += SV.seg(ox, oy, P.X(3), oy, AMB, 4);
           g += SV.seg(P.X(3), oy, P.X(3), P.Y(5), RED, 3.2, '6 4');
@@ -63,14 +66,85 @@ window.DECK = window.DECK || [];
           g += txt(P.X(3) + 8, (oy + P.Y(5)) / 2, '上走 5', RED, 12, 'start');
           g += mark(P, [3, 5], RED, 'A(3,5)', 9, -9, 14);
           g += mark(P, [5, 3], BLU, 'B(5,3)', 9, -9, 14);
-          g += txt(176, 298, '順序換了就是另一個點：(3,5) ≠ (5,3)', C, 13);
-          h.innerHTML = svg('0 0 344 308', g);
+          g += txt(220, 294, '順序換了就是另一個點：(3,5) ≠ (5,3)', C, 13);
+          h.innerHTML = svg('0 0 440 300', g);
         },
         caption: '先沿 \\(x\\) 軸橫走，再往上（下）直走，就描出 \\((a,b)\\)。',
         example: {
           q: '點 \\(P\\) 在原點右方 4 單位、上方 2 單位，寫出 \\(P\\) 的坐標；\\((2,4)\\) 又在哪裡？',
           steps: ['先橫走 4、再上走 2，所以 \\(P(4,2)\\)。', '\\((2,4)\\) 是橫走 2、上走 4，是<b>另一個</b>點。'],
           ans: '\\(P(4,2)\\)，與 \\((2,4)\\) 不同'
+        }
+      },
+
+      {
+        sec: '2-1', secName: '直角坐標平面',
+        title: '從方位到坐標：說「東 3 北 2」也能定位',
+        points: [
+          '生活中常用<b>方位＋距離</b>報位置：「往東 3 公尺、往北 2 公尺」。',
+          '把<b>東西</b>當橫向、<b>南北</b>當縱向，就寫成坐標 \\((3,2)\\)。',
+          '向<b>西</b>、向<b>南</b>是<b>負</b>方向：西 2 北 1 就是 \\((-2,1)\\)。'
+        ],
+        formula: { label: '方位換坐標', tex: '\\text{東}\\to+x,\\quad\\text{西}\\to-x,\\quad\\text{北}\\to+y,\\quad\\text{南}\\to-y' },
+        visual: (h) => {
+          h.innerHTML = `<div style="width:100%"><div id="mfig"></div>
+            <div class="ictrl"><label>地標 <span class="ival" id="mv">圖書館 (3, 2)</span></label>
+            <input type="range" id="ms" min="0" max="4" step="1" value="0"></div></div>`;
+          const R = { xmin: -5, xmax: 5, ymin: -4, ymax: 4 };
+          const P = SV.plane({ x0: 116, y0: 12, w: 260, h: 208, xmin: R.xmin, xmax: R.xmax, ymin: R.ymin, ymax: R.ymax });
+          const SPOT = [
+            { n: '圖書館', ew: '東 3', ns: '北 2', p: [3, 2] },
+            { n: '體育館', ew: '西 2', ns: '北 1', p: [-2, 1] },
+            { n: '司令台', ew: '東 4', ns: '不南不北', p: [4, 0] },
+            { n: '停車場', ew: '西 3', ns: '南 2', p: [-3, -2] },
+            { n: '操場', ew: '東 2', ns: '南 3', p: [2, -3] }
+          ];
+          // 左上角八方位羅盤（只算一次，之後每次重繪直接沿用）
+          const cx = 58, cy = 62, r = 36;
+          let rose = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="${C}" stroke-width="1.6"/>`;
+          rose += `<polygon points="${cx},${cy - r + 3} ${cx - 7},${cy} ${cx + 7},${cy}" fill="${RED}"/>`;
+          rose += `<polygon points="${cx},${cy + r - 3} ${cx - 7},${cy} ${cx + 7},${cy}" fill="#c3ccdb"/>`;
+          rose += `<polygon points="${cx + r - 3},${cy} ${cx},${cy - 7} ${cx},${cy + 7}" fill="${BLU}"/>`;
+          rose += `<polygon points="${cx - r + 3},${cy} ${cx},${cy - 7} ${cx},${cy + 7}" fill="#c3ccdb"/>`;
+          [[45, '東北'], [135, '西北'], [225, '西南'], [315, '東南']].forEach(([d, t]) => {
+            const q = SV.pt(cx, cy, r + 12, d);
+            rose += txt(q[0], q[1] + 4, t, '#9aa4b6', 9);
+          });
+          rose += txt(cx, cy - r - 8, '北', RED, 12) + txt(cx, cy + r + 16, '南', '#657187', 12);
+          rose += txt(cx + r + 13, cy + 4, '東', BLU, 12) + txt(cx - r - 13, cy + 4, '西', '#657187', 12);
+          rose += txt(cx, 150, '東 → x 正向', BLU, 11) + txt(cx, 168, '北 → y 正向', RED, 11);
+          rose += txt(cx, 190, '西、南 → 負向', '#9aa4b6', 11);
+          const draw = () => {
+            const i = Math.max(0, Math.min(SPOT.length - 1, Math.round(+h.querySelector('#ms').value)));
+            const it = SPOT[i], a = it.p[0], b = it.p[1];
+            h.querySelector('#mv').textContent = `${it.n} (${a}, ${b})`;
+            let g = P.defs + P.svg + rose;
+            // 原點就是校門口
+            g += SV.dot(P.X(0), P.Y(0), '#5b6478', 5);
+            // 往左下讓開，避開 y 軸刻度「−1」與 x 軸刻度數字
+            g += txt(P.X(0) - 26, P.Y(0) + 34, '校門口', '#5b6478', 11.5, 'end');
+            // 先走東西（橫向），再走南北（縱向）
+            if (a !== 0) {
+              g += SV.seg(P.X(0), P.Y(0), P.X(a), P.Y(0), BLU, 4);
+              g += txt((P.X(0) + P.X(a)) / 2, P.Y(0) - 8, it.ew, BLU, 11.5);
+            }
+            if (b !== 0) {
+              g += SV.seg(P.X(a), P.Y(0), P.X(a), P.Y(b), RED, 3.2, '6 4');
+              // 比中點再往下 6px，才不會壓到 x 軸的刻度數字
+              g += txt(P.X(a) + (a >= 0 ? 7 : -7), (P.Y(0) + P.Y(b)) / 2 + 6, it.ns, RED, 11.5, a >= 0 ? 'start' : 'end');
+            }
+            g += mark(P, it.p, VIO, it.n, 9, b < 0 ? 18 : -10, 13);
+            g += txt(220, 246, `${it.n}：從校門口往 ${it.ew}、${it.ns}`, C, 14);
+            g += txt(220, 270, `${it.ew} → x ＝ ${a}　　${it.ns} → y ＝ ${b}　　坐標 (${a}, ${b})`, '#172033', 13);
+            h.querySelector('#mfig').innerHTML = svg('0 0 440 285', g);
+          };
+          h.querySelector('#ms').oninput = draw; draw();
+        },
+        caption: '把校門口當<b>原點</b>：東西看 \\(x\\)、南北看 \\(y\\)，方位描述立刻變成坐標。',
+        example: {
+          q: '福利社在校門口<b>東 4 公尺、南 3 公尺</b>，坐標是多少？',
+          steps: ['「東 4」是橫向的正方向 → 橫坐標 \\(4\\)。', '「南 3」是縱向的負方向 → 縱坐標 \\(-3\\)。', '合起來寫成 \\((4,-3)\\)。'],
+          ans: '\\((4,-3)\\)'
         }
       },
 
@@ -261,18 +335,33 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '代入檢驗', tex: '(x_0,y_0)\\text{ 在 }ax+by=c\\text{ 上}\\;\\Longleftrightarrow\\;ax_0+by_0=c' },
         visual: (h) => {
+          h.innerHTML = `<div style="width:100%"><div id="tfig"></div>
+            <div class="ictrl"><label>候選點 <span class="ival" id="tv">(0, 6)</span></label>
+            <input type="range" id="ts" min="0" max="6" step="1" value="0"></div></div>`;
           const R = { xmin: -1, xmax: 7, ymin: -1, ymax: 7 };
-          const P = SV.plane({ x0: 50, y0: 10, w: 256, h: 256, xmin: R.xmin, xmax: R.xmax, ymin: R.ymin, ymax: R.ymax });
-          let g = P.defs + P.svg;
-          g += lineOn(P, R, 2, 1, 6, BLU, 3.2);
-          g += mark(P, [1, 4], GRN, '(1,4)', 10, -10, 13);
-          g += mark(P, [2, 3], RED, '(2,3)', 10, -10, 13);
-          g += txt(250, 60, '2x ＋ y ＝ 6', BLU, 14);
-          g += txt(94, 288, '✓ (1,4)：2×1＋4 ＝ 6', GRN, 12.5);
-          g += txt(250, 288, '✗ (2,3)：2×2＋3 ＝ 7', RED, 12.5);
-          h.innerHTML = svg('0 0 350 300', g);
+          const P = SV.plane({ x0: 56, y0: 12, w: 224, h: 224, xmin: R.xmin, xmax: R.xmax, ymin: R.ymin, ymax: R.ymax });
+          // 在線上與不在線上刻意交錯，逼學生每次都真的代進去算
+          const CAND = [[0, 6], [1, 3], [1, 4], [2, 3], [2, 2], [3, 1], [3, 0]];
+          const draw = () => {
+            const i = Math.max(0, Math.min(CAND.length - 1, Math.round(+h.querySelector('#ts').value)));
+            const a = CAND[i][0], b = CAND[i][1], v = 2 * a + b, ok = (v === 6);
+            h.querySelector('#tv').textContent = `(${a}, ${b})`;
+            let g = P.defs + P.svg;
+            g += lineOn(P, R, 2, 1, 6, BLU, 3.2);
+            // 其他候選點畫成灰色小點，看得出這幾個點的相對位置
+            CAND.forEach((q, j) => { if (j !== i) g += SV.dot(P.X(q[0]), P.Y(q[1]), '#c3ccdb', 3.4); });
+            // 點落在 y 軸上時，標籤改放右下角，避開軸名「y」
+            g += mark(P, [a, b], ok ? GRN : RED, `(${a}, ${b})`, 10, a === 0 ? 18 : -10, 13);
+            g += txt(348, 40, '2x ＋ y ＝ 6', BLU, 15);
+            g += txt(348, 66, '藍線上的點', '#657187', 12);
+            g += txt(348, 84, '＝方程式的解', '#657187', 12);
+            g += txt(220, 256, `代入：2 × ${a} ＋ ${b} ＝ ${v}`, '#172033', 14);
+            g += txt(220, 280, ok ? '＝ 6 ✓ 在線上' : '≠ 6 ✗ 不在線上', ok ? GRN : RED, 15);
+            h.querySelector('#tfig').innerHTML = svg('0 0 440 288', g);
+          };
+          h.querySelector('#ts').oninput = draw; draw();
         },
-        caption: '\\((2,3)\\) 看起來很靠近直線，但代進去是 7 不是 6，<b>就是不在線上</b>。',
+        caption: '拖滑桿換點：算出來<b>剛好是 6</b> 才在線上；\\((2,3)\\) 看起來很近，代進去卻是 7。',
         example: {
           q: '點 \\((4,-2)\\) 在 \\(2x+y=6\\) 的圖形上嗎？',
           steps: ['代入左式：\\(2\\times4+(-2)=8-2=6\\)。', '左式 \\(=6=\\) 右式，等式成立。'],
@@ -390,6 +479,55 @@ window.DECK = window.DECK || [];
           q: '由圖讀出交點 \\((3,2)\\)，怎麼確認沒讀錯？',
           steps: ['代入 \\(x+y=5\\)：\\(3+2=5\\) 成立。', '代入 \\(x-y=1\\)：\\(3-2=1\\) 成立。', '兩式都對，交點正確。'],
           ans: '\\(x=3,\\;y=2\\)'
+        }
+      },
+
+      {
+        sec: '2-2', secName: '二元一次方程式的圖形',
+        title: '兩方案哪個划算？看兩條直線誰比較低',
+        points: [
+          '把兩種收費方式各列成一個<b>二元一次方程式</b>，各畫出一條直線。',
+          '<b>交點</b>就是<b>聯立的解</b>：在那個時數，兩家<b>剛好一樣貴</b>。',
+          '交點<b>左邊</b>甲比較低、<b>右邊</b>乙比較低——看誰的線在下面就好。'
+        ],
+        formula: { label: '交點＝聯立解', tex: '2x-y=0\\;\\text{與}\\;x-y=-3\\;\\Longrightarrow\\;\\text{交於}\\;(3,6)' },
+        visual: (h) => {
+          h.innerHTML = `<div style="width:100%"><div id="pfig"></div>
+            <div class="ictrl"><label>打球時數 <span class="ival" id="pv">0</span> 小時</label>
+            <input type="range" id="ps" min="0" max="4" step="1" value="0"></div></div>`;
+          const R = { xmin: -1, xmax: 7, ymin: -1, ymax: 9 };
+          const P = SV.plane({ x0: 56, y0: 12, w: 232, h: 230, xmin: R.xmin, xmax: R.xmax, ymin: R.ymin, ymax: R.ymax });
+          const draw = () => {
+            const t = Math.max(0, Math.min(4, Math.round(+h.querySelector('#ps').value)));
+            const ya = 2 * t, yb = t + 3;
+            h.querySelector('#pv').textContent = t;
+            let g = P.defs + P.svg;
+            g += lineOn(P, R, 2, -1, 0, BLU, 3.2);   // 甲館：2x − y ＝ 0
+            g += lineOn(P, R, 1, -1, -3, AMB, 3.2);  // 乙館：x − y ＝ −3
+            g += mark(P, [3, 6], RED, '(3, 6)', -20, -14, 13);   // 標在交點正上方，避開兩條線的讀數
+            g += SV.seg(P.X(t), P.Y(0), P.X(t), P.Y(Math.max(ya, yb)), '#9aa4b6', 2, '5 4');
+            g += SV.dot(P.X(t), P.Y(ya), BLU, 5) + SV.dot(P.X(t), P.Y(yb), AMB, 5);
+            g += txt(P.X(t) - 8, P.Y(ya) + 4, `${ya}`, BLU, 12, 'end');
+            g += txt(P.X(t) + 8, P.Y(yb) + 4, `${yb}`, AMB, 12, 'start');
+            g += txt(300, 44, '甲館 2x － y ＝ 0', BLU, 12.5, 'start');
+            g += txt(300, 63, '（每小時 2）', '#657187', 11, 'start');
+            g += txt(300, 96, '乙館 x － y ＝ −3', AMB, 12.5, 'start');
+            g += txt(300, 115, '（入場 3、每小時 1）', '#657187', 11, 'start');
+            g += txt(300, 152, 'x：時數', '#657187', 11, 'start');
+            g += txt(300, 171, 'y：花費（百元）', '#657187', 11, 'start');
+            g += txt(220, 258, `打 ${t} 小時：甲 ${ya} 百元、乙 ${yb} 百元`, '#172033', 13.5);
+            g += txt(220, 278,
+              ya < yb ? '甲館比較便宜' : (ya > yb ? '乙館比較便宜' : '兩館一樣貴 → 這就是交點'),
+              ya === yb ? RED : (ya < yb ? BLU : AMB), 14);
+            h.querySelector('#pfig').innerHTML = svg('0 0 440 286', g);
+          };
+          h.querySelector('#ps').oninput = draw; draw();
+        },
+        caption: '兩線交於 \\((3,6)\\)：打 3 小時都花 600 元；再久下去換乙館划算。',
+        example: {
+          q: '甲館每小時 200 元；乙館入場 300 元、每小時再 100 元。打 5 小時哪家便宜？',
+          steps: ['甲館：\\(200\\times5=1000\\) 元。', '乙館：\\(300+100\\times5=800\\) 元。', '5 小時落在交點（3 小時）<b>右邊</b>，乙館較省。'],
+          ans: '乙館，省 200 元'
         }
       },
 

@@ -129,37 +129,38 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '100 以內質數共 25 個', tex: '2,3,5,7,11,13,17,19,23,\\dots,97' },
         visual: (h) => {
-          const cols = 10, cw = 41, chh = 35, ox = 16, oy = 16;
+          const cols = 10, cw = 41, chh = 25, ox = 16, oy = 14;
           const cell = (n, st) => {
             const i = n - 1, r = Math.floor(i / cols), c = i % cols;
             const x = ox + c * cw, y = oy + r * chh, w = cw - 5, hh = chh - 6;
             const fill = st === 'p' ? '#ede9fe' : (st === 'x' ? '#f4f5f7' : '#ffffff');
             const stk = st === 'p' ? C : '#dfe4ee';
             const tc = st === 'x' ? '#b9c0cd' : (st === 'p' ? C : '#334');
-            let s = `<rect x="${x}" y="${y}" width="${w}" height="${hh}" rx="6" fill="${fill}" stroke="${stk}" stroke-width="${st === 'p' ? 2 : 1}"/>`;
-            s += `<text x="${x + w / 2}" y="${y + hh / 2 + 5}" text-anchor="middle" font-size="13" font-weight="${st === 'p' ? 900 : 600}" fill="${tc}">${n}</text>`;
-            if (st === 'x') s += SV.seg(x + 4, y + hh - 4, x + w - 4, y + 4, RED, 1.4);
+            let s = `<rect x="${x}" y="${y}" width="${w}" height="${hh}" rx="5" fill="${fill}" stroke="${stk}" stroke-width="${st === 'p' ? 1.8 : 1}"/>`;
+            s += `<text x="${x + w / 2}" y="${y + hh / 2 + 4}" text-anchor="middle" font-size="12" font-weight="${st === 'p' ? 900 : 600}" fill="${tc}">${n}</text>`;
+            if (st === 'x') s += SV.seg(x + 4, y + hh - 3, x + w - 4, y + 3, RED, 1.3);
             return s;
           };
           const board = (kill, mark) => {
             let s = '';
-            for (let n = 1; n <= 60; n++) s += cell(n, kill.has(n) ? 'x' : (mark ? 'p' : 'n'));
+            for (let n = 1; n <= 100; n++) s += cell(n, kill.has(n) ? 'x' : (mark ? 'p' : 'n'));
             return s;
           };
           const k1 = new Set([1]);
-          const k2 = new Set(k1); for (let n = 4; n <= 60; n += 2) k2.add(n);
-          const k3 = new Set(k2); for (let n = 6; n <= 60; n += 3) k3.add(n);
+          const k2 = new Set(k1); for (let n = 4; n <= 100; n += 2) k2.add(n);
+          const k3 = new Set(k2); for (let n = 6; n <= 100; n += 3) k3.add(n);
           const k4 = new Set(k3);
-          for (let n = 10; n <= 60; n += 5) k4.add(n);
-          for (let n = 14; n <= 60; n += 7) k4.add(n);
-          SV.stepper(h, '0 0 440 275', [
-            { t: '寫下 1~60，先把 <b>1</b> 劃掉（1 不是質數）。', d: () => board(k1, false) },
+          for (let n = 10; n <= 100; n += 5) k4.add(n);
+          for (let n = 14; n <= 100; n += 7) k4.add(n);
+          const note = `<text x="220" y="277" text-anchor="middle" font-size="12" font-weight="800" fill="${GRN}">√100 = 10，比 10 小的質數只有 2、3、5、7，篩到 7 就結束</text>`;
+          SV.stepper(h, '0 0 440 285', [
+            { t: '寫下 1~100，先把 <b>1</b> 劃掉（1 不是質數）。', d: () => board(k1, false) },
             { t: '留下 <b>2</b>，把 2 的其他倍數全部劃掉。', d: () => board(k2, false) },
             { t: '留下 <b>3</b>，把 3 的其他倍數劃掉。', d: () => board(k3, false) },
-            { t: '再劃掉 <b>5</b>、<b>7</b> 的倍數，剩下的<b>全是質數</b>。', d: () => board(k4, true) }
+            { t: '再劃掉 <b>5</b>、<b>7</b> 的倍數，剩下的 <b>25 格全是質數</b>。', d: () => board(k4, true) + note }
           ], { acc: false });
         },
-        caption: '60 以內只要篩掉 2、3、5、7 的倍數，留下來的就一定是質數。',
+        caption: '100 以內只要篩掉 2、3、5、7 的倍數，留下來的就一定是質數。',
         example: {
           q: '91 是質數嗎？',
           steps: ['末位不是偶數也不是 0、5；數字和 10 不是 3 的倍數。', '再試 7：\\(91\\div7=13\\)，整除。'],
@@ -572,13 +573,43 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '除法變乘法', tex: '\\dfrac{a}{b}\\div\\dfrac{c}{d}=\\dfrac{a}{b}\\times\\dfrac{d}{c}\\quad(c\\neq0)' },
         visual: (h) => {
-          h.innerHTML = SV.fbox([
-            { label: '① 先約分再乘', tex: '\\dfrac{8}{9}\\times\\dfrac{3}{4}=\\dfrac{2\\times1}{3\\times1}=\\dfrac{2}{3}', color: C, fill: '#f4efff', border: C, size: 17, note: '8 與 4 約掉 4；3 與 9 約掉 3' },
-            { label: '② 除以分數＝乘倒數', tex: '\\dfrac{5}{6}\\div\\dfrac{10}{3}=\\dfrac{5}{6}\\times\\dfrac{3}{10}=\\dfrac{1}{4}', color: GRN, fill: '#eef7f2', border: '#cfe8dd', size: 17, note: '只把「除數」上下顛倒' },
-            { label: '③ 負號個數決定正負', tex: '\\left(-\\dfrac12\\right)\\times\\left(-\\dfrac23\\right)\\times\\left(-\\dfrac34\\right)=-\\dfrac14', color: RED, fill: '#fdeef2', border: '#f0c9d3', size: 16, note: '三個負號（奇數）⇒ 結果為負' }
-          ], { gap: 10 });
+          h.innerHTML = `<div style="width:100%"><div id="area"></div>
+            <div class="ictrl"><label>分母 b <span class="ival" id="bv">3</span></label>
+            <input type="range" id="bs" min="2" max="6" step="1" value="3">
+            <label>分母 d <span class="ival" id="dv">4</span></label>
+            <input type="range" id="ds" min="2" max="6" step="1" value="4"></div></div>`;
+          const X0 = 62, W = 320, Y0 = 44, H = 136;
+          const draw = () => {
+            const b = +h.querySelector('#bs').value, d = +h.querySelector('#ds').value;
+            h.querySelector('#bv').textContent = b;
+            h.querySelector('#dv').textContent = d;
+            const a = Math.min(2, b - 1), c = Math.min(3, d - 1);   // 分子固定小數字，永遠是真分數
+            const rh = H / b, cwd = W / d;
+            let s = `<text x="220" y="13" text-anchor="middle" font-size="11" fill="#657187">紫：橫向切 ${b} 等分塗 ${a} 份　綠：縱向切 ${d} 等分塗 ${c} 份</text>`;
+            for (let j = 0; j < b; j++) for (let i = 0; i < d; i++) {
+              const inRow = j < a, inCol = i < c;
+              const fill = (inRow && inCol) ? 'rgba(88,28,135,.62)'
+                : inRow ? 'rgba(124,58,237,.20)'
+                  : inCol ? 'rgba(5,150,105,.20)' : '#f6f7fa';
+              s += `<rect x="${(X0 + i * cwd).toFixed(1)}" y="${(Y0 + j * rh).toFixed(1)}" width="${(cwd - 1.4).toFixed(1)}" height="${(rh - 1.4).toFixed(1)}" rx="3" fill="${fill}" stroke="#cdd6e2" stroke-width="1"/>`;
+            }
+            // 上：綠色 c/d；左：紫色 a/b
+            s += SV.seg(X0, 35, X0 + c * cwd - 1.4, 35, GRN, 2.2);
+            s += `<text x="${(X0 + c * cwd / 2).toFixed(1)}" y="29" text-anchor="middle" font-size="13" font-weight="900" fill="${GRN}">${c}/${d}</text>`;
+            s += SV.seg(52, Y0, 52, Y0 + a * rh - 1.4, C, 2.2);
+            s += `<text x="30" y="${(Y0 + a * rh / 2 + 5).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="900" fill="${C}">${a}/${b}</text>`;
+            const den = b * d, num = a * c, g = gcd(num, den);
+            const simp = (den / g === 1) ? `${num / g}` : `${num / g}/${den / g}`;
+            s += `<text x="220" y="206" text-anchor="middle" font-size="13.5" font-weight="800" fill="#172033">總格數 ${b} × ${d} ＝ <tspan fill="${BLU}" font-weight="900">${den}</tspan> 格 → 當<tspan fill="${BLU}" font-weight="900">分母</tspan></text>`;
+            s += `<text x="220" y="228" text-anchor="middle" font-size="13.5" font-weight="800" fill="#172033">重疊格數 ${a} × ${c} ＝ <tspan fill="${RED}" font-weight="900">${num}</tspan> 格 → 當<tspan fill="${RED}" font-weight="900">分子</tspan></text>`;
+            s += `<text x="220" y="258" text-anchor="middle" font-size="17" font-weight="900" fill="${C}">${a}/${b} × ${c}/${d} ＝ ${num}/${den}${g > 1 ? ` ＝ ${simp}` : ''}</text>`;
+            h.querySelector('#area').innerHTML = svg('0 0 440 275', s);
+          };
+          h.querySelector('#bs').oninput = draw;
+          h.querySelector('#ds').oninput = draw;
+          draw();
         },
-        caption: '流程固定：<b>先把除法改成乘倒數 → 再一次把數字約乾淨 → 最後才乘</b>。',
+        caption: '面積模型：<b>總格數＝分母相乘</b>、<b>重疊格數＝分子相乘</b>；除法先改成乘倒數，就能套同一張圖。',
         example: {
           q: '計算 \\(\\left(-\\dfrac{4}{9}\\right)\\div\\dfrac{8}{15}\\)。',
           steps: ['改成乘倒數：\\(-\\dfrac49\\times\\dfrac{15}{8}\\)。', '約分：4 與 8 約 4、9 與 15 約 3。', '得 \\(-\\dfrac{1\\times5}{3\\times2}\\)。'],
@@ -598,52 +629,78 @@ window.DECK = window.DECK || [];
         formula: { label: '運算順序（一定要背）', tex: '\\text{括號}\\to\\text{乘方／絕對值}\\to\\text{乘除}\\to\\text{加減}' },
         visual: (h) => {
           const box = (y, t, sub, col, fill) =>
-            `<rect x="86" y="${y}" width="268" height="46" rx="13" fill="${fill}" stroke="${col}" stroke-width="2"/>` +
-            `<text x="220" y="${y + 22}" text-anchor="middle" font-size="15" font-weight="900" fill="${col}">${t}</text>` +
-            `<text x="220" y="${y + 39}" text-anchor="middle" font-size="11.5" fill="#657187">${sub}</text>`;
-          const arrow = (y) => SV.seg(220, y, 220, y + 14, '#8a94a6', 2.2) + `<path d="M220,${y + 18} L215,${y + 9} L225,${y + 9} Z" fill="#8a94a6"/>`;
-          h.innerHTML = svg('0 0 440 290', `
-            <text x="220" y="20" text-anchor="middle" font-size="13" font-weight="900" fill="#172033">四則運算順序</text>
-            ${box(30, '① 括號內先算', '小括號 → 中括號 → 大括號', C, '#f4efff')}
-            ${arrow(76)}
-            ${box(94, '② 乘方、絕對值求值', '先把次方與 | | 算成一個數', BLU, '#eef4ff')}
-            ${arrow(140)}
-            ${box(158, '③ 乘、除', '同級由左而右', GRN, '#eef7f2')}
-            ${arrow(204)}
-            ${box(222, '④ 加、減', '同級由左而右', AMB, '#fdf3e6')}
+            `<rect x="80" y="${y}" width="280" height="44" rx="13" fill="${fill}" stroke="${col}" stroke-width="2"/>` +
+            `<text x="220" y="${y + 21}" text-anchor="middle" font-size="15" font-weight="900" fill="${col}">${t}</text>` +
+            `<text x="220" y="${y + 37}" text-anchor="middle" font-size="11.5" fill="#657187">${sub}</text>`;
+          const arrow = (y) => SV.seg(220, y, 220, y + 8, '#8a94a6', 2.2) + `<path d="M220,${y + 12} L215,${y + 4} L225,${y + 4} Z" fill="#8a94a6"/>`;
+          h.innerHTML = svg('0 0 440 300', `
+            <text x="220" y="14" text-anchor="middle" font-size="13" font-weight="900" fill="#172033">四則運算順序</text>
+            <rect x="62" y="18" width="316" height="28" rx="14" fill="#fdf3e6" stroke="${AMB}" stroke-width="2" stroke-dasharray="6 4"/>
+            <text x="220" y="37" text-anchor="middle" font-size="13.5" font-weight="900" fill="${AMB}">有小數／百分率 → 先化成分數</text>
+            ${arrow(48)}
+            ${box(62, '① 括號內先算', '小括號 → 中括號 → 大括號', C, '#f4efff')}
+            ${arrow(108)}
+            ${box(122, '② 乘方、絕對值求值', '先把次方與 | | 算成一個數', BLU, '#eef4ff')}
+            ${arrow(168)}
+            ${box(182, '③ 乘、除', '同級由左而右', GRN, '#eef7f2')}
+            ${arrow(228)}
+            ${box(242, '④ 加、減', '同級由左而右', AMB, '#fdf3e6')}
           `);
         },
         caption: '順序記牢：<b>括號最優先，乘方比乘除大，同級一律由左到右</b>；有小數先化成分數。',
         example: {
-          q: '計算 \\(\\dfrac{1}{2}-\\dfrac{1}{3}\\times\\left(-\\dfrac{3}{4}\\right)^{2}\\)。',
-          steps: ['先算乘方：\\(\\left(-\\dfrac34\\right)^2=\\dfrac{9}{16}\\)。', '再算乘法：\\(\\dfrac13\\times\\dfrac{9}{16}=\\dfrac{3}{16}\\)。', '最後相減：\\(\\dfrac{8}{16}-\\dfrac{3}{16}\\)。'],
-          ans: '\\(\\dfrac{5}{16}\\)'
+          q: '計算 \\(0.75-\\dfrac{1}{3}\\times\\left(-\\dfrac{3}{4}\\right)^{2}\\)。',
+          steps: ['\\(0.75=\\dfrac34\\)，<b>先把小數全部化成分數</b>再套運算順序。', '乘方：\\(\\left(-\\dfrac34\\right)^2=\\dfrac{9}{16}\\)。', '乘法：\\(\\dfrac13\\times\\dfrac{9}{16}=\\dfrac{3}{16}\\)。', '相減：\\(\\dfrac{12}{16}-\\dfrac{3}{16}\\)。'],
+          ans: '\\(\\dfrac{9}{16}\\)'
         }
       },
 
       /* ---------- 2-4 指數律 ---------- */
       {
         sec: '2-4', secName: '乘方',
-        title: '括號有沒有包住負號，答案差很多',
+        title: '分數的乘方：分子分母各自次方',
         points: [
-          '\\(a^n\\) 是 <b>n 個 a 相乘</b>；\\(a\\) 叫<span class="k">底數</span>、\\(n\\) 叫<span class="k">指數</span>。',
-          '有括號：\\((-2)^4=(-2)(-2)(-2)(-2)=16\\)；沒括號：\\(-2^4=-(2^4)=-16\\)。',
-          '分數的乘方：<b>分子分母各自次方</b>，\\(\\left(\\dfrac{2}{3}\\right)^3=\\dfrac{2^3}{3^3}=\\dfrac{8}{27}\\)。',
-          '負數的乘方：指數是<b>偶數</b>為正、<b>奇數</b>為負。'
+          '\\(\\left(\\dfrac{a}{b}\\right)^{n}=\\dfrac{a^{n}}{b^{n}}\\)：<b>分子、分母各自</b>做 \\(n\\) 次方。',
+          '負分數的乘方：指數<b>偶數</b>結果為正、<b>奇數</b>結果為負。',
+          '括號要看清楚：\\(\\left(-\\dfrac23\\right)^2=\\dfrac49\\)，但 \\(-\\left(\\dfrac23\\right)^2=-\\dfrac49\\)。'
         ],
         formula: { label: '分數的乘方', tex: '\\left(\\dfrac{a}{b}\\right)^{n}=\\dfrac{a^{n}}{b^{n}}\\quad(b\\neq0)' },
         visual: (h) => {
-          h.innerHTML = SV.fbox([
-            { label: '✓ 負號被括號包住 → 一起乘', tex: '(-2)^4=(-2)(-2)(-2)(-2)=16', color: GRN, fill: '#eef7f2', border: '#cfe8dd', size: 16 },
-            { label: '✓ 負號沒被包住 → 只有 2 連乘四次', tex: '-2^4=-(2\\times2\\times2\\times2)=-16', color: RED, fill: '#fdeef2', border: '#f0c9d3', size: 16 },
-            { label: '分數＋負號', tex: '\\left(-\\dfrac{2}{3}\\right)^{3}=-\\dfrac{2^3}{3^3}=-\\dfrac{8}{27}', color: C, fill: '#f4efff', border: C, size: 16, note: '指數 3（奇數）⇒ 結果為負' }
-          ], { gap: 10 });
+          const gx = 48, gy = 50, u = 46;
+          let s = '';
+          // 左：邊長 2/3 的正方形，切成 3×3 共 9 小格，塗其中 2×2 ＝ 4 格
+          for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+            const on = i < 2 && j < 2;
+            s += `<rect x="${gx + i * u}" y="${gy + j * u}" width="${u - 2}" height="${u - 2}" rx="4" fill="${on ? 'rgba(124,58,237,.40)' : '#f5f6f9'}" stroke="${on ? C : '#dfe4ee'}" stroke-width="1.4"/>`;
+          }
+          s += SV.seg(gx, gy - 12, gx + 2 * u - 2, gy - 12, C, 2);
+          s += `<text x="${gx + u - 1}" y="${gy - 18}" text-anchor="middle" font-size="13" font-weight="900" fill="${C}">2/3</text>`;
+          s += SV.seg(gx - 12, gy, gx - 12, gy + 2 * u - 2, C, 2);
+          s += `<text x="20" y="${gy + u + 3}" text-anchor="middle" font-size="13" font-weight="900" fill="${C}">2/3</text>`;
+          s += `<text x="116" y="208" text-anchor="middle" font-size="13" font-weight="800" fill="#172033">9 小格中塗了 4 格</text>`;
+          s += `<text x="116" y="230" text-anchor="middle" font-size="15" font-weight="900" fill="${C}">面積 ＝ 4/9</text>`;
+          // 右：兩張運算卡
+          const card = (y, hh, t1, t2, t3, col, fill) =>
+            `<rect x="206" y="${y}" width="220" height="${hh}" rx="14" fill="${fill}" stroke="${col}" stroke-width="2"/>` +
+            `<text x="316" y="${y + 26}" text-anchor="middle" font-size="16" font-weight="900" fill="${col}">${t1}</text>` +
+            `<text x="316" y="${y + 48}" text-anchor="middle" font-size="12" fill="#657187">${t2}</text>` +
+            `<text x="316" y="${y + 71}" text-anchor="middle" font-size="16" font-weight="900" fill="${col}">${t3}</text>`;
+          s += card(44, 84, '(2/3)² ＝ 2²/3²', '分子、分母各自平方', '＝ 4/9', C, '#f4efff');
+          s += card(138, 84, '(2/3)³ ＝ 2³/3³', '分子、分母各自立方', '＝ 8/27', BLU, '#eef4ff');
+          // 下：負分數看指數奇偶
+          const band = (x, t1, t2, col, fill) =>
+            `<rect x="${x}" y="240" width="180" height="38" rx="11" fill="${fill}" stroke="${col}" stroke-width="1.8"/>` +
+            `<text x="${x + 90}" y="257" text-anchor="middle" font-size="14" font-weight="900" fill="${col}">${t1}</text>` +
+            `<text x="${x + 90}" y="272" text-anchor="middle" font-size="11" fill="#657187">${t2}</text>`;
+          s += band(34, '(−2/3)² ＝ ＋4/9', '指數 2（偶數）⇒ 正', GRN, '#eef7f2');
+          s += band(226, '(−2/3)³ ＝ −8/27', '指數 3（奇數）⇒ 負', RED, '#fdeef2');
+          h.innerHTML = svg('0 0 440 285', s);
         },
-        caption: '兩者只差一個括號，答案卻差一個負號——考卷上最愛考這一組。',
+        caption: '把 \\(\\left(\\dfrac23\\right)^2\\) 看成邊長 \\(\\dfrac23\\) 的正方形：9 小格中剛好塗了 4 格。',
         example: {
-          q: '計算 \\((-3)^2+(-3^2)\\)。',
-          steps: ['\\((-3)^2=9\\)（負號在括號內，一起平方）。', '\\(-3^2=-9\\)（只有 3 被平方）。'],
-          ans: '\\(9+(-9)=0\\)'
+          q: '計算 \\(\\left(-\\dfrac{2}{3}\\right)^{3}\\) 與 \\(\\left(-\\dfrac{2}{3}\\right)^{2}\\)。',
+          steps: ['分子分母各自次方：\\(\\dfrac{2^3}{3^3}=\\dfrac{8}{27}\\)、\\(\\dfrac{2^2}{3^2}=\\dfrac{4}{9}\\)。', '指數 3 是奇數 ⇒ 結果為負；指數 2 是偶數 ⇒ 結果為正。'],
+          ans: '\\(-\\dfrac{8}{27}\\)、\\(\\dfrac{4}{9}\\)'
         }
       },
 
@@ -652,11 +709,11 @@ window.DECK = window.DECK || [];
         title: '同底數：相乘加指數，相除減指數',
         points: [
           '同底數<b>相乘</b>，指數<b>相加</b>：\\(2^3\\times2^5=2^{8}\\)。',
-          '同底數<b>相除</b>，指數<b>相減</b>：\\(2^7\\div2^3=2^{4}\\)。',
+          '同底數<b>相除</b>，指數<b>相減</b>：\\(2^7\\div2^3=2^{4}\\)；本階段只做 \\(m\\ge n\\)，<b>指數不會變成負的</b>。',
           '<b>乘方的乘方</b>，指數<b>相乘</b>：\\((3^2)^4=3^{8}\\)。',
           '這三條都要<b>底數相同</b>才能用；底數不同就<b>不能</b>合併指數。'
         ],
-        formula: { label: '三條指數律', tex: 'a^m\\times a^n=a^{m+n},\\quad a^m\\div a^n=a^{m-n},\\quad (a^m)^n=a^{mn}' },
+        formula: { label: '三條指數律', tex: 'a^m\\times a^n=a^{m+n},\\quad a^m\\div a^n=a^{m-n}\\;(a\\neq0,\\,m\\geq n),\\quad (a^m)^n=a^{mn}' },
         visual: (h) => {
           h.innerHTML = `<div style="width:100%"><div id="pow"></div>
             <div class="ictrl"><label>左邊的指數 m <span class="ival" id="mv">2</span>（右邊固定 3）</label>

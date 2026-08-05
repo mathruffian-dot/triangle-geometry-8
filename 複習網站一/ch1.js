@@ -301,19 +301,78 @@ window.DECK = window.DECK || [];
         sec: '1-2', secName: '整數的加減',
         title: '同號相加照抄符號，異號相加取「大的」符號',
         points: [
-          '<b>同號</b>相加：符號<b>照抄</b>、絕對值<b>相加</b>——\\((-3)+(-5)=-8\\)。',
-          '<b>異號</b>相加：取<b>絕對值較大</b>那個數的符號、絕對值<b>相減</b>——\\((+7)+(-3)=+4\\)。',
-          '心法：同號像「一直欠錢」愈欠愈多；異號像「有錢還債」，看誰比較多、剩哪一邊。'
+          '<b>同號</b>相加：兩段箭頭<b>同方向</b>，符號照抄、絕對值<b>相加</b>——\\((-3)+(-5)=-8\\)。',
+          '<b>異號</b>相加：兩段箭頭<b>反方向</b>，短的把長的抵銷掉一截，絕對值<b>相減</b>。',
+          '剩下的那一段落在哪一邊，答案就取<b>那一邊的符號</b>——\\((+7)+(-3)=+4\\)。',
+          '拖 a、b 兩個滑桿，看兩段是「接力往前」還是「互相抵銷」。'
         ],
         formula: { label: '兩條規則', tex: '(-3)+(-5)=-(3+5)=-8\\qquad (+7)+(-3)=+(7-3)=+4' },
         visual: (h) => {
-          h.innerHTML = SV.fbox([
-            { label: '同號相加：符號照抄、絕對值相加', tex: '(-3)+(-5)=-(3+5)=-8', color: RED, fill: '#fdeef2', border: '#f3c3ce', size: 18, note: '欠 3 元再欠 5 元 → 共欠 8 元' },
-            { label: '異號相加：取大的符號、絕對值相減', tex: '(+7)+(-3)=+(7-3)=+4', color: BLU, fill: '#eef4ff', border: BLU, size: 18, note: '有 7 元、還債 3 元 → 剩 4 元' },
-            { label: '絕對值一樣大時', tex: '(+6)+(-6)=0', color: GRN, border: '#cfe8dd', size: 17, note: '互為相反數，剛好抵銷' }
-          ], { gap: 10 });
+          h.innerHTML = `<div style="width:100%"><div id="fig"></div>
+            <div class="ictrl">
+              <label>a ＝ <span class="ival" id="av8">7</span></label>
+              <input type="range" id="as8" min="-8" max="8" step="1" value="7">
+              <label>b ＝ <span class="ival" id="bv8">-3</span></label>
+              <input type="range" id="bs8" min="-8" max="8" step="1" value="-3">
+            </div></div>`;
+          const GY = '#9aa4b5', Y1 = 146, Y2 = 92, YL = 192;
+          // 純線段（無箭頭）
+          const bar = (x1, x2, y, col, w) => (Math.abs(x2 - x1) < 0.5 ? '' :
+            `<line x1="${x1.toFixed(1)}" y1="${y}" x2="${x2.toFixed(1)}" y2="${y}" stroke="${col}" stroke-width="${w}"/>`);
+          // 有向箭頭（箭頭用多邊形畫，長度固定，不會被 stroke-width 放大）
+          const arw = (x1, x2, y, col, w) => {
+            if (Math.abs(x2 - x1) < 0.5) return '';
+            const d = x2 > x1 ? 1 : -1, xb = (x2 - d * 11).toFixed(1);
+            return bar(x1, x2 - d * 9, y, col, w) +
+              `<polygon points="${x2.toFixed(1)},${y} ${xb},${y - 6.5} ${xb},${y + 6.5}" fill="${col}"/>`;
+          };
+          const draw = () => {
+            const a = +h.querySelector('#as8').value, b = +h.querySelector('#bs8').value;
+            h.querySelector('#av8').textContent = a;
+            h.querySelector('#bv8').textContent = b;
+            const r = a + b, A = Math.abs(a), B = Math.abs(b), opp = a * b < 0;
+            const colA = a >= 0 ? GRN : RED, colB = b >= 0 ? GRN : RED;
+            const colR = r > 0 ? GRN : (r < 0 ? RED : '#5b6478');
+            const N = numline(-16, 16, 26, 414, YL, 'nl8', { lab: 4 });
+            let s = N.g;
+            s += SV.seg(N.X(a), Y2 - 16, N.X(a), YL, '#cdd5e2', 1.4, '4 4');
+            s += SV.seg(N.X(r), Y2 - 16, N.X(r), YL, '#cdd5e2', 1.4, '4 4');
+            if (!opp) {                       // 同號（或其中一個是 0）：兩段同向接力
+              s += arw(N.X(0), N.X(a), Y1, colA, 4.5);
+              s += arw(N.X(a), N.X(r), Y2, colB, 4.5);
+            } else {                          // 異號：重疊的部分互相抵銷（畫灰色）
+              const c = B <= A ? r : 0;       // 抵銷結束的位置
+              s += bar(N.X(0), N.X(c), Y1, colA, A > B ? 7 : 4.5);
+              s += arw(N.X(c), N.X(a), Y1, GY, 4.5);
+              s += (B <= A ? arw(N.X(a), N.X(c), Y2, GY, 4.5) : bar(N.X(a), N.X(c), Y2, GY, 4.5));
+              s += arw(N.X(c), N.X(r), Y2, colB, 7);
+              s += `<text x="${((N.X(a) + N.X(c)) / 2).toFixed(1)}" y="${Y2 + 22}" text-anchor="middle" font-size="12" font-weight="800" fill="${GY}">抵銷 ${Math.min(A, B)} 格</text>`;
+            }
+            if (a !== 0) s += `<text x="${((N.X(0) + N.X(a)) / 2).toFixed(1)}" y="${Y1 - 13}" text-anchor="middle" font-size="12" font-weight="800" fill="${colA}">a：${a > 0 ? '向右' : '向左'} ${A} 格</text>`;
+            if (b !== 0) s += `<text x="${((N.X(a) + N.X(r)) / 2).toFixed(1)}" y="${Y2 - 13}" text-anchor="middle" font-size="12" font-weight="800" fill="${colB}">b：${b > 0 ? '向右' : '向左'} ${B} 格</text>`;
+            const mid = ((N.X(0) + N.X(r)) / 2).toFixed(1);
+            if (opp) {
+              s += r === 0
+                ? `<text x="220" y="${Y1 + 24}" text-anchor="middle" font-size="13" font-weight="800" fill="#657187">兩段一樣長，剛好抵銷完</text>`
+                : `<text x="${mid}" y="${Y1 + 24}" text-anchor="middle" font-size="13.5" font-weight="900" fill="${colR}">剩 ${Math.abs(r)} 格</text>`;
+            } else if (a !== 0 && b !== 0) {
+              s += `<text x="${mid}" y="${Y1 + 24}" text-anchor="middle" font-size="13.5" font-weight="900" fill="${colR}">長度相加 ${A}＋${B}＝${Math.abs(r)} 格</text>`;
+            }
+            s += SV.dot(N.X(0), YL, '#5b6478', 4) + SV.dot(N.X(r), YL, colR, 6.5);
+            s += `<text x="220" y="252" text-anchor="middle" font-size="24" font-weight="900" fill="#172033">(${a}) ＋ (${b}) ＝ <tspan fill="${colR}">${r}</tspan></text>`;
+            const hint = opp
+              ? (r === 0 ? '兩段一樣長就完全抵銷 ⇒ 和是 0'
+                : `剩 ${Math.abs(r)} 格，符號跟著比較長的那一段（${A > B ? 'a' : 'b'}）`)
+              : (a === 0 || b === 0 ? '其中一個是 0 ⇒ 直接照抄另一個數'
+                : '兩段同方向 ⇒ 符號照抄、長度相加');
+            s += `<text x="220" y="277" text-anchor="middle" font-size="12.5" fill="#657187">${hint}</text>`;
+            h.querySelector('#fig').innerHTML = svg('0 0 440 288', s);
+          };
+          h.querySelector('#as8').oninput = draw;
+          h.querySelector('#bs8').oninput = draw;
+          draw();
         },
-        caption: '兩個規則差在「符號怎麼定、絕對值是加還是減」。',
+        caption: '同向就「接力加長」，反向就「互相抵銷」；剩下的那一段決定符號與大小。',
         example: {
           q: '計算 \\((-12)+(+5)+(-3)\\)。',
           steps: ['\\((-12)+(+5)\\)：異號，取負號、\\(12-5=7\\Rightarrow-7\\)。', '\\((-7)+(-3)\\)：同號，\\(-(7+3)=-10\\)。'],
@@ -326,19 +385,45 @@ window.DECK = window.DECK || [];
         title: '減法先變加法，才能自由搬動位置',
         points: [
           '<b>減去一個數＝加上它的相反數</b>：\\(a-b=a+(-b)\\)。',
-          '因為只有<b>加法</b>才有交換律與結合律，改成加法後就能把正的、負的各自併在一起算。',
-          '減法本身<b>沒有</b>交換律，也沒有結合律：\\(5-3\\ne3-5\\)。'
+          '因為<b>加法與乘法</b>才有交換律與結合律、<b>減法沒有</b>，所以先全部換成加法。',
+          '減法真的不能搬：\\(5-3=2\\) 但 \\(3-5=-2\\)，兩邊並不相等。',
+          '換成加法後，正的歸正的、負的歸負的，一次算完又快又不易錯。'
         ],
         formula: { label: '減法轉加法', tex: 'a-b=a+(-b)' },
         visual: (h) => {
-          h.innerHTML = SV.fbox([
-            { label: '① 原式', tex: '8-15+7-4', color: '#5b6478', border: '#dce3ee', size: 19 },
-            { label: '② 全部改寫成加法', tex: '8+(-15)+7+(-4)', color: BLU, fill: '#eef4ff', border: BLU, size: 19 },
-            { label: '③ 用交換律、結合律重新分組', tex: '(8+7)+\\left[(-15)+(-4)\\right]', color: VIO, border: '#ddd0f5', size: 18 },
-            { label: '④ 算出來', tex: '15+(-19)=-4', color: GRN, fill: '#eef7f2', border: '#bfe0d1', size: 19 }
-          ], { gap: 8 });
+          const rows = [
+            {
+              lab: '① 原式', e: '8 − 15 + 7 − 4', c: '#5b6478', bg: '#f4f6fa',
+              t: '式子裡有加也有減，這時候<b>還不能</b>隨便搬動位置。'
+            },
+            {
+              lab: '② 全部改寫成加法', e: '8 + (−15) + 7 + (−4)', c: BLU, bg: '#eef4ff',
+              t: '每個減號都換成「加上相反數」：−15 變 +(−15)、−4 變 +(−4)。'
+            },
+            {
+              lab: '③ 用交換律、結合律分組', e: '(8 + 7) + [(−15) + (−4)]', c: VIO, bg: '#f3eefd',
+              t: '全部都是加法了才可以搬：<b>正的歸正的、負的歸負的</b>。'
+            },
+            {
+              lab: '④ 兩個小計相加', e: '15 + (−19) = −4', c: GRN, bg: '#eef7f2',
+              t: '8+7=15、(−15)+(−4)=−19，異號相加取負號 ⇒ <b>−4</b>。'
+            }
+          ];
+          SV.stepper(h, '0 0 440 282', rows.map((r, i) => ({
+            t: r.t,
+            d: (k) => {
+              let s = '';
+              for (let j = 0; j <= i; j++) {
+                const cur = j === i, op = (cur ? Math.max(0.15, k) : 0.34).toFixed(2), y = 18 + j * 64;
+                s += `<rect x="20" y="${y}" width="400" height="56" rx="13" fill="${cur ? rows[j].bg : '#f7f9fc'}" stroke="${cur ? rows[j].c : '#e2e8f2'}" stroke-width="${cur ? 2.2 : 1.2}" opacity="${op}"/>`;
+                s += `<text x="34" y="${y + 18}" font-size="11.5" font-weight="900" fill="${rows[j].c}" opacity="${op}">${rows[j].lab}</text>`;
+                s += `<text x="220" y="${y + 44}" text-anchor="middle" font-size="${cur ? 20 : 17}" font-weight="${cur ? 900 : 700}" fill="#172033" opacity="${op}">${rows[j].e}</text>`;
+              }
+              return s;
+            }
+          })), { acc: false });
         },
-        caption: '改成加法之後就能「正的歸正的、負的歸負的」，計算又快又不易錯。',
+        caption: '拖滑桿走四步：先換成加法，才有資格「正的歸正的、負的歸負的」。',
         example: {
           q: '計算 \\(13-25+7-5\\)。',
           steps: ['改寫：\\(13+(-25)+7+(-5)\\)。', '分組：\\((13+7)+\\left[(-25)+(-5)\\right]=20+(-30)\\)。', '\\(=-10\\)。'],
@@ -412,27 +497,130 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '符號規則', tex: '(+)\\times(+)=(+),\\ (-)\\times(-)=(+),\\ (+)\\times(-)=(-)' },
         visual: (h) => {
-          const cell = (x, y, txt, col, bg) =>
-            `<rect x="${x}" y="${y}" width="118" height="64" rx="12" fill="${bg}" stroke="${col}" stroke-width="2"/>` +
-            `<text x="${x + 59}" y="${y + 42}" text-anchor="middle" font-size="26" font-weight="900" fill="${col}">${txt}</text>`;
-          let s = '';
-          s += `<text x="180" y="46" text-anchor="middle" font-size="15" font-weight="900" fill="#5b6478">乘正數</text>`;
-          s += `<text x="330" y="46" text-anchor="middle" font-size="15" font-weight="900" fill="#5b6478">乘負數</text>`;
-          s += `<text x="66" y="102" text-anchor="middle" font-size="15" font-weight="900" fill="#5b6478">正數 ×</text>`;
-          s += `<text x="66" y="182" text-anchor="middle" font-size="15" font-weight="900" fill="#5b6478">負數 ×</text>`;
-          s += cell(121, 62, '＋ 正', BLU, 'rgba(37,99,235,.08)');
-          s += cell(271, 62, '－ 負', RED, 'rgba(225,29,72,.07)');
-          s += cell(121, 142, '－ 負', RED, 'rgba(225,29,72,.07)');
-          s += cell(271, 142, '＋ 正', BLU, 'rgba(37,99,235,.08)');
-          s += `<text x="220" y="240" text-anchor="middle" font-size="15" font-weight="800" fill="#172033">同號 → 正　　異號 → 負</text>`;
-          s += `<text x="220" y="266" text-anchor="middle" font-size="13" fill="#657187">符號決定後，絕對值照常相乘</text>`;
-          h.innerHTML = svg('0 0 440 280', s);
+          h.innerHTML = `<div style="width:100%"><div id="fig"></div>
+            <div class="ictrl">
+              <label>每日 d <span class="ival" id="dv3">-3</span></label>
+              <input type="range" id="ds3" min="-3" max="3" step="1" value="-3">
+              <label>天數 t <span class="ival" id="tv3">-3</span></label>
+              <input type="range" id="ts3" min="-3" max="3" step="1" value="-3">
+            </div></div>`;
+          const XL = 30, XR = 146, TOP = 26, BOT = 186, BASE = 106;
+          const TX = v => 315 + v * 31;
+          const cellX = [272, 344], cellY = [134, 161];
+          const draw = () => {
+            const d = +h.querySelector('#ds3').value, t = +h.querySelector('#ts3').value;
+            h.querySelector('#dv3').textContent = d;
+            h.querySelector('#tv3').textContent = t;
+            const p = d * t, sy = BASE - p * 8;
+            const col = p > 0 ? BLU : (p < 0 ? RED : '#8a94a6');
+            let s = '';
+            /* ---- 左半：水槽剖面 ---- */
+            s += `<rect x="${XL}" y="${TOP}" width="${XR - XL}" height="${BOT - TOP}" rx="6" fill="#f7f9fc" stroke="#5b6478" stroke-width="2.4"/>`;
+            s += `<rect x="${XL + 3}" y="${sy}" width="${XR - XL - 6}" height="${BOT - sy - 3}" fill="${p >= 0 ? 'rgba(37,99,235,.20)' : 'rgba(225,29,72,.14)'}"/>`;
+            s += SV.seg(XL + 3, sy, XR - 3, sy, col, 3.2);
+            s += SV.seg(XL - 6, BASE, XR + 8, BASE, '#8a94a6', 1.6, '5 4');
+            s += `<text x="${XR + 12}" y="${BASE + 4}" font-size="10.5" fill="#8a94a6">基準</text>`;
+            if (p !== 0) {
+              const dir = p > 0 ? -1 : 1, yb = (sy - dir * 11).toFixed(1);
+              s += SV.seg(62, BASE, 62, sy - dir * 10, col, 3);
+              s += `<polygon points="62,${sy} 56,${yb} 68,${yb}" fill="${col}"/>`;
+              s += `<text x="106" y="${((BASE + sy) / 2 + 5).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="900" fill="${col}">${p > 0 ? '升' : '降'} ${Math.abs(p)} 公分</text>`;
+            }
+            s += `<text x="88" y="206" text-anchor="middle" font-size="11.5" font-weight="800" fill="#5b6478">水槽剖面</text>`;
+            /* ---- 右上：時間軸 ---- */
+            s += `<text x="315" y="34" text-anchor="middle" font-size="12" font-weight="900" fill="#5b6478">時間軸（天）</text>`;
+            s += SV.seg(TX(-3) - 16, 64, TX(3) + 18, 64, '#5b6478', 2);
+            s += `<polygon points="${TX(3) + 22},64 ${TX(3) + 12},59 ${TX(3) + 12},69" fill="#5b6478"/>`;
+            for (let v = -3; v <= 3; v++) {
+              s += SV.seg(TX(v), 58, TX(v), 70, v === 0 ? '#5b6478' : '#a9b2c2', v === 0 ? 2.2 : 1.2);
+              s += `<text x="${TX(v)}" y="84" text-anchor="middle" font-size="10.5" fill="#8a94a6">${v}</text>`;
+            }
+            s += SV.dot(TX(t), 64, VIO, 6);
+            s += `<text x="${TX(t)}" y="50" text-anchor="middle" font-size="12" font-weight="900" fill="${VIO}">${t === 0 ? '今天' : (t > 0 ? t + ' 天後' : (-t) + ' 天前')}</text>`;
+            s += `<text x="315" y="102" text-anchor="middle" font-size="10.5" fill="#8a94a6">負：幾天前　　正：幾天後</text>`;
+            /* ---- 右下：2×2 規則表（結論） ---- */
+            s += `<text x="314" y="130" text-anchor="middle" font-size="11" font-weight="900" fill="#5b6478">× 正</text>`;
+            s += `<text x="386" y="130" text-anchor="middle" font-size="11" font-weight="900" fill="#5b6478">× 負</text>`;
+            s += `<text x="242" y="152" text-anchor="middle" font-size="11" font-weight="900" fill="#5b6478">正 ×</text>`;
+            s += `<text x="242" y="179" text-anchor="middle" font-size="11" font-weight="900" fill="#5b6478">負 ×</text>`;
+            for (let ri = 0; ri < 2; ri++) {
+              for (let ci = 0; ci < 2; ci++) {
+                const pos = (ri === 0) === (ci === 0);
+                const on = d !== 0 && t !== 0 && (d > 0 ? 0 : 1) === ri && (t > 0 ? 0 : 1) === ci;
+                s += `<rect x="${cellX[ci]}" y="${cellY[ri]}" width="72" height="27" rx="7" fill="${on ? (pos ? 'rgba(37,99,235,.18)' : 'rgba(225,29,72,.15)') : '#f4f6fa'}" stroke="${on ? (pos ? BLU : RED) : '#dce3ee'}" stroke-width="${on ? 2 : 1}"/>`;
+                s += `<text x="${cellX[ci] + 36}" y="${cellY[ri] + 20}" text-anchor="middle" font-size="16" font-weight="900" fill="${pos ? BLU : RED}">${pos ? '＋' : '－'}</text>`;
+              }
+            }
+            s += `<text x="314" y="206" text-anchor="middle" font-size="10.5" fill="#8a94a6">同號得正、異號得負</text>`;
+            /* ---- 底部：算式與結論 ---- */
+            const ds = d < 0 ? `(${d})` : `${d}`, ts = t < 0 ? `(${t})` : `${t}`;
+            s += `<text x="220" y="238" text-anchor="middle" font-size="24" font-weight="900" fill="#172033">${ds} × ${ts} ＝ <tspan fill="${col}">${p}</tspan></text>`;
+            if (d < 0 && t < 0) {
+              s += `<rect x="132" y="252" width="176" height="30" rx="15" fill="rgba(37,99,235,.12)" stroke="${BLU}" stroke-width="1.8"/>`;
+              s += `<text x="220" y="272" text-anchor="middle" font-size="14" font-weight="900" fill="${BLU}">負 × 負 ＝ 正</text>`;
+            } else {
+              s += `<text x="220" y="272" text-anchor="middle" font-size="12.5" fill="#657187">先定符號，再把絕對值相乘</text>`;
+            }
+            h.querySelector('#fig').innerHTML = svg('0 0 440 288', s);
+          };
+          h.querySelector('#ds3').oninput = draw;
+          h.querySelector('#ts3').oninput = draw;
+          draw();
         },
-        caption: '兩個數的符號相同就得正、不同就得負；記住這張表就不會亂。',
+        caption: '拖 d 與 t：水位往上（藍）或往下（紅），正負就是 \\(d\\times t\\) 的符號。',
         example: {
           q: '計算 \\((-4)\\times(-6)\\times(+2)\\)。',
           steps: ['\\((-4)\\times(-6)=+24\\)（同號得正）。', '\\(24\\times2=48\\)。'],
           ans: '\\(48\\)'
+        }
+      },
+
+      {
+        sec: '1-3', secName: '整數的乘除與四則運算',
+        title: '運算律總表：誰可以搬、誰不能搬',
+        points: [
+          '<b>加法與乘法</b>都有<b>交換律</b>與<b>結合律</b>，位置和分組都可以任意搬。',
+          '<b>減法與除法兩個都沒有</b>：\\(5-3\\neq3-5\\)、\\(8\\div4\\neq4\\div8\\)。',
+          '<b>分配律</b>是唯一把乘法和加減接起來的規律：先分給每一項再算。'
+        ],
+        formula: { label: '交換律', tex: 'a+b=b+a,\\quad a\\times b=b\\times a' },
+        visual: (h) => {
+          const cols = [{ op: '＋', ok: true }, { op: '－', ok: false }, { op: '×', ok: true }, { op: '÷', ok: false }];
+          const ex = [
+            [['3 + 5 = 8', '5 + 3 = 8'], ['5 − 3 = 2', '3 − 5 = −2'], ['3 × 5 = 15', '5 × 3 = 15'], ['8 ÷ 4 = 2', '4 ÷ 8 = 0.5']],
+            [['(2+3)+4 = 9', '2+(3+4) = 9'], ['(9−4)−2 = 3', '9−(4−2) = 7'], ['(2×3)×4 = 24', '2×(3×4) = 24'], ['(36÷6)÷3 = 2', '36÷(6÷3) = 18']]
+          ];
+          const rws = [{ n: '交換律', sub: '換位置' }, { n: '結合律', sub: '換分組' }];
+          const cx = [92, 176, 260, 344], cw = 84;
+          let s = `<rect x="12" y="26" width="80" height="34" rx="9" fill="#f1f4f9" stroke="#dce3ee" stroke-width="1.2"/>`;
+          cols.forEach((c, i) => {
+            s += `<rect x="${cx[i] + 2}" y="26" width="${cw - 4}" height="34" rx="9" fill="#f1f4f9" stroke="#dce3ee" stroke-width="1.2"/>`;
+            s += `<text x="${cx[i] + cw / 2}" y="52" text-anchor="middle" font-size="22" font-weight="900" fill="#5b6478">${c.op}</text>`;
+          });
+          rws.forEach((r, ri) => {
+            const ry = 60 + ri * 92;
+            s += `<text x="52" y="${ry + 42}" text-anchor="middle" font-size="14" font-weight="900" fill="#5b6478">${r.n}</text>`;
+            s += `<text x="52" y="${ry + 62}" text-anchor="middle" font-size="10.5" fill="#8a94a6">${r.sub}</text>`;
+            cols.forEach((c, ci) => {
+              s += `<rect x="${cx[ci] + 2}" y="${ry + 3}" width="${cw - 4}" height="86" rx="11" fill="${c.ok ? 'rgba(5,150,105,.07)' : 'rgba(225,29,72,.06)'}" stroke="${c.ok ? '#bfe0d1' : '#f3c3ce'}" stroke-width="1.5"/>`;
+              s += `<text x="${cx[ci] + cw / 2}" y="${ry + 36}" text-anchor="middle" font-size="26" font-weight="900" fill="${c.ok ? GRN : RED}">${c.ok ? '✓' : '✗'}</text>`;
+              s += `<text x="${cx[ci] + cw / 2}" y="${ry + 60}" text-anchor="middle" font-size="10.5" fill="#172033">${ex[ri][ci][0]}</text>`;
+              s += `<text x="${cx[ci] + cw / 2}" y="${ry + 78}" text-anchor="middle" font-size="10.5" font-weight="${c.ok ? 400 : 800}" fill="${c.ok ? '#657187' : RED}">${ex[ri][ci][1]}</text>`;
+            });
+          });
+          s += `<text x="220" y="268" text-anchor="middle" font-size="14" font-weight="900" fill="#172033">加、乘可以任意搬　　減、除搬了就變答案</text>`;
+          s += `<text x="220" y="290" text-anchor="middle" font-size="12" fill="#657187">分配律連接乘與加減：5 × (8 ＋ 2) ＝ 5 × 8 ＋ 5 × 2</text>`;
+          h.innerHTML = svg('0 0 440 302', s);
+        },
+        caption: '兩個綠勾（加、乘）隨你搬；兩個紅叉（減、除）一搬答案就跑掉。',
+        example: {
+          q: '下列哪些等式成立？① \\(7\\times4=4\\times7\\)　② \\(9-2=2-9\\)　③ \\((12\\div6)\\div2=12\\div(6\\div2)\\)',
+          steps: [
+            '① 乘法有交換律：兩邊都是 \\(28\\) ⇒ 成立。',
+            '② 減法沒有交換律：\\(9-2=7\\)、\\(2-9=-7\\) ⇒ 不成立。',
+            '③ 除法沒有結合律：左式 \\(=1\\)、右式 \\(=4\\) ⇒ 不成立。'
+          ],
+          ans: '只有 ① 成立'
         }
       },
 

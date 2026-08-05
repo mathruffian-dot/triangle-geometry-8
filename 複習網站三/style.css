@@ -521,6 +521,13 @@ svg .dim { fill: var(--muted); }
 .zoom-x { border-color: #e11d48; color: #e11d48; }
 .zoom-x:hover { background: #e11d48; color: #fff; }
 
+/* 右側浮動教具列（.dock）是 fixed 且垂直置中，會壓在投影片右緣上方；
+   視窗一矮，教具列就升到「🔍 放大」鈕的高度並蓋住它（dock z-index 1000 > 放大鈕 6）。
+   寬螢幕（兩欄不捲動版面）預留一條「教具列車道」，讓投影片內容永遠不進入該區。 */
+@media (min-width: 1081px) {
+  .stage { padding-right: 86px; }
+}
+
 /* 響應式 */
 @media (max-width: 1080px) {
   .body { grid-template-columns: 1fr; }

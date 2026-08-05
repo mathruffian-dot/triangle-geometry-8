@@ -299,21 +299,46 @@ window.DECK = window.DECK || [];
         sec: '4-2', secName: '解不等式',
         title: '易錯專頁：移項不換向，除以負數才換向',
         points: [
-          '✗ \\(-2x\\lt 6\\Rightarrow x\\lt -3\\)：除以 \\(-2\\) 卻忘記換向。',
-          '✓ \\(-2x\\lt 6\\Rightarrow x\\gt -3\\)：除以<b>負數</b>，\\(\\lt\\) 要變成 \\(\\gt\\)。',
+          '✗ \\(-2x\\lt 6\\Rightarrow x\\lt -3\\)：除以 \\(-2\\) 忘了換向；✓ 應得 \\(x\\gt -3\\)。',
           '✗ \\(x+3\\le 7\\Rightarrow x\\ge 4\\)：移項只把 \\(+3\\) 變 \\(-3\\)，<b>不准動不等號</b>。',
-          '自保招式：解完隨便代一個數回<b>原式</b>驗算，兩秒就抓到方向錯。'
+          '\\(7\\gt x\\) 要改寫成 \\(x\\lt 7\\)：未知數挪到左邊，不等號<b>跟著轉向</b>，不是乘負數。',
+          '自保招式：拖滑桿把數代回<b>原式</b>，錯解區間裡的數<b>一定失敗</b>。'
         ],
         formula: { label: '一句話記住', tex: '\\text{移項：變項的正負號}\\;;\\quad \\text{乘除負數：變不等號方向}' },
         visual: (h) => {
-          h.innerHTML = SV.fbox([
-            { label: '✗ 錯：除以負數沒換向', tex: '-2x\\lt 6\\;\\Rightarrow\\;x\\lt -3', color: RED, fill: '#fdeef2', border: '#f0c9d3', size: 16, pad: '9px 14px' },
-            { label: '✓ 對：除以 −2，方向反轉', tex: '-2x\\lt 6\\;\\Rightarrow\\;x\\gt -3', color: GRN, fill: '#eef7f2', border: '#cfe8dd', size: 16, pad: '9px 14px', note: '代 x=0 回原式：0 &lt; 6 ✓' },
-            { label: '✗ 錯：移項也跟著翻', tex: 'x+3\\le 7\\;\\Rightarrow\\;x\\ge 4', color: RED, fill: '#fdeef2', border: '#f0c9d3', size: 16, pad: '9px 14px' },
-            { label: '✓ 對：移項不動不等號', tex: 'x+3\\le 7\\;\\Rightarrow\\;x\\le 4', color: GRN, fill: '#eef7f2', border: '#cfe8dd', size: 16, pad: '9px 14px' }
-          ], { gap: 8 });
+          h.innerHTML = `<div style="width:100%"><div id="vfy"></div>
+            <div class="ictrl"><label>代入 x = <span class="ival" id="vv">2</span></label>
+            <input type="range" id="vs" min="-6" max="6" step="0.5" value="2"></div></div>`;
+          // 負號統一用數學減號 −（U+2212），和圖上的 −2x 一致
+          const fx = v => (Number.isInteger(v) ? String(v) : v.toFixed(1)).replace('-', '−');
+          const draw = () => {
+            const x = +h.querySelector('#vs').value;
+            h.querySelector('#vv').textContent = fx(x);
+            const val = -2 * x, ok = val < 6;
+            const col = ok ? GRN : RED;
+            const A = nline(126, -6, 6, 50, 390);
+            // 垂直對位虛線（先畫，之後的圖層會壓在上面）
+            let s = SV.seg(A.X(x), 74, A.X(x), 180, '#d5dbe6', 1.6, '4 4');
+            s += `<text x="220" y="24" text-anchor="middle" font-size="18" font-weight="900" fill="#172033">原式　−2x &lt; 6</text>`;
+            s += `<text x="220" y="47" text-anchor="middle" font-size="13" font-weight="900" fill="${RED}">✗ 錯解 x &lt; −3（空心、向左）</text>`;
+            s += ray(68, A.X, -3, -1, false, RED, 38, 1);
+            s += A.s;
+            s += ray(186, A.X, -3, 1, false, GRN, 400, 1);
+            s += `<text x="220" y="211" text-anchor="middle" font-size="13" font-weight="900" fill="${GRN}">✓ 對解 x &gt; −3（空心、向右）</text>`;
+            s += SV.dot(A.X(x), 126, col, 7);
+            s += `<rect x="${(A.X(x) - 31).toFixed(1)}" y="97" width="62" height="17" rx="5" fill="#ffffff"/>`;
+            s += `<text x="${A.X(x).toFixed(1)}" y="110" text-anchor="middle" font-size="12.5" font-weight="900" fill="${col}">x = ${fx(x)}</text>`;
+            const rel = val < 6 ? '&lt; 6' : (val === 6 ? '= 6' : '&gt; 6');
+            s += `<text x="220" y="238" text-anchor="middle" font-size="15.5" font-weight="900" fill="${col}">−2 × (${fx(x)}) = ${fx(val)}　${rel}　${ok ? '成立 ✓' : '不成立 ✗'}</text>`;
+            // 對照卡：把未知數挪到左邊，只是左右對調
+            s += `<rect x="40" y="252" width="360" height="32" rx="10" fill="#fff8ec" stroke="#e6dcc8" stroke-width="1.5"/>`;
+            s += `<text x="56" y="273" font-size="14" font-weight="900" fill="${C}">7 &gt; x　⇔　x &lt; 7</text>`;
+            s += `<text x="186" y="273" font-size="11.5" fill="#657187">左右對調而已，不是乘負數</text>`;
+            h.querySelector('#vfy').innerHTML = svg('0 0 440 290', s);
+          };
+          h.querySelector('#vs').oninput = draw; draw();
         },
-        caption: '一次只問自己一句：「我剛剛<b>乘或除了負數嗎</b>？」沒有就不准翻。',
+        caption: '紅色是錯解區間：拿裡面的數代回 \\(-2x\\lt 6\\)，<b>每一個都不成立</b>。',
         example: {
           q: '解 \\(-3x+1\\ge 7\\)。',
           steps: ['移項：\\(-3x\\ge 6\\)（方向不變）。', '同除以 \\(-3\\)：\\(x\\le -2\\)（方向反轉）。', '驗算 \\(x=-3\\)：\\(-3\\times(-3)+1=10\\ge 7\\) ✓。'],
@@ -359,30 +384,104 @@ window.DECK = window.DECK || [];
         points: [
           '四步驟：<b>設未知數 → 依情境列不等式 → 解 → 依現實取整數作答</b>。',
           '「最多買幾支、至少考幾分」——解出範圍後要挑<b>合乎現實的整數</b>當答案。',
-          '別忘了現實限制：<b>支數、人數、天數都是正整數</b>，答案不會是 7.2 支。'
+          '別忘了現實限制：<b>支數、人數、天數都是正整數</b>，答案不會是 7.2 支。',
+          '拖兩支滑桿改預算與單價，看流程圖與數線上的<b>可買範圍</b>怎麼跳。'
         ],
         formula: { label: '取答口訣', tex: 'x\\le 7.2\\ \\text{且 }x\\text{ 為正整數}\\;\\Rightarrow\\;x_{\\max}=7' },
         visual: (h) => {
-          const box = (y, t1, t2, col, bg) => `<rect x="70" y="${y}" width="300" height="52" rx="14" fill="${bg}" stroke="${col}" stroke-width="2"/>
-            <text x="220" y="${y + 22}" text-anchor="middle" font-size="13.5" font-weight="900" fill="${col}">${t1}</text>
-            <text x="220" y="${y + 41}" text-anchor="middle" font-size="13" fill="#172033">${t2}</text>`;
-          const arr = y => `<path d="M220,${y} L220,${y + 14}" stroke="#8a94a6" stroke-width="2.4"/>
-            <path d="M220,${y + 22} L214,${y + 10} L226,${y + 10} Z" fill="#8a94a6"/>`;
-          h.innerHTML = svg('0 0 440 300', `
-            ${box(14, '① 設未知數', '設買 x 支筆', BLU, '#eef4ff')}
-            ${arr(66)}
-            ${box(90, '② 依情境列不等式', '25x + 20 ≤ 200', C, '#fdf2e3')}
-            ${arr(142)}
-            ${box(166, '③ 解不等式', '25x ≤ 180　⟹　x ≤ 7.2', VIO, '#f4eefe')}
-            ${arr(218)}
-            ${box(242, '④ 依現實取整數作答', 'x 是正整數 → 最多買 7 支', GRN, '#eef7f2')}
-          `);
+          h.innerHTML = `<div style="width:100%"><div id="flow"></div>
+            <div class="ictrl">
+              <label>預算 B <span class="ival" id="bv">200</span></label>
+              <input type="range" id="bs" min="100" max="300" step="20" value="200">
+              <label>單價 p <span class="ival" id="pv">25</span></label>
+              <input type="range" id="ps" min="20" max="40" step="5" value="25">
+            </div></div>`;
+          const FARE = 20;
+          const box = (y, lbl, val, col, bg) => `<rect x="16" y="${y}" width="408" height="36" rx="10" fill="${bg}" stroke="${col}" stroke-width="1.8"/>
+            <text x="30" y="${y + 23}" font-size="12" font-weight="900" fill="${col}">${lbl}</text>
+            <text x="410" y="${y + 23}" text-anchor="end" font-size="13.5" font-weight="800" fill="#172033">${val}</text>`;
+          const chev = y => `<path d="M213,${y} L227,${y} L220,${y + 8} Z" fill="#8a94a6"/>`;
+          const draw = () => {
+            const B = +h.querySelector('#bs').value, p = +h.querySelector('#ps').value;
+            h.querySelector('#bv').textContent = B;
+            h.querySelector('#pv').textContent = p;
+            const rem = B - FARE, q = rem / p, n = Math.floor(q);
+            // 除不盡時尾端加「…」，避免把近似值寫成等號
+            const exact = Math.abs(q * 100 - Math.round(q * 100)) < 1e-9;
+            const qs = String(+q.toFixed(2)) + (exact ? '' : '…');
+            let s = box(4, '① 設未知數', '設買 x 支筆', BLU, '#eef4ff') + chev(42);
+            s += box(52, '② 依情境列不等式', `${p}x + ${FARE} ≤ ${B}`, C, '#fdf2e3') + chev(90);
+            s += box(100, '③ 解不等式', `${p}x ≤ ${rem}　⟹　x ≤ ${qs}`, VIO, '#f4eefe') + chev(138);
+            s += box(148, '④ 依現實取整數作答', n >= 1 ? `x 為正整數 → 最多買 ${n} 支` : '預算不夠，一支也買不到', GRN, '#eef7f2');
+            s += `<text x="220" y="200" text-anchor="middle" font-size="11.5" fill="#657187">綠色實心＝買得起；灰色空心＝超出預算</text>`;
+            const A = nline(216, 0, 20, 40, 400, { step: 2 });
+            s += A.s;
+            for (let v = 1; v <= 20; v++) {
+              s += (v <= q)
+                ? SV.dot(A.X(v), 216, GRN, 5)
+                : `<circle cx="${A.X(v).toFixed(1)}" cy="216" r="4" fill="#fff" stroke="#c3ccdb" stroke-width="1.8"/>`;
+            }
+            s += SV.seg(A.X(Math.min(q, 20)), 203, A.X(Math.min(q, 20)), 229, AMB, 2, '4 3');
+            s += `<text x="220" y="262" text-anchor="middle" font-size="13" font-weight="900" fill="${GRN}">x ≤ ${qs}　→　最多 ${n} 支（分界線在 ${qs}）</text>`;
+            h.querySelector('#flow').innerHTML = svg('0 0 440 272', s);
+          };
+          h.querySelector('#bs').oninput = draw; h.querySelector('#ps').oninput = draw; draw();
         },
-        caption: '解出 \\(x\\le 7.2\\) 不能直接寫 7.2；<b>回頭看題目問什麼、單位是什麼</b>再作答。',
+        caption: '數線上<b>綠色實心點</b>才是買得起的支數；橘色分界線右邊的整數全都超出預算。',
         example: {
           q: '帶 200 元去買筆，一支 25 元，另外要留 20 元車錢，最多能買幾支？',
           steps: ['設買 \\(x\\) 支：\\(25x+20\\le 200\\)。', '\\(25x\\le 180\\Rightarrow x\\le 7.2\\)。', '\\(x\\) 為正整數，取最大的 7。'],
           ans: '最多 7 支'
+        }
+      },
+
+      {
+        sec: '4-2', secName: '解不等式',
+        title: '應用第二型：平均分數與方案比較',
+        points: [
+          '「平均要達標」＝<b>總分 ÷ 筆數 ≥ 門檻</b>，先把總分寫成含 \\(x\\) 的式子。',
+          '方案比較先各自列出<b>總花費</b>，再用不等號連起來問「何時 A 比 B 便宜」。',
+          '解完<b>答案要取整數</b>，再回頭檢查合不合現實（分數 0~100、人數是正整數）。'
+        ],
+        formula: { label: '兩型的第一步', tex: '\\dfrac{\\text{總分}}{\\text{筆數}}\\ge\\text{門檻}\\;;\\qquad \\text{A 總花費}\\lt\\text{B 總花費}' },
+        visual: (h) => {
+          h.innerHTML = `<div style="width:100%"><div id="avg"></div>
+            <div class="ictrl"><label>第四次分數 <span class="ival" id="s4v">84</span></label>
+            <input type="range" id="s4s" min="0" max="100" step="1" value="84"></div></div>`;
+          const base = [78, 85, 80], BASE_Y = 232, SC = 1.6, GOAL = 82;
+          const Y = v => BASE_Y - v * SC;
+          const draw = () => {
+            const x = +h.querySelector('#s4s').value;
+            h.querySelector('#s4v').textContent = x;
+            const tot = base[0] + base[1] + base[2] + x, avg = tot / 4, ok = avg >= GOAL;
+            const col = ok ? GRN : RED, av = +avg.toFixed(2);
+            let s = `<text x="220" y="22" text-anchor="middle" font-size="14" fill="#657187">(78 + 85 + 80 + ${x}) ÷ 4 = ${av}</text>`;
+            s += `<text x="220" y="47" text-anchor="middle" font-size="16.5" font-weight="900" fill="${col}">平均 ${av} ${ok ? '≥' : '&lt;'} 82　${ok ? '達標 ✓' : '未達標 ✗'}</text>`;
+            s += SV.seg(40, BASE_Y, 400, BASE_Y, '#5b6478', 2.2);
+            [base[0], base[1], base[2], x].forEach((v, i) => {
+              const bx = 62 + i * 82, top = Y(v), last = (i === 3);
+              s += `<rect x="${bx}" y="${top.toFixed(1)}" width="58" height="${(BASE_Y - top).toFixed(1)}" rx="5" fill="${last ? col : '#c9d3e4'}" opacity="0.88"/>`;
+              s += `<text x="${bx + 29}" y="${(top - 6).toFixed(1)}" text-anchor="middle" font-size="12.5" font-weight="900" fill="${last ? col : '#5b6478'}">${v}</text>`;
+              s += `<text x="${bx + 29}" y="252" text-anchor="middle" font-size="11.5" fill="#96a0b3">第${i + 1}次</text>`;
+            });
+            s += SV.seg(34, Y(GOAL), 406, Y(GOAL), AMB, 2, '6 4');
+            s += `<text x="8" y="${(Y(GOAL) - 4).toFixed(1)}" font-size="11" font-weight="900" fill="${AMB}">82</text>`;
+            s += SV.seg(34, Y(avg), 406, Y(avg), col, 2.4);
+            s += `<text x="410" y="${(Y(avg) + 4).toFixed(1)}" font-size="11" font-weight="900" fill="${col}">平均</text>`;
+            s += `<text x="220" y="276" text-anchor="middle" font-size="12" fill="#657187">第四次考到 <tspan font-weight="900" fill="${GRN}">85 分</tspan> 以上，平均才會 ≥ 82</text>`;
+            h.querySelector('#avg').innerHTML = svg('0 0 440 285', s);
+          };
+          h.querySelector('#s4s').oninput = draw; draw();
+        },
+        caption: '橘色虛線是門檻 82，實線是目前平均；<b>實線爬過虛線才算達標</b>。',
+        example: {
+          q: '前三次考 78、85、80，第四次至少要考幾分，平均才不低於 82？',
+          steps: [
+            '設第四次考 \\(x\\) 分：\\(\\dfrac{78+85+80+x}{4}\\ge 82\\)。',
+            '兩邊同乘 4（正數，方向不變）：\\(243+x\\ge 328\\)。',
+            '移項得 \\(x\\ge 85\\)，分數取整數 ⇒ 至少 85 分。'
+          ],
+          ans: '至少 85 分'
         }
       }
     ]

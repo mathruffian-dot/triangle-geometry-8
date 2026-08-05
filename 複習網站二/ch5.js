@@ -66,7 +66,7 @@ window.DECK = window.DECK || [];
             { t: '<b>解讀</b>：回答問題、下判斷——這才是重點。', d: k => wrap(k, arrow(212) + card(4, 228, '解讀並下判斷', '最多？占幾成？趨勢是升還是降？', C, '#fdeef2')) }
           ]);
         },
-        caption: '整理與呈現只是手段，能不能<b>正確解讀</b>才是統計真正要的能力。',
+        caption: '整理與呈現只是手段，能不能<b>正確解讀</b>才是統計真正要的能力；<b>數據複雜時可用計算機輔助計算</b>。',
         example: {
           q: '「把 30 位同學的身高分成 5 組，數出每一組有幾個人」屬於哪一個步驟？',
           steps: ['取得身高數據是「蒐集」。', '分組並數出各組人數，是把原始資料變成表格。'],
@@ -88,6 +88,28 @@ window.DECK = window.DECK || [];
           h.innerHTML = `<div style="width:100%"><div id="hist"></div>
             <div class="ictrl"><label>組距 <span class="ival" id="wv">10</span> 分</label>
             <input type="range" id="ws" min="5" max="20" step="5" value="10"></div></div>`;
+          // 「正」字的五畫：依畫數 c（0~5）畫出部首，用於劃記
+          const zheng = (x, y, c, col) => {
+            const L = [
+              [x + 1, y, x + 13, y],
+              [x + 4, y, x + 4, y + 15],
+              [x + 4, y + 8, x + 11, y + 8],
+              [x + 11, y + 8, x + 11, y + 15],
+              [x, y + 15, x + 14, y + 15]
+            ];
+            let o = '';
+            for (let i = 0; i < c; i++)
+              o += `<line x1="${L[i][0].toFixed(1)}" y1="${L[i][1]}" x2="${L[i][2].toFixed(1)}" y2="${L[i][3]}" stroke="${col}" stroke-width="2" stroke-linecap="round"/>`;
+            return o;
+          };
+          // 以格子中心 cx 排出 ⌈c/5⌉ 個「正」字（最後一個只寫剩下的畫數）
+          const tally = (cx, y, c, col) => {
+            const g = Math.max(1, Math.ceil(c / 5)), U = 17;
+            const sx = cx - (g * U - 3) / 2;
+            let o = '';
+            for (let i = 0; i < g; i++) o += zheng(sx + i * U, y, Math.min(5, c - i * 5), col);
+            return o;
+          };
           const draw = () => {
             const w = +h.querySelector('#ws').value;
             h.querySelector('#wv').textContent = w;
@@ -95,27 +117,47 @@ window.DECK = window.DECK || [];
             const cnt = new Array(n).fill(0);
             data.forEach(v => { let i = Math.floor((v - start) / w); if (i >= n) i = n - 1; if (i < 0) i = 0; cnt[i]++; });
             const maxc = Math.max.apply(null, cnt);
-            const x0 = 46, yB = 205, bw = (404 - x0) / n, H = 148;
-            let s = SV.seg(x0, yB, 412, yB, '#5b6478', 2) + SV.seg(x0, yB, x0, 34, '#5b6478', 2);
+            const x0 = 48, xR = 424, yB = 144, bw = (xR - x0) / n, H = 98;
+            let s = `<text x="222" y="17" text-anchor="middle" font-size="12.5" font-weight="800" fill="#172033">組距 ${w} 分　→　共 <tspan fill="${C}">${n}</tspan> 組（25 筆成績）</text>`;
+            s += SV.seg(x0, yB, xR + 6, yB, '#5b6478', 2) + SV.seg(x0, yB, x0, 32, '#5b6478', 2);
             for (let i = 0; i < n; i++) {
               const bh = cnt[i] / maxc * H;
               s += `<rect x="${(x0 + i * bw).toFixed(1)}" y="${(yB - bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${C}" opacity="0.75" stroke="#fff" stroke-width="1.5"/>`;
-              if (cnt[i]) s += `<text x="${(x0 + i * bw + bw / 2).toFixed(1)}" y="${(yB - bh - 6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#172033">${cnt[i]}</text>`;
+              if (cnt[i]) s += `<text x="${(x0 + i * bw + bw / 2).toFixed(1)}" y="${(yB - bh - 5).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="800" fill="#172033">${cnt[i]}</text>`;
             }
             const sk = n > 8 ? 2 : 1;
             for (let i = 0; i <= n; i += sk)
-              s += `<text x="${(x0 + i * bw).toFixed(1)}" y="${yB + 19}" text-anchor="middle" font-size="10.5" fill="#7b8598">${start + i * w}</text>`;
-            s += `<text x="228" y="${yB + 47}" text-anchor="middle" font-size="13.5" font-weight="800" fill="#172033">組距 ${w} 分　→　共 <tspan fill="${C}">${n}</tspan> 組（25 筆成績）</text>`;
-            s += `<text x="228" y="${yB + 70}" text-anchor="middle" font-size="11.5" fill="#657187">長方形緊緊相連，因為成績是連續的數值</text>`;
-            h.querySelector('#hist').innerHTML = svg('0 0 440 285', s);
+              s += `<text x="${(x0 + i * bw).toFixed(1)}" y="${yB + 15}" text-anchor="middle" font-size="10" fill="#7b8598">${start + i * w}</text>`;
+            /* ---- 直方圖下方：即時重建的三欄次數分配表（組別／劃記／次數）---- */
+            const y1 = 170, y2 = 192, y3 = 226, y4 = 248, cw = (xR - x0) / n;
+            s += `<rect x="6" y="${y1}" width="${xR - 6}" height="${y4 - y1}" rx="6" fill="#fff" stroke="#cdd6e2" stroke-width="1.4"/>`;
+            s += `<rect x="6" y="${y1}" width="42" height="${y4 - y1}" fill="#fafbfd"/>`;
+            s += SV.seg(6, y2, xR, y2, '#dbe2ec', 1.2) + SV.seg(6, y3, xR, y3, '#dbe2ec', 1.2);
+            s += SV.seg(x0, y1, x0, y4, '#cdd6e2', 1.4);
+            for (let i = 1; i < n; i++) s += SV.seg(x0 + i * cw, y1, x0 + i * cw, y4, '#e9eef6', 1);
+            s += `<text x="27" y="${y1 + 15}" text-anchor="middle" font-size="10.5" font-weight="800" fill="#657187">組別</text>`;
+            s += `<text x="27" y="${(y2 + y3) / 2 + 4}" text-anchor="middle" font-size="10.5" font-weight="800" fill="${C}">劃記</text>`;
+            s += `<text x="27" y="${y3 + 15}" text-anchor="middle" font-size="10.5" font-weight="800" fill="#657187">次數</text>`;
+            for (let i = 0; i < n; i++) {
+              const cx = x0 + i * cw + cw / 2, lo = start + i * w;
+              s += `<text x="${cx.toFixed(1)}" y="${y1 + 15}" text-anchor="middle" font-size="${cw >= 56 ? 10 : 9}" fill="#5b6478">${cw >= 56 ? `${lo}–${lo + w - 1}` : `${lo}~`}</text>`;
+              s += tally(cx, y2 + 9, cnt[i], C);
+              s += `<text x="${cx.toFixed(1)}" y="${y3 + 16}" text-anchor="middle" font-size="12" font-weight="900" fill="#172033">${cnt[i]}</text>`;
+            }
+            s += `<text x="222" y="267" text-anchor="middle" font-size="11" fill="#657187">劃記每 5 筆湊成一個「正」字，數完再把次數填進表（次數合計 25）</text>`;
+            h.querySelector('#hist').innerHTML = svg('0 0 440 280', s);
           };
           h.querySelector('#ws').oninput = draw; draw();
         },
-        caption: '同一份成績，組距 5 看得細、組距 20 看得粗——<b>組距是自己決定的</b>。',
+        caption: '拖滑桿改組距，<b>直方圖與下方的次數分配表一起重建</b>——劃記是「整理」這一步的產物。',
         example: {
-          q: '25 筆成績最低 42、最高 99，若組距取 10，要分成幾組？',
-          steps: ['\\(99-42=57\\)，\\(57\\div10=5.7\\)。', '不整除就進位，需 6 組（從 40 起：40–49、50–59、…、90–99）。'],
-          ans: '6 組'
+          q: '25 筆成績最低 42、最高 99，組距取 10 要分成幾組？這 25 筆的<b>中位數</b>落在哪一組？',
+          steps: [
+            '\\(99-42=57\\)，\\(57\\div10=5.7\\)，不整除進位 → 6 組（40–49、50–59、…、90–99）。',
+            '25 筆是奇數，中位數是排序後第 \\(\\dfrac{25+1}{2}=13\\) 筆。',
+            '由表：各組次數 1、2、5、7、5、5；前三組共 \\(1+2+5=8\\) 筆，第 9～15 筆都在第四組。'
+          ],
+          ans: '共 6 組；中位數（第 13 筆）落在 <b>70–79</b> 這一組'
         }
       },
 
@@ -368,6 +410,81 @@ window.DECK = window.DECK || [];
 
       {
         sec: '5-2', secName: '代表值',
+        title: '用計算機的 M+／Σ 鍵算平均數',
+        points: [
+          '<span class="k">M+</span> 把螢幕上的數<b>累加進記憶體</b>，<span class="k">MR</span> 再把總和讀出來。',
+          '總和讀出後<b>再 ÷ 筆數</b>，就是平均數——不必自己在紙上加一長串。',
+          '計算機顯示位數有限，<b>除不盡時只是近似值</b>，要寫 \\(\\approx\\) 不能寫 \\(=\\)。'
+        ],
+        formula: { label: 'M+ 求平均', tex: '\\text{平均數}=\\dfrac{\\text{MR 讀出的總和}}{\\text{資料筆數}}' },
+        visual: (h) => {
+          const rows = [
+            ['AC', 'M+', 'MR', '÷'],
+            ['7', '8', '9', '×'],
+            ['4', '5', '6', '−'],
+            ['1', '2', '3', '+'],
+            ['0', '.', '=', '']
+          ];
+          const OPS = ['÷', '×', '−', '+', '='];
+          const KX = i => 44 + i * 50, KY = j => 88 + j * 34, KW = 44, KH = 30;
+          const fillOf = t => t === 'AC' ? '#fdeef2' : (t === 'M+' || t === 'MR') ? '#fdf3e6' : OPS.indexOf(t) >= 0 ? '#eef4ff' : '#ffffff';
+          const lineOf = t => t === 'AC' ? C : (t === 'M+' || t === 'MR') ? AMB : OPS.indexOf(t) >= 0 ? BLU : '#cdd6e2';
+          // 計算機本體：disp＝螢幕顯示值、mem＝記憶體值、hot＝這一步按下的鍵
+          const calc = (disp, mem, hot) => {
+            let o = `<rect x="28" y="18" width="228" height="246" rx="16" fill="#eef1f6" stroke="#b9c4d4" stroke-width="2"/>`;
+            o += `<rect x="42" y="30" width="200" height="44" rx="8" fill="#172033"/>`;
+            o += `<text x="52" y="47" font-size="11" font-weight="900" fill="${mem ? AMB : '#4a5468'}">M</text>`;
+            o += `<text x="232" y="64" text-anchor="end" font-size="23" font-weight="900" fill="#ffffff">${disp}</text>`;
+            rows.forEach((r, j) => r.forEach((t, i) => {
+              if (!t) return;
+              const on = hot.indexOf(t) >= 0;
+              o += `<rect x="${KX(i)}" y="${KY(j)}" width="${KW}" height="${KH}" rx="7" fill="${on ? C : fillOf(t)}" stroke="${on ? C : lineOf(t)}" stroke-width="${on ? 2.8 : 1.4}"/>`;
+              o += `<text x="${KX(i) + KW / 2}" y="${KY(j) + 20}" text-anchor="middle" font-size="14" font-weight="900" fill="${on ? '#ffffff' : '#172033'}">${t}</text>`;
+            }));
+            return o;
+          };
+          // 右側螢幕區：同時顯示「當下顯示值」與「記憶體值」
+          const panel = (disp, mem, note) => {
+            let o = `<rect x="272" y="40" width="156" height="62" rx="12" fill="#ffffff" stroke="#cdd6e2" stroke-width="1.6"/>`;
+            o += `<text x="350" y="60" text-anchor="middle" font-size="11" font-weight="800" fill="#657187">螢幕顯示</text>`;
+            o += `<text x="350" y="90" text-anchor="middle" font-size="24" font-weight="900" fill="#172033">${disp}</text>`;
+            o += `<rect x="272" y="112" width="156" height="62" rx="12" fill="#fdf3e6" stroke="${AMB}" stroke-width="1.8"/>`;
+            o += `<text x="350" y="132" text-anchor="middle" font-size="11" font-weight="800" fill="${AMB}">記憶體 M（總和）</text>`;
+            o += `<text x="350" y="162" text-anchor="middle" font-size="24" font-weight="900" fill="${AMB}">${mem}</text>`;
+            o += `<text x="350" y="196" text-anchor="middle" font-size="11.5" font-weight="800" fill="#657187">${note}</text>`;
+            o += `<text x="350" y="228" text-anchor="middle" font-size="11" fill="#96a0b3">82、91、76、88、73</text>`;
+            o += `<text x="350" y="248" text-anchor="middle" font-size="11" fill="#96a0b3">五次小考成績</text>`;
+            return o;
+          };
+          const S = [
+            { d: '0', m: 0, k: ['AC'], n: '記憶體歸零', t: '先按 <b>AC</b> 清空螢幕與記憶體，從乾淨的狀態開始。' },
+            { d: '82', m: 82, k: ['8', '2', 'M+'], n: 'M：0＋82＝82', t: '輸入 <b>82</b> 再按 <b>M+</b>，82 被加進記憶體。' },
+            { d: '91', m: 173, k: ['9', '1', 'M+'], n: 'M：82＋91＝173', t: '輸入 <b>91</b> 按 <b>M+</b>，記憶體自己累加。' },
+            { d: '76', m: 249, k: ['7', '6', 'M+'], n: 'M：173＋76＝249', t: '輸入 <b>76</b> 按 <b>M+</b>，螢幕只顯示剛輸入的數。' },
+            { d: '88', m: 337, k: ['8', 'M+'], n: 'M：249＋88＝337', t: '輸入 <b>88</b> 按 <b>M+</b>，總和默默存在記憶體裡。' },
+            { d: '73', m: 410, k: ['7', '3', 'M+'], n: 'M：337＋73＝410', t: '輸入 <b>73</b> 按 <b>M+</b>，五筆資料都進去了。' },
+            { d: '410', m: 410, k: ['MR'], n: '總和 ＝ 410', t: '按 <b>MR</b> 把記憶體讀出來 → 螢幕出現總和 <b>410</b>。' },
+            { d: '82', m: 410, k: ['÷', '5', '='], n: '410 ÷ 5 ＝ 82', t: '再按 <b>÷ 5 ＝</b>，就得到平均數 <b>82</b>。' }
+          ];
+          SV.stepper(h, '0 0 440 288', S.map(st => ({
+            t: st.t,
+            d: () => calc(st.d, st.m, st.k) + panel(st.d, st.m, st.n)
+          })), { acc: false });
+        },
+        caption: '按鍵順序：<b>AC → 82 M+ → 91 M+ → 76 M+ → 88 M+ → 73 M+ → MR → ÷ 5 ＝</b>，螢幕出現 82。',
+        example: {
+          q: '用計算機的 M+ 鍵求 82、91、76、88、73 這五次小考的平均數。',
+          steps: [
+            'AC 清空後，五個數字各按一次 M+，記憶體會自動累加。',
+            'MR 讀出總和：\\(82+91+76+88+73=410\\)。',
+            '再按 \\(\\div\\,5=\\)：\\(410\\div5=82\\)。'
+          ],
+          ans: '平均 82 分'
+        }
+      },
+
+      {
+        sec: '5-2', secName: '代表值',
         title: '中位數：一定要先排序，再看筆數是奇是偶',
         points: [
           '<span class="k">中位數</span>是<b>排序後站在正中間</b>的那個數：一半的資料比它小、一半比它大。',
@@ -421,23 +538,45 @@ window.DECK = window.DECK || [];
         ],
         formula: { label: '眾數', tex: '\\text{眾數}=\\text{出現次數最多的那個資料值}' },
         visual: (h) => {
-          const sizes = [36, 37, 38, 39, 40, 41], cnt = [3, 6, 11, 8, 5, 2];
-          const yB = 214, x0 = 56, cell = (416 - x0) / 6, bw = cell * 0.6, H = 150, mx = 11;
-          let s = SV.seg(x0, yB, 424, yB, '#5b6478', 2) + SV.seg(x0, yB, x0, 44, '#5b6478', 2);
-          cnt.forEach((v, i) => {
-            const bh = v / mx * H, x = x0 + i * cell + (cell - bw) / 2, top = yB - bh;
-            const hot = (v === mx);
-            s += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="${hot ? C : '#9aa4b6'}" opacity="${hot ? 0.9 : 0.55}"/>`;
-            s += `<text x="${(x + bw / 2).toFixed(1)}" y="${(top - 7).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="800" fill="${hot ? C : '#5b6478'}">${v}</text>`;
-            s += `<text x="${(x + bw / 2).toFixed(1)}" y="${yB + 20}" text-anchor="middle" font-size="12" font-weight="800" fill="#5b6478">${sizes[i]}</text>`;
-          });
-          s += `<text x="240" y="60" font-size="13" font-weight="900" fill="${C}">最高的這一根 → 眾數</text>`;
-          s += `<text x="240" y="80" font-size="12" fill="#657187">是「38 號」，不是「11 雙」</text>`;
-          s += `<text x="222" y="${yB + 44}" text-anchor="middle" font-size="12.5" font-weight="800" fill="#172033">鞋號（號）　縱軸：賣出雙數</text>`;
-          s += `<text x="222" y="${yB + 66}" text-anchor="middle" font-size="11.5" fill="#657187">鞋店進貨要看眾數：38 號賣最好，就多進 38 號</text>`;
-          h.innerHTML = svg('0 0 440 285', s);
+          const sizes = [36, 37, 38, 39, 40, 41], base = [3, 6, 11, 8, 5, 2];
+          h.innerHTML = `<div style="width:100%"><div id="mode"></div>
+            <div class="ictrl"><label>情境 <span class="ival" id="mv">39 號賣 8 雙</span></label>
+            <input type="range" id="ms" min="5" max="12" step="1" value="8"></div></div>`;
+          const draw = () => {
+            const v = +h.querySelector('#ms').value, flat = (v === 12);
+            h.querySelector('#mv').textContent = flat ? '六款一樣多' : `39 號賣 ${v} 雙`;
+            const cnt = flat ? [7, 7, 7, 7, 7, 7] : base.map((c, i) => i === 3 ? v : c);
+            const mx = Math.max.apply(null, cnt);
+            const hot = flat ? [] : cnt.map((c, i) => c === mx ? i : -1).filter(i => i >= 0);
+            const yB = 190, x0 = 56, cell = (420 - x0) / 6, bw = cell * 0.58, H = 132;
+            let s = `<text x="222" y="19" text-anchor="middle" font-size="12" fill="#657187">某鞋店一週各鞋號賣出雙數</text>`;
+            s += SV.seg(x0, yB, 428, yB, '#5b6478', 2) + SV.seg(x0, yB, x0, 34, '#5b6478', 2);
+            cnt.forEach((c, i) => {
+              const bh = c / mx * H, x = x0 + i * cell + (cell - bw) / 2, top = yB - bh;
+              const on = hot.indexOf(i) >= 0;
+              s += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="${on ? C : '#9aa4b6'}" opacity="${on ? 0.9 : 0.5}"/>`;
+              s += `<text x="${(x + bw / 2).toFixed(1)}" y="${(top - 7).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="800" fill="${on ? C : '#5b6478'}">${c}</text>`;
+              s += `<text x="${(x + bw / 2).toFixed(1)}" y="${yB + 19}" text-anchor="middle" font-size="12" font-weight="800" fill="${on ? C : '#5b6478'}">${sizes[i]}</text>`;
+            });
+            let msg, sub, col;
+            if (flat) {
+              msg = '沒有眾數'; col = '#5b6478';
+              sub = '六款都賣 7 雙，每個值的次數都一樣多';
+            } else if (hot.length > 1) {
+              msg = '眾數有兩個：38 號與 39 號'; col = C;
+              sub = '兩個值並列最多 → 雙眾數，兩根一起染紅';
+            } else {
+              msg = '眾數是「38 號」，不是「11 雙」'; col = C;
+              sub = `38 號賣 11 雙最多，39 號只賣 ${v} 雙`;
+            }
+            s += `<text x="222" y="236" text-anchor="middle" font-size="14" font-weight="900" fill="${col}">${msg}</text>`;
+            s += `<text x="222" y="257" text-anchor="middle" font-size="11.5" fill="#657187">${sub}</text>`;
+            s += `<text x="222" y="275" text-anchor="middle" font-size="11" fill="#96a0b3">橫軸：鞋號　縱軸：賣出雙數</text>`;
+            h.querySelector('#mode').innerHTML = svg('0 0 440 282', s);
+          };
+          h.querySelector('#ms').oninput = draw; draw();
         },
-        caption: '最高的那一根是 38 號（賣出 11 雙）→ 眾數是 <b>38 號</b>，不是 11。',
+        caption: '拖滑桿把 39 號拉到 11 雙 → <b>兩根同高就是雙眾數</b>；再拉一格讓六款一樣多 → <b>沒有眾數</b>。',
         example: {
           q: '資料 5、7、7、9、9、12，眾數是多少？',
           steps: ['7 出現 2 次、9 出現 2 次，其餘各 1 次。', '兩個並列最多，眾數就有兩個。'],
@@ -449,32 +588,71 @@ window.DECK = window.DECK || [];
         sec: '5-2', secName: '代表值',
         title: '平均數看總量、中位數看排名、眾數看熱門',
         points: [
-          '要算<b>總分、總量</b>→ 用<span class="k">平均數</span>（每一筆都算進去，總和才對得起來）。',
-          '資料裡<b>有極端值</b>（薪水、房價）→ 用<span class="k">中位數</span>，它不被極端值拉走。',
-          '要<b>進貨、選最受歡迎的</b>→ 用<span class="k">眾數</span>，而且類別資料也能用。',
-          '題目問「哪個代表值比較能代表這組資料」，先看<b>有沒有極端值</b>再回答。'
+          '要算<b>總分、總量</b>→ 用<span class="k">平均數</span>，每一筆都算進去。',
+          '資料裡<b>有極端值</b>（薪水、房價）→ 用<span class="k">中位數</span>，它不被拉走。',
+          '要<b>進貨、挑最受歡迎的</b>→ 用<span class="k">眾數</span>，類別資料也能用。',
+          '拖滑桿把老闆薪水 5→50 萬：<b>只有紅色的平均數在往右狂奔</b>。'
         ],
+        formula: { label: '怎麼選代表值', tex: '\\text{有極端值}\\Rightarrow\\text{中位數};\\quad\\text{看熱門}\\Rightarrow\\text{眾數}' },
         visual: (h) => {
-          const th = t => `<th style="border:1px solid #cdd6e2;padding:8px 5px">${t}</th>`;
-          const td = (t, extra) => `<td style="border:1px solid #cdd6e2;padding:8px 5px;${extra || ''}">${t}</td>`;
-          h.innerHTML = `<div style="width:97%;margin:0 auto">
-            <table style="width:100%;border-collapse:collapse;font-size:12.5px;text-align:center">
-              <tr style="background:#fdeef2">${th('代表值')}${th('怎麼算')}${th('怕極端值嗎')}${th('什麼時候用')}</tr>
-              <tr>${td('<b>平均數</b>', `font-weight:900;color:${C}`)}${td('總和 ÷ 筆數')}${td('<b style="color:#e11d48">很怕</b>')}${td('算總分、算總量')}</tr>
-              <tr style="background:#fafbfd">${td('<b>中位數</b>', `font-weight:900;color:${BLU}`)}${td('排序後取正中間<br>（偶數取兩筆平均）')}${td('<b style="color:#059669">不怕</b>')}${td('薪水、房價等<br>有極端值的資料')}</tr>
-              <tr>${td('<b>眾數</b>', `font-weight:900;color:${AMB}`)}${td('出現次數最多的值')}${td('<b style="color:#059669">不怕</b>')}${td('鞋店進貨、<br>最受歡迎的選項')}</tr>
-            </table>
-            <div style="margin-top:12px;background:#fdeef2;border-left:4px solid ${C};border-radius:10px;padding:9px 12px;font-size:12.5px;color:#172033;line-height:1.6">
-              <b>一句話記</b>：平均數怕極端值、中位數不怕、眾數看熱門。<br>
-              <span style="color:#657187">三個代表值只是「用一個數代表一群數」，本來就各有各的角度。</span>
-            </div>
-          </div>`;
+          h.innerHTML = `<div style="width:100%"><div id="rep"></div>
+            <div class="ictrl"><label>老闆月薪 <span class="ival" id="bv">5</span> 萬</label>
+            <input type="range" id="bs" min="5" max="50" step="1" value="5"></div></div>`;
+          const emp = [3.0, 3.2, 3.5, 3.5, 3.5, 3.8, 4.0, 4.2];   // 8 名員工，總和 28.7 萬
+          const yL = 196, xa = 30, xb = 420, VM = 10;
+          const X = v => xa + Math.min(v, VM) / VM * (xb - xa);
+          const draw = () => {
+            const b = +h.querySelector('#bs').value;
+            h.querySelector('#bv').textContent = b;
+            const mean = (28.7 + b) / 9;      // 中位數（第 5 筆）與眾數恆為 3.5
+            let s = `<text x="220" y="18" text-anchor="middle" font-size="12" fill="#657187">8 名員工（藍）＋老闆（琥珀）共 9 筆月薪（萬元）</text>`;
+            s += SV.seg(xa, yL, xb + 12, yL, '#5b6478', 2.2);
+            for (let v = 0; v <= VM; v++) {
+              s += SV.seg(X(v), yL - 5, X(v), yL + 5, '#5b6478', 1.5);
+              s += `<text x="${X(v).toFixed(1)}" y="${yL + 20}" text-anchor="middle" font-size="10.5" fill="#7b8598">${v}</text>`;
+            }
+            // 眾數（粗琥珀）與中位數（細藍）都釘在 3.5，兩線重疊故用粗細區分
+            s += `<line x1="${X(3.5).toFixed(1)}" y1="62" x2="${X(3.5).toFixed(1)}" y2="${yL + 8}" stroke="${AMB}" stroke-width="9" opacity="0.34" stroke-linecap="round"/>`;
+            s += SV.seg(X(3.5), 62, X(3.5), yL + 8, BLU, 2.6);
+            s += SV.seg(X(mean), 40, X(mean), yL + 8, RED, 2.6, '7 5');
+            // 相同薪水往上疊：3.5 疊了三顆 → 一眼看出眾數
+            const cnts = {};
+            emp.forEach(v => { cnts[v] = (cnts[v] || 0) + 1; });
+            Object.keys(cnts).forEach(kk => {
+              for (let i = 0; i < cnts[kk]; i++)
+                s += `<circle cx="${X(+kk).toFixed(1)}" cy="${(yL - 9 - i * 11).toFixed(1)}" r="4.6" fill="${BLU}" stroke="#fff" stroke-width="1.4"/>`;
+            });
+            if (b <= VM) {
+              s += `<circle cx="${X(b).toFixed(1)}" cy="${yL - 9}" r="6.4" fill="${AMB}" stroke="#fff" stroke-width="1.6"/>`;
+              s += `<text x="${X(b).toFixed(1)}" y="${yL - 24}" text-anchor="middle" font-size="11" font-weight="800" fill="${AMB}">老闆 ${b}</text>`;
+            } else {
+              s += `<path d="M${xb - 4},${yL - 17} L${xb + 12},${yL - 9} L${xb - 4},${yL - 1} Z" fill="${AMB}"/>`;
+              s += `<text x="${xb + 8}" y="${yL - 24}" text-anchor="end" font-size="11" font-weight="800" fill="${AMB}">老闆 ${b} 萬 →</text>`;
+            }
+            s += `<text x="${X(mean).toFixed(1)}" y="34" text-anchor="middle" font-size="12.5" font-weight="900" fill="${RED}">平均數 ${mean.toFixed(2)}</text>`;
+            s += `<text x="${(X(3.5) - 10).toFixed(1)}" y="82" text-anchor="end" font-size="11.5" font-weight="900" fill="${BLU}">中位數 3.5</text>`;
+            s += `<text x="${(X(3.5) - 10).toFixed(1)}" y="100" text-anchor="end" font-size="11.5" font-weight="900" fill="${AMB}">眾數 3.5</text>`;
+            const chip = (x, col, bg, ttl, val) =>
+              `<rect x="${x}" y="228" width="130" height="40" rx="11" fill="${bg}" stroke="${col}" stroke-width="1.6"/>` +
+              `<text x="${x + 65}" y="244" text-anchor="middle" font-size="10.5" font-weight="800" fill="${col}">${ttl}</text>` +
+              `<text x="${x + 65}" y="262" text-anchor="middle" font-size="15" font-weight="900" fill="#172033">${val}</text>`;
+            s += chip(12, RED, '#fdeef2', '平均數（很怕極端值）', `${mean.toFixed(2)} 萬`);
+            s += chip(155, BLU, '#eef4ff', '中位數（不怕）', '3.5 萬');
+            s += chip(298, AMB, '#fdf3e6', '眾數（不怕）', '3.5 萬');
+            s += `<text x="220" y="282" text-anchor="middle" font-size="11" fill="#657187">老闆薪水一路拉高，只有紅色平均數跟著跑，中位數與眾數釘在 3.5</text>`;
+            h.querySelector('#rep').innerHTML = svg('0 0 440 288', s);
+          };
+          h.querySelector('#bs').oninput = draw; draw();
         },
-        caption: '同一組資料算出的三個代表值可以差很多，關鍵是<b>你要回答什麼問題</b>。',
+        caption: '平均數＝總和÷筆數（<b>很怕</b>極端值）｜中位數＝排序後正中間（<b>不怕</b>）｜眾數＝出現最多次的值（<b>不怕</b>，類別資料也能用）。',
         example: {
-          q: '某公司 9 人月薪多在 3～4 萬，但老闆是 40 萬。要說明「一般員工的薪水」，用哪個代表值較合適？',
-          steps: ['40 萬是極端值，會把平均數大幅拉高。', '中位數不受極端值影響，較能代表多數人。'],
-          ans: '中位數'
+          q: '8 名員工月薪 3.0、3.2、3.5、3.5、3.5、3.8、4.0、4.2 萬，老闆 50 萬。要說明「一般員工的薪水」，用哪個代表值？',
+          steps: [
+            '九人總和 \\(28.7+50=78.7\\)，平均 \\(78.7\\div9\\approx8.74\\) 萬。',
+            '排序後第 5 筆是 3.5，中位數 \\(=3.5\\) 萬；3.5 出現 3 次最多，眾數也是 3.5 萬。',
+            '\\(8.74\\) 萬比全部 8 名員工都高，是被老闆一筆拉走的結果。'
+          ],
+          ans: '用中位數 3.5 萬（平均 \\(\\approx8.74\\) 萬會誤導）'
         }
       },
 
