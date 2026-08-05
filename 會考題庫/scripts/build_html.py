@@ -1058,7 +1058,7 @@ function reviewCard(r){
     +'<span style="color:var(--sub);font-size:.8rem">'+(q.year||'')+'年 非選第'+num+'題　'+escR(q.topic||'')+(String(tLv||'')!==''?'　✅已覆核 '+escR(tLv)+'級':'')+'</span></div>'
     +'<div class="rvgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">'
     +'<div><div class="hint">'+(rpid?'紅筆批改版（原圖未被更動）':'學生作答')+'（點可放大）'
-    +(rpid?' <button class="hwbtn" style="padding:2px 10px;font-size:.78rem" onclick="event.preventDefault();toggleRedpen(this,''+fid0+'',''+rpid+'')">看原圖</button>':'')+'</div>'
+    +(rpid?' <button class="hwbtn" style="padding:2px 10px;font-size:.78rem" data-fid="'+fid0+'" data-rp="'+rpid+'" onclick="toggleRedpen(this)">看原圖</button>':'')+'</div>'
     +'<a href="'+(link||img)+'" target="_blank" rel="noopener"><img src="'+img+'" loading="lazy" referrerpolicy="no-referrer" '
     +'onerror="this.onerror=null;this.src=\'https://lh3.googleusercontent.com/d/'+encodeURIComponent(fid0)+'=w1600\'" '
     +'style="width:100%;border:1px solid var(--line);border-radius:8px;background:#fff"></a>'
@@ -1074,7 +1074,8 @@ function reviewCard(r){
     +'<span class="hint" id="rvst-'+fid+'"></span></div></div></div></div>';
 }
 function setLv(fid, lv, btn){ rvPick[fid]=lv; btn.parentElement.querySelectorAll('.lvbtn').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
-function toggleRedpen(btn, fid, rpid){
+function toggleRedpen(btn){
+  const fid = btn.dataset.fid, rpid = btn.dataset.rp;
   const im = btn.closest('.rvcard').querySelector('img'); if(!im) return;
   const D = (id)=>'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1600';
   const showingRed = im.dataset.mode !== 'orig';
@@ -1649,8 +1650,18 @@ document.getElementById('btnSubmit').onclick = () => {
   });
   const auto = rows.filter(r=>r.ok!==null);
   const score = auto.filter(r=>r.ok).length;
+  // 防護：只送出「確實有內容」的圖（曾發生上傳成 0 bytes 空檔，老師端就取不到圖）
+  const MIN_IMG = 2000;   // dataURL 至少要這麼長才算有效（空白/失敗的會遠小於此）
+  const badImgs = [];
   const essay_imgs = ITEMS.filter(q=>q.type!=='choice' && imgs[q.id])
+    .filter(q=>{ const ok = String(imgs[q.id]||'').length >= MIN_IMG; if(!ok) badImgs.push(q); return ok; })
     .map(q=>({id:q.id, img:imgs[q.id], ans:essayText[q.id]||''}));
+  if(badImgs.length){
+    alert('有 '+badImgs.length+' 題的作答圖片看起來是空的或沒有存成功，\n請回去重新手寫或重新拍照上傳後再交卷。');
+    submitted = false; document.body.classList.remove('locked');
+    const c = document.getElementById('q-'+badImgs[0].id); if(c) c.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
   const rec = {
     v:1, quiz:"__TITLE__", cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName'),
     ts_start:new Date(tsStart).toISOString(), ts_submit:new Date().toISOString(),

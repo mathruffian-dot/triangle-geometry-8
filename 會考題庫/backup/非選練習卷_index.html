@@ -404,8 +404,18 @@ document.getElementById('btnSubmit').onclick = () => {
   });
   const auto = rows.filter(r=>r.ok!==null);
   const score = auto.filter(r=>r.ok).length;
+  // 防護：只送出「確實有內容」的圖（曾發生上傳成 0 bytes 空檔，老師端就取不到圖）
+  const MIN_IMG = 2000;   // dataURL 至少要這麼長才算有效（空白/失敗的會遠小於此）
+  const badImgs = [];
   const essay_imgs = ITEMS.filter(q=>q.type!=='choice' && imgs[q.id])
+    .filter(q=>{ const ok = String(imgs[q.id]||'').length >= MIN_IMG; if(!ok) badImgs.push(q); return ok; })
     .map(q=>({id:q.id, img:imgs[q.id], ans:essayText[q.id]||''}));
+  if(badImgs.length){
+    alert('有 '+badImgs.length+' 題的作答圖片看起來是空的或沒有存成功，\n請回去重新手寫或重新拍照上傳後再交卷。');
+    submitted = false; document.body.classList.remove('locked');
+    const c = document.getElementById('q-'+badImgs[0].id); if(c) c.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
   const rec = {
     v:1, quiz:"會考數學非選題練習卷（104-115）", cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName'),
     ts_start:new Date(tsStart).toISOString(), ts_submit:new Date().toISOString(),
