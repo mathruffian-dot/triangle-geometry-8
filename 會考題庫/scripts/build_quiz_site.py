@@ -131,12 +131,33 @@ def main():
 
     import build_html as B   # 匯入即重建題庫；提供 make_quiz
     made = 0
+    # 若某卷指定了 classes（如 ["902","904"]），就展開成一班一份卷：
+    #   code-902、code-904…，班級自動帶入並鎖定，學生只需填座號
+    expanded = []
+    for q in quizzes:
+        cs = q.get("classes") or []
+        if cs:
+            # 保留原始（無指定班級）網址，讓「已經發出去的連結」不會失效
+            base = dict(q); base["listed"] = False; base["fixed_cls"] = ""
+            expanded.append(base)
+            for c in cs:
+                e = dict(q)
+                e["code"] = f'{q["code"]}-{c}'
+                e["title"] = f'{q["title"]}｜{c}班'
+                e["fixed_cls"] = str(c)
+                e["listed"] = q.get("listed", True)
+                expanded.append(e)
+        else:
+            expanded.append(q)
+    quizzes = expanded
+
     for q in quizzes:
         d = SITE / "q" / q["code"]
         d.mkdir(parents=True, exist_ok=True)
         pdf_name = "print.pdf" if q.get("print", True) else ""
         B.make_quiz(q["qids"], q["title"], d / "index.html",
-                    submit_url=SUBMIT_URL, print_pdf=pdf_name)
+                    submit_url=SUBMIT_URL, print_pdf=pdf_name,
+                    fixed_cls=q.get("fixed_cls", ""))
         if pdf_name:
             # 紙本含全部題目（選擇題流排＋非選題附作答框），封面帶該卷網址的 QR code
             quiz_url = f"{args.site_url.rstrip('/')}/q/{q['code']}/" if args.site_url else ""

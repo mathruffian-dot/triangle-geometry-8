@@ -906,7 +906,7 @@ async function exportQuiz(){
   const su = submitUrl();
   const html = QUIZ_TPL.split('__TITLE__').join(safeTitle)
       .split('__SUBMITURL__').join(su)
-      .split('__PRINTPDF__').join('')
+      .split('__PRINTPDF__').join('').split('__FIXEDCLS__').join('')
       .replace('__QUIZDATA__', JSON.stringify(items).replace(/<\//g,'<\\/'));
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const a = document.createElement('a');
@@ -1376,6 +1376,7 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 <script>
 // ====== 收卷網址：由題庫「匯出線上試卷」時自動內嵌（Apps Script 網頁應用程式 URL 含 ?token=）======
 const CONFIG = { submitUrl: "__SUBMITURL__" };
+const FIXED_CLS = "__FIXEDCLS__";   // 派卷時指定班級則自動帶入並鎖定，學生只需填座號
 const SUBMIT = (CONFIG.submitUrl && CONFIG.submitUrl.indexOf('http') === 0) ? CONFIG.submitUrl : '';
 const ITEMS = JSON.parse(document.getElementById('qdata').textContent);
 const ans = {};        // id -> 'A'~'D'（選擇）或 '[手寫]'（非選）
@@ -1389,6 +1390,14 @@ let submitted = false;
 const tsStart = Date.now();
 const LSKEY = 'quiz-__TITLE__';
 
+// 一班一網址：指定班級時自動帶入並鎖定，學生只填座號（避免填錯班級）
+if(FIXED_CLS){
+  const ci=document.getElementById('stuClass');
+  ci.value=FIXED_CLS; ci.readOnly=true;
+  ci.style.background='#f1f5f9'; ci.style.color='var(--sub)'; ci.style.fontWeight='700';
+  const lb=ci.previousElementSibling; if(lb) lb.textContent='班級（本卷專屬）';
+  setTimeout(()=>{ const si=document.getElementById('stuSeat'); if(si && !si.value) si.focus(); },300);
+}
 document.getElementById('totalQ').textContent = ITEMS.length;
 document.getElementById('doneT').textContent = ITEMS.length;
 
@@ -1598,11 +1607,15 @@ function refresh(){
   if(bar) bar.style.width = ITEMS.length ? Math.round(n/ITEMS.length*100)+'%' : '0%';
 }
 function save(){
-  const base = {ans, essayText, mode:MODE, cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName')};
+  const base = {ans, essayText, mode:MODE, cls:valCls(), seat:valSeat(), name:val('stuName')};
   try{ localStorage.setItem(LSKEY, JSON.stringify({...base, imgs})); }
   catch(e){ try{ localStorage.setItem(LSKEY, JSON.stringify(base)); }catch(_){} }  // 作答圖太大存不下時，至少保住文字與選擇
 }
 function val(id){ return document.getElementById(id).value.trim(); }
+// 班級／座號正規化：只留數字、去前導零（避免 03 與 3 被當成兩個人）
+function numId(v){ const d=String(v||'').replace(/[^0-9]/g,''); return d.replace(/^0+(?=\d)/,''); }
+function valCls(){ return FIXED_CLS || numId(val('stuClass')) || val('stuClass'); }
+function valSeat(){ return numId(val('stuSeat')) || val('stuSeat'); }
 // 還原草稿
 try{
   const d = JSON.parse(localStorage.getItem(LSKEY)||'null');
@@ -1632,6 +1645,10 @@ try{
   }
 }catch(e){}
 ['stuClass','stuSeat','stuName'].forEach(k=>document.getElementById(k).addEventListener('input', save));
+['stuClass','stuSeat'].forEach(k=>document.getElementById(k).addEventListener('blur', e=>{
+  if(k==='stuClass' && FIXED_CLS) return;
+  const n=numId(e.target.value); if(n) e.target.value=n;   // 離開欄位即正規化（03 → 3）
+}));
 
 function grade(q){
   if(q.type!=='choice') return null;
@@ -1665,7 +1682,7 @@ document.getElementById('btnSubmit').onclick = () => {
     return;
   }
   const rec = {
-    v:1, quiz:"__TITLE__", cls:val('stuClass'), seat:val('stuSeat'), name:val('stuName'),
+    v:1, quiz:"__TITLE__", cls:valCls(), seat:valSeat(), name:val('stuName'),
     ts_start:new Date(tsStart).toISOString(), ts_submit:new Date().toISOString(),
     dur_s:Math.round((Date.now()-tsStart)/1000),
     score, total_auto:auto.length, n_essay:essay_imgs.length,
@@ -1772,7 +1789,7 @@ function dlRec(){
 }
 // ---- 查我的非選批改結果（只顯示老師覆核完的級分；沒批到＝批改中）----
 document.getElementById('btnMyResult').onclick = async ()=>{
-  const cls = val('stuClass'), seat = val('stuSeat');
+  const cls = valCls(), seat = valSeat();
   const hint = document.getElementById('myResultHint');
   if(!cls || !seat){ alert('請先填「班級、座號」再查'); return; }
   if(!SUBMIT){ hint.textContent = '（此卷沒有設定收卷網址，無法查詢）'; return; }
@@ -1863,7 +1880,7 @@ out2.write_text(html2, encoding="utf-8")
 print("written", out2, f"{out2.stat().st_size/1024/1024:.1f} MB")
 
 
-def make_quiz(question_ids, title, out_path, submit_url="", print_pdf=""):
+def make_quiz(question_ids, title, out_path, submit_url="", print_pdf="", fixed_cls=""):
     """由 Python 端直接產生線上試卷（與網頁匯出功能同一模板）
     print_pdf：紙本作答卷 PDF 的相對路徑（放同一部署資料夾），空字串＝不顯示下載鈕"""
     idx = {q["id"]: q for q in questions}
@@ -1887,6 +1904,7 @@ def make_quiz(question_ids, title, out_path, submit_url="", print_pdf=""):
     html = (QUIZ_TEMPLATE.replace("__TITLE__", title)
             .replace("__SUBMITURL__", submit_url)
             .replace("__PRINTPDF__", pdf_html)
+            .replace("__FIXEDCLS__", str(fixed_cls or ""))
             .replace("__QUIZDATA__", data))
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     Path(out_path).write_text(html, encoding="utf-8")

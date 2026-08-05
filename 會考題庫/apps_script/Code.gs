@@ -7,6 +7,13 @@
 // 簡易通行碼（可自行改，改了之後收卷網址的 ?token= 也要跟著改）
 const TOKEN = 'math809';
 
+// 班級／座號正規化：只留數字並去前導零（"03"→"3"），避免同一人被當成兩人
+function _nid(v) {
+  const d = String(v == null ? '' : v).replace(/[^0-9]/g, '');
+  const t = d.replace(/^0+(?=\d)/, '');
+  return t || String(v == null ? '' : v).trim();
+}
+
 // 取得（第一次自動建立）試算表
 function _ss() {
   const props = PropertiesService.getScriptProperties();
@@ -74,7 +81,7 @@ function _saveEssayImgs(ss, rec, imgs, now) {
       if (m) {
         const blob = Utilities.newBlob(
           Utilities.base64Decode(m[2]), m[1],
-          (rec.quiz || '卷') + '_' + (rec.cls || '') + '_' + (rec.seat || '') + '_' + im.id + '.jpg');
+          (rec.quiz || '卷') + '_' + _nid(rec.cls) + '_' + _nid(rec.seat) + '_' + im.id + '.jpg');
         const file = folder.createFile(blob);
         // 以「知道連結的人可看」分享，讓老師與批改腳本能取圖（網址不可猜；學生個資請勿外流）
         file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
@@ -82,7 +89,7 @@ function _saveEssayImgs(ss, rec, imgs, now) {
         link = file.getUrl();
       }
     } catch (err) { link = 'ERR:' + err; }
-    rows.push([now, rec.quiz || '', String(rec.cls || ''), String(rec.seat || ''), rec.name || '',
+    rows.push([now, rec.quiz || '', _nid(rec.cls), _nid(rec.seat), rec.name || '',
                im.id, link, fileId, im.ans || '', '', '', '', '', '']);
   });
   if (rows.length) s.getRange(s.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
@@ -207,13 +214,13 @@ function doPost(e) {
     const essayImgs = rec.essay_imgs || [];
     delete rec.essay_imgs;
     ss.getSheetByName('作答紀錄').appendRow([
-      now, rec.quiz || '', String(rec.cls || ''), String(rec.seat || ''), rec.name || '',
+      now, rec.quiz || '', _nid(rec.cls), _nid(rec.seat), rec.name || '',
       rec.score, rec.total_auto, rec.dur_s, rec.ts_start || '', rec.ts_submit || '',
       JSON.stringify(rec),
     ]);
     const s2 = ss.getSheetByName('逐題明細');
     const rows = (rec.answers || []).map(a =>
-      [now, rec.quiz || '', String(rec.cls || ''), String(rec.seat || ''), a.id, a.a, a.ok === null ? '' : (a.ok ? 'O' : 'X')]);
+      [now, rec.quiz || '', _nid(rec.cls), _nid(rec.seat), a.id, a.a, a.ok === null ? '' : (a.ok ? 'O' : 'X')]);
     if (rows.length) s2.getRange(s2.getLastRow() + 1, 1, rows.length, 7).setValues(rows);
     // 非選手寫圖 → Drive + 非選作答表
     if (essayImgs.length) _saveEssayImgs(ss, rec, essayImgs, now);
