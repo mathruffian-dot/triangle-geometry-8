@@ -589,6 +589,54 @@ window.DECK = window.DECK || [];
 
       {
         sec: '1-3', secName: '應用問題',
+        title: '幾何應用：周長給一式，長寬關係給另一式',
+        points: [
+          '長方形<b>周長</b> \\(=2(\\text{長}+\\text{寬})\\)，這就是<b>第一式</b>。',
+          '「長比寬多幾」「長是寬的幾倍」這類敘述，就是<b>第二式</b>。',
+          '拖滑桿改變寬，看長與周長怎麼連動——只有一個寬能同時滿足兩式。'
+        ],
+        formula: { label: '兩式來源', tex: '2(x+y)=\\text{周長}\\;,\\qquad x-y=\\text{長寬差}' },
+        visual: (h) => {
+          h.innerHTML = `<div style="width:100%"><div id="geo"></div>
+            <div class="ictrl"><label>寬 y ＝ <span class="ival" id="gv">7</span></label>
+            <input type="range" id="gs" min="2" max="16" step="1" value="7"></div></div>`;
+          const PER = 36;                       // 周長固定 36
+          const draw = () => {
+            const y = +h.querySelector('#gs').value;
+            h.querySelector('#gv').textContent = y;
+            const x = PER / 2 - y;              // 由周長反推長
+            const diff = x - y;
+            const ok = (diff === 4);            // 目標：長比寬多 4
+            const sc = 9.5;                     // 每單位對應的像素
+            const w = Math.max(6, x * sc), hh = Math.max(6, y * sc);
+            const ox = 220 - w / 2, oy = 150 - hh / 2;
+            let s = TX(220, 22, `周長固定 ${PER}，所以長 ＋ 寬 永遠 ＝ ${PER / 2}`, { fs: 14, c: C, anchor: 'middle' });
+            s += BOX(ox, oy, w, hh, { fill: ok ? 'rgba(5,150,105,.10)' : 'rgba(37,99,235,.08)', stroke: ok ? GRN : C, sw: 2.6, r: 6 });
+            s += TX(220, oy - 9, `長 x ＝ ${x}`, { fs: 14, c: ok ? GRN : C, anchor: 'middle' });
+            s += TX(ox - 12, 150 + 5, `${y}`, { fs: 14, c: VIO, anchor: 'end' });
+            s += TX(ox - 12, 150 - 12, '寬 y', { fs: 11.5, c: VIO, anchor: 'end' });
+            s += BOX(24, 232, 392, 50, { fill: ok ? '#eef7f2' : '#f6f8fc', stroke: ok ? '#bfe0d1' : '#dce3ee' });
+            s += TX(220, 252, `長 − 寬 ＝ ${x} − ${y} ＝ ${diff}`, { fs: 14, anchor: 'middle' });
+            s += TX(220, 272, ok ? '★ 同時滿足「周長 36」與「長比寬多 4」' : '還不符合「長比寬多 4」，再拖拖看',
+              { fs: 13.5, c: ok ? GRN : '#657187', anchor: 'middle' });
+            h.querySelector('#geo').innerHTML = svg('0 0 440 292', s);
+          };
+          h.querySelector('#gs').oninput = draw; draw();
+        },
+        caption: '周長把長與寬<b>綁在一起</b>，長寬關係再把答案<b>釘死</b>——兩式缺一不可。',
+        example: {
+          q: '長方形周長 \\(36\\) 公分，長比寬多 \\(4\\) 公分，求長與寬。',
+          steps: [
+            '設長 \\(x\\)、寬 \\(y\\)：周長式 \\(2(x+y)=36\\Rightarrow x+y=18\\)。',
+            '長寬關係式：\\(x-y=4\\)。',
+            '兩式相加：\\(2x=22\\Rightarrow x=11\\)，代回得 \\(y=7\\)。'
+          ],
+          ans: '長 \\(11\\) 公分、寬 \\(7\\) 公分'
+        }
+      },
+
+      {
+        sec: '1-3', secName: '應用問題',
         title: '易錯：兩位數是 10x+y，答案還要合乎題意',
         points: [
           '✗ 十位 \\(x\\)、個位 \\(y\\) 的兩位數寫成 \\(xy\\)　✓ 應該是 <b>\\(10x+y\\)</b>，對調後是 \\(10y+x\\)。',

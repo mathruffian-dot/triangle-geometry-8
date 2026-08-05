@@ -99,21 +99,57 @@
     showZoom(s, '範例');
     typeset(document.getElementById('zoomBody'));
   }
+  // 放大層：把 host 內容等比放大到填滿整頁
+  // 繪圖 SVG 有 viewBox，寬度撐滿就會連同裡面的字一起放大，不必特別處理；
+  // 但「重點整理／易錯對照」這類 HTML 內容（fbox 公式卡、表格）字級是固定 px，
+  // 框會被撐大、字卻還是原來大小 → 必須用 transform 等比放大整塊。
+  function fitZoomHost() {
+    const host = zoomHost;
+    if (!host) return;
+    const body = document.getElementById('zoomBody');
+    if (!body) return;
+    const isDrawing = !!host.querySelector('svg:not(mjx-container svg)');
+    if (isDrawing) { host.style.width = ''; host.style.transform = 'none'; return; }
+    // 以「原本在投影片視覺欄的寬度」當基準寬度，再整塊等比放大，維持原有版面比例
+    const baseW = +host.dataset.zoomBase || 460;
+    host.style.width = baseW + 'px';
+    host.style.margin = '0 auto';
+    host.style.transformOrigin = 'top center';
+    host.style.transform = 'none';
+    // .zoom-body > .visual-host 預設 flex:1 會撐滿整個放大層高度，
+    // 那樣量到的是「容器高」而不是「內容自然高」，算出來的倍率永遠是 1；
+    // 先解除彈性伸展改為 height:auto，才量得到真正需要的高度。
+    host.style.flex = 'none';
+    host.style.height = 'auto';
+    const needH = host.scrollHeight;
+    if (!needH) return;
+    const k = Math.max(1, Math.min(body.clientWidth / baseW, body.clientHeight / needH, 3.4));
+    host.style.transform = 'scale(' + k.toFixed(4) + ')';
+  }
   function openVisualModal(s, host) {
     ensureZoom();
     document.getElementById('zoomSol').style.display = 'none';   // 圖解不需要「顯示解答」
     const body = document.getElementById('zoomBody');
     body.innerHTML = '';
     zoomHost = host; zoomHostParent = host.parentNode;
+    host.dataset.zoomBase = Math.round(host.getBoundingClientRect().width) || 460;
     host.style.transform = 'none';   // 取消縮圖時的縮放，放大層用滿版
     body.appendChild(host);
     showZoom(s, '圖解');
-    typeset(body);
+    // MathJax 排版完才量得到真實高度，排版後再算放大倍率
+    if (window.MathJax && MathJax.typesetPromise) {
+      MathJax.typesetPromise([body]).then(fitZoomHost).catch(fitZoomHost);
+    } else { typeset(body); setTimeout(fitZoomHost, 300); }
   }
   function closeZoom() {
     const m = document.getElementById('zoomModal');
     if (!m || m.classList.contains('hidden')) return;
     if (zoomHost && zoomHostParent) {
+      // 還原放大層加上的行內樣式，否則回到投影片會殘留寬度與縮放
+      zoomHost.style.width = ''; zoomHost.style.margin = '';
+      zoomHost.style.flex = ''; zoomHost.style.height = '';
+      zoomHost.style.transform = ''; zoomHost.style.transformOrigin = '';
+      delete zoomHost.dataset.zoomBase;
       zoomHostParent.insertBefore(zoomHost, zoomHostParent.firstChild);   // 把圖放回原視覺欄
       zoomHost = null; zoomHostParent = null;
     }
@@ -430,7 +466,7 @@
     if (!document.fullscreenElement) (document.documentElement.requestFullscreen && document.documentElement.requestFullscreen());
     else document.exitFullscreen();
   };
-  window.addEventListener('resize', () => { fitPen(); fitSlide(); });
+  window.addEventListener('resize', () => { fitPen(); fitSlide(); fitZoomHost(); });
   // 拖動滑桿／步驟器時，說明文字行數可能改變（例如步驟說明從一行變兩行），
   // 導致視覺欄需要重新量高縮放；用 rAF 去抖，避免拖曳過程重複計算
   let _refitRAF = null;
