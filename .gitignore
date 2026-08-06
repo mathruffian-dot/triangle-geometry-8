@@ -47,3 +47,4 @@ __pycache__/
 
 # 工具自動產生的備份（merge_cards.py／gen_essay.py 每次寫入前備份，屬本機狀態）
 會考題庫/backup/*_備份_*.json
+會考題庫/backup/自編非選卷_*.html
