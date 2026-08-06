@@ -3638,6 +3638,1199 @@
     }
    ],
    "notes": "三個小題的干擾項池各 6 個，恆為「3 個比正解小 ＋ 3 個比正解大」：小題1 小＝da2/da3/da7、大＝da1/da5/da6；小題2 小＝db2/db4/db5、大＝db1/db6/db7；小題3 小＝dc4/dc5/dc6、大＝dc1/dc2/dc3（大小關係由 constraints 的 gainA > base、gainB > base 保證）。數值選項照大小排（option_order: sorted），正解字母＝被抽中的干擾項中比正解小的個數，因此「隨機抽三個」的自然傾向會集中在 B、C（A、D 各只有 1/20 的組合）——這是 sorted 型數值選項的共通現象，不是本卡的缺陷。實測四個字母都指定得到（A/B/C/D 各 40/40），派卷時 gen_choice.py 會用 target_idx 從池中挑出落在指定字母的組合，全卷仍然均衡。"
+  },
+  {
+   "id": "C-B1-04",
+   "skeleton": "圖形求值",
+   "book": "B1",
+   "chapter": "第1章 整數的運算",
+   "topic": "數線上兩點的中點",
+   "codes": [
+    "N-7-5",
+    "N-7-3"
+   ],
+   "perf": [
+    "n-IV-2"
+   ],
+   "difficulty": "易",
+   "slot": "1-8",
+   "key_idea": "數線上兩點的中點所表示的數＝兩數的平均（兩數相加再除以 2）；兩點距離是 |a－b|，和中點不是同一件事",
+   "source_ref": "108-10 絕對值等距（中點）、106-01 絕對值與四則運算（本卡改為直接給值的單步版）",
+   "contexts": [
+    {
+     "p": "A",
+     "q": "B"
+    },
+    {
+     "p": "P",
+     "q": "Q"
+    },
+    {
+     "p": "M",
+     "q": "N"
+    },
+    {
+     "p": "E",
+     "q": "F"
+    }
+   ],
+   "params": {
+    "a": {
+     "range": [
+      -28,
+      -2
+     ],
+     "step": 2
+    },
+    "b": {
+     "range": [
+      -26,
+      28
+     ],
+     "step": 2
+    }
+   },
+   "derive": [
+    "ans = int(Rational(a + b, 2))",
+    "d_sum = a + b",
+    "d_dist = b - a",
+    "d_halfdist = int(Rational(b - a, 2))",
+    "d_neghalf = int(Rational(a - b, 2))",
+    "d_halfb = a + int(Rational(b, 2))",
+    "d_halfa = int(Rational(a, 2)) + b",
+    "d_leftmid = a - d_halfdist",
+    "a_par = '(' + str(a) + ')'",
+    "b_par = str(b) if b > 0 else '(' + str(b) + ')'",
+    "rng = [min(a, -2) - 2, max(b, 2) + 2]",
+    "pts = [{'x': 0, 'label': '', 'sub': '0', 'color': '#334155'}, {'x': a, 'label': c_p, 'sub': str(a)}, {'x': b, 'label': c_q, 'sub': str(b)}]"
+   ],
+   "constraints": [
+    "b > a",
+    "b != 0",
+    "a + b != 0",
+    "(a + b) % 2 == 0",
+    "b - a >= 6",
+    "len(set([ans, d_sum, d_dist, d_halfdist, d_neghalf, d_halfb, d_halfa, d_leftmid])) == 8"
+   ],
+   "stem": "如圖，數線上 {c_p}、{c_q} 兩點所表示的數分別為 {a} 與 {b}，則 {c_p}、{c_q} 兩點的中點所表示的數為何？",
+   "figure": {
+    "kind": "numberline",
+    "range": "$rng",
+    "tick": 2,
+    "width": 520,
+    "points": "$pts"
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{d_sum}",
+     "error": "兩數相加後忘了再除以 2",
+     "value": "d_sum"
+    },
+    {
+     "text": "{d_dist}",
+     "error": "算成 {c_p}、{c_q} 兩點的距離 |{a_par} － {b_par}|，沒有回答中點所表示的數",
+     "value": "d_dist"
+    },
+    {
+     "text": "{d_halfdist}",
+     "error": "只算出兩點距離的一半，忘了還要從左邊的 {c_p}（{a}）往右移這一段",
+     "value": "d_halfdist"
+    },
+    {
+     "text": "{d_neghalf}",
+     "error": "把「兩數相加」誤成「兩數相減」，算成（{a_par} － {b_par}）÷ 2",
+     "value": "d_neghalf"
+    },
+    {
+     "text": "{d_halfb}",
+     "error": "除以 2 時只除到 {b}，前面的 {a} 忘了一起除",
+     "value": "d_halfb"
+    },
+    {
+     "text": "{d_halfa}",
+     "error": "除以 2 時只除到 {a}，後面的 {b} 忘了一起除",
+     "value": "d_halfa"
+    },
+    {
+     "text": "{d_leftmid}",
+     "error": "用距離法時方向弄反，從 {c_p}（{a}）往左退了半個距離，算成 {a_par} － {d_halfdist}",
+     "value": "d_leftmid"
+    }
+   ],
+   "solution": "中點所表示的數就是兩數的平均。{a_par} ＋ {b_par} = {d_sum}，再除以 2：{d_sum} ÷ 2 = {ans}。（也可以用距離想：{c_p}、{c_q} 兩點相距 |{a_par} － {b_par}| = {d_dist}，從左邊的 {c_p} 往右移一半 {d_halfdist}，得 {a} ＋ {d_halfdist} = {ans}。）",
+   "steps": [
+    "中點所表示的數 =（兩數相加）÷ 2",
+    "{a_par} ＋ {b_par} = {d_sum}",
+    "{d_sum} ÷ 2 = {ans}",
+    "檢查：{ans} 到 {a} 與到 {b} 的距離都是 {d_halfdist}，確實在正中間"
+   ],
+   "trap": "中點是兩數的平均，不是兩點距離的一半：{d_halfdist} 只說明兩點相隔多遠的一半，還要從左邊那一點再往右移這麼多才是中點；相加時負數要連符號一起加。"
+  },
+  {
+   "id": "C-B2-06",
+   "skeleton": "圖形求值",
+   "book": "B2",
+   "chapter": "第2章 直角坐標與二元一次方程式的圖形",
+   "topic": "點的平移與水平線方程式",
+   "codes": [
+    "G-7-1",
+    "A-7-6"
+   ],
+   "perf": [
+    "g-IV-1",
+    "g-IV-2"
+   ],
+   "difficulty": "易",
+   "slot": "1-8",
+   "key_idea": "左右平移只動 x 坐標、上下平移只動 y 坐標；與 x 軸平行的直線方程式是 y ＝ 該直線上任一點的 y 坐標",
+   "source_ref": "115-13 與 x 軸平行的直線方程式、114-06 坐標平面上的平移方向（圖(三)）",
+   "contexts": [
+    {
+     "who": "小柔",
+     "pa": "A",
+     "pb": "B"
+    },
+    {
+     "who": "阿哲",
+     "pa": "P",
+     "pb": "Q"
+    },
+    {
+     "who": "阿宏",
+     "pa": "M",
+     "pb": "N"
+    },
+    {
+     "who": "小妍",
+     "pa": "R",
+     "pb": "S"
+    },
+    {
+     "who": "阿翰",
+     "pa": "C",
+     "pb": "D"
+    }
+   ],
+   "params": {
+    "x0": {
+     "range": [
+      -5,
+      5
+     ]
+    },
+    "y0": {
+     "range": [
+      -5,
+      5
+     ]
+    },
+    "p": {
+     "range": [
+      1,
+      6
+     ]
+    },
+    "q": {
+     "range": [
+      1,
+      6
+     ]
+    },
+    "sx": {
+     "choices": [
+      1,
+      -1
+     ]
+    },
+    "sy": {
+     "choices": [
+      1,
+      -1
+     ]
+    }
+   },
+   "derive": [
+    "dirh = '右' if sx == 1 else '左'",
+    "dirv = '上' if sy == 1 else '下'",
+    "dirv2 = '下' if sy == 1 else '上'",
+    "xb = x0 + sx * p",
+    "ans = y0 + sy * q",
+    "d_noshift = y0",
+    "d_rev = y0 - sy * q",
+    "d_both = ans + sx * p",
+    "d_xline = xb",
+    "d_x0 = x0",
+    "d_swap = y0 + sy * p",
+    "d_neg = -ans",
+    "hexpr = ('%d ＋ %d' % (x0, p)) if sx == 1 else ('%d － %d' % (x0, p))",
+    "vexpr = ('%d ＋ %d' % (y0, q)) if sy == 1 else ('%d － %d' % (y0, q))",
+    "rexpr = ('%d － %d' % (y0, q)) if sy == 1 else ('%d ＋ %d' % (y0, q))",
+    "bexpr = vexpr + ((' ＋ %d' % p) if sx == 1 else (' － %d' % p))",
+    "swexpr = ('%d ＋ %d' % (y0, p)) if sy == 1 else ('%d － %d' % (y0, p))",
+    "pool = [d_noshift, d_rev, d_both, d_xline, d_x0, d_swap, d_neg]",
+    "figcfg = {'x_range': [-6, 6], 'y_range': [-6, 6], 'show_grid': True, 'tick_interval': 1, 'points': [{'x': x0, 'y': y0, 'label': c_pa}]}"
+   ],
+   "constraints": [
+    "x0 != 0",
+    "y0 != 0",
+    "p != q",
+    "ans != 0",
+    "abs(xb) <= 6",
+    "abs(ans) <= 6",
+    "len(set(pool + [ans])) == 8",
+    "len([v for v in pool if v > ans]) >= 3",
+    "len([v for v in pool if v < ans]) >= 3"
+   ],
+   "stem": "如圖，{c_who}在坐標平面上標出一點 {c_pa}，其坐標為 ({x0}, {y0})。今將 {c_pa} 點向{dirh}平移 {p} 單位、向{dirv}平移 {q} 單位後得到 {c_pb} 點。若通過 {c_pb} 點且與 x 軸平行的直線為 y ＝ k，則 k 之值為何？",
+   "figure": {
+    "kind": "coord",
+    "width": 380,
+    "height": 340,
+    "config": "$figcfg"
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{d_noshift}",
+     "error": "忘了平移，直接把 {c_pa} 的 y 坐標 {y0} 當成答案",
+     "value": "d_noshift"
+    },
+    {
+     "text": "{d_rev}",
+     "error": "上下平移的方向弄反，把「向{dirv} {q} 單位」算成向{dirv2}（{rexpr}）",
+     "value": "d_rev"
+    },
+    {
+     "text": "{d_both}",
+     "error": "把向{dirh}的 {p} 單位也一起算進 y 坐標（{bexpr}），兩個平移量都往 y 算",
+     "value": "d_both"
+    },
+    {
+     "text": "{d_xline}",
+     "error": "定義誤用：把「與 x 軸平行」當成 x ＝ 常數，答成 {c_pb} 的 x 坐標 {xb}",
+     "value": "d_xline"
+    },
+    {
+     "text": "{d_x0}",
+     "error": "既把「與 x 軸平行」當成 x ＝ 常數，又忘了平移，答成 {c_pa} 的 x 坐標 {x0}",
+     "value": "d_x0"
+    },
+    {
+     "text": "{d_swap}",
+     "error": "兩個平移量張冠李戴：把向{dirh}的 {p} 單位誤當成上下的平移量，算成 {swexpr}",
+     "value": "d_swap"
+    },
+    {
+     "text": "{d_neg}",
+     "error": "符號弄反：把水平線寫成 y ＋ k ＝ 0，於是把 k 答成 {ans} 的相反數",
+     "value": "d_neg"
+    }
+   ],
+   "solution": "向{dirh}平移只改變 x 坐標，向{dirv}平移只改變 y 坐標，所以 {c_pb} 的 x 坐標為 {hexpr} ＝ {xb}、y 坐標為 {vexpr} ＝ {ans}，即 {c_pb}({xb}, {ans})。與 x 軸平行的直線是水平線，線上每一點的 y 坐標都相同，方程式為 y ＝（線上任一點的 y 坐標），故通過 {c_pb} 的水平線為 y ＝ {ans}，得 k ＝ {ans}。",
+   "steps": [
+    "向{dirh}平移 {p} 單位只動 x 坐標：{hexpr} ＝ {xb}",
+    "向{dirv}平移 {q} 單位只動 y 坐標：{vexpr} ＝ {ans}",
+    "所以 {c_pb} 的坐標是 ({xb}, {ans})",
+    "與 x 軸平行的直線是水平線，方程式形如 y ＝ 常數，這個常數就是線上點的 y 坐標",
+    "通過 {c_pb} 的水平線為 y ＝ {ans}，故 k ＝ {ans}"
+   ],
+   "trap": "與 x 軸平行的直線是 y ＝ 常數（看 y 坐標），與 y 軸平行的才是 x ＝ 常數；而且左右平移只動 x 坐標，不會動到 y 坐標。",
+   "notes": "干擾項池 7 個：d_noshift（忘了平移）／d_rev（上下方向弄反）／d_both（把左右的平移量也加到 y）／d_xline（把「與 x 軸平行」當成 x ＝ 常數，答成 x 坐標；報告 貳-四 列的第 3 類錯誤）／d_x0（前兩種錯誤同時犯）／d_swap（把左右平移量誤當成上下平移量，y0 ± p）／d_neg（把 y ＝ k 寫成 y ＋ k ＝ 0 的符號錯）。約束強制「大於正解的至少 3 個、小於正解的至少 3 個」，實測 388 組參數 × 4 個 target_idx 共 1552 次全部命中，正解可排到 A/B/C/D 任一位置（try_card 顯示的自然傾向偏 B/C，是 option_order=sorted 數值題的本質）。參數空間 388／17424 組可用。\n【正解唯一】k 只由 {c_pb} 的 y 坐標決定（水平線上所有點 y 坐標相同），7 個干擾項與正解共 8 個值互異由約束強制。特別注意 d_neg＝-ans：若 ans＝0 則 d_neg 與正解重合，且「y＝0」就是 x 軸本身、不能說與 x 軸平行——所以 ans != 0 是**顯式**約束，不可拿掉（別依賴 len(set)==8 順帶擋到）。\n【sx／sy】左右、上下方向各半。加入 sx 之後參數空間對 (x0,y0,sx,sy)→(-x0,-y0,-sx,-sy) 完全對稱，sy 上/下 194:194、sx 左/右 194:194，x0 從 -5 到 5 每個值 36～44 組，不會像只有「向右」時擠在 x0＝±5（那時 x0＝5 有 94 組、x0＝-1 只有 14 組）。算式文字（hexpr／vexpr／rexpr／bexpr／swexpr）在 derive 裡依 sx、sy 先組好，避免詳解出現「＋ -3」。\n【圖】只畫 {c_pa} 一點、標籤僅寫點名（坐標寫在題幹；若把坐標寫進標籤，x0＝5 時標籤會衝出畫布右緣）；{c_pb} 與那條水平線都不畫，以免洩題。約束 abs(xb) <= 6、abs(ans) <= 6 讓 {c_pb} 一定落在畫出來的格線範圍內，想在圖上一格一格數的學生數得到、不會跑出畫布外。x0、y0 限在 -5～5 而畫布開到 -6～6，保證 {c_pa} 不貼邊。負坐標一律用 ASCII 連字號（fmt 直接輸出 -3），不可換成 U+2212 的減號字元（字型缺字會變方框，見 C-B6-02 的同一則提醒）。\n【難度】只有「平移改坐標」與「水平線方程式看 y 坐標」兩個動作，沒有第二個轉折、沒有需要建模的生活情境，對照 115-13（單步：過 (-3,-1) 且與 x 軸平行 → y＝-1）只多了一次平移，仍屬 1-8 題的份量。\n【與圖的關係】坐標同時寫在題幹與畫在圖上，圖是輔助而非唯一資訊來源——這與 114-06 的圖(三) 同一路數（該題也把點 (-1, 2) 寫在題幹、圖只提供坐標平面），亦與本庫 C-B4-01（∠A、∠B 度數寫在題幹、圖只給三角形與角弧）一致，故仍掛「圖形求值」。"
+  },
+  {
+   "id": "C-B2-07",
+   "skeleton": "圖表判讀",
+   "book": "B2",
+   "chapter": "第5章 統計",
+   "topic": "直方圖判讀與中位數所在組",
+   "codes": [
+    "D-7-1",
+    "D-7-2"
+   ],
+   "perf": [
+    "d-IV-1"
+   ],
+   "difficulty": "中",
+   "slot": "9-16",
+   "key_idea": "先把各組人數相加求出總筆數，再用累積人數找出第（總筆數＋1）÷2 筆落在哪一組",
+   "source_ref": "109-13 中位數（長條圖，難度中）、114-07 直方圖判讀（改為分組直方圖問中位數所在組）",
+   "contexts": [
+    {
+     "who": "某社區暑期籃球營的",
+     "person": "學員",
+     "item": "每天練球時間",
+     "short": "練球時間",
+     "unit": "分鐘",
+     "title": "籃球營學員每天練球時間",
+     "lo": 30,
+     "w": 15
+    },
+    {
+     "who": "阿哲學校參加晨讀活動的",
+     "person": "學生",
+     "item": "上週閱讀時間",
+     "short": "閱讀時間",
+     "unit": "分鐘",
+     "title": "晨讀活動學生上週閱讀時間",
+     "lo": 0,
+     "w": 30
+    },
+    {
+     "who": "小妍學校九年級參加服務學習的",
+     "person": "學生",
+     "item": "這學期累計服務時數",
+     "short": "服務時數",
+     "unit": "小時",
+     "title": "九年級學生服務學習時數",
+     "lo": 0,
+     "w": 4
+    },
+    {
+     "who": "阿凱參加的路跑團全體",
+     "person": "團員",
+     "item": "上次五公里測驗的完成時間",
+     "short": "完成時間",
+     "unit": "分鐘",
+     "title": "路跑團團員五公里測驗的時間",
+     "lo": 20,
+     "w": 5
+    },
+    {
+     "who": "阿宏參加的直排輪社全體",
+     "person": "社員",
+     "item": "一週練習時間",
+     "short": "練習時間",
+     "unit": "分鐘",
+     "title": "直排輪社社員每週練習時間",
+     "lo": 40,
+     "w": 20
+    }
+   ],
+   "params": {
+    "f1": {
+     "choices": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ]
+    },
+    "f2": {
+     "choices": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    "f3": {
+     "choices": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    "f4": {
+     "choices": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    "f5": {
+     "choices": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ]
+    },
+    "f6": {
+     "choices": [
+      1,
+      2,
+      3,
+      5,
+      6
+     ]
+    }
+   },
+   "derive": [
+    "f = [f1, f2, f3, f4, f5, f6]",
+    "n = f1 + f2 + f3 + f4 + f5 + f6",
+    "cum = [sum(f[:i+1]) for i in range(6)]",
+    "pos = (n + 1) // 2",
+    "ans_i = min([i for i in range(6) if cum[i] >= pos])",
+    "fmax = max(f)",
+    "fmin = min(f)",
+    "mode_i = min([i for i in range(6) if f[i] == fmax])",
+    "low_i = min([i for i in range(6) if f[i] == fmin])",
+    "fmid = sorted(f)[2]",
+    "fmed_i = min([i for i in range(6) if f[i] == fmid])",
+    "prev_i = max(ans_i - 1, 0)",
+    "next_i = min(ans_i + 1, 5)",
+    "mid_i = 3",
+    "cand_i = [prev_i, next_i, mode_i, mid_i, fmed_i, low_i]",
+    "n_below = len(set([x for x in cand_i if x < ans_i]))",
+    "n_above = len(set([x for x in cand_i if x > ans_i]))",
+    "bnd = [c_lo + i * c_w for i in range(7)]",
+    "gtxt = [str(bnd[i]) + ' 以上未滿 ' + str(bnd[i+1]) for i in range(6)]",
+    "glab = [str(bnd[i]) + '以上\\n未滿' + str(bnd[i+1]) for i in range(6)]",
+    "ans_txt = gtxt[ans_i]",
+    "prev_txt = gtxt[prev_i]",
+    "next_txt = gtxt[next_i]",
+    "mode_txt = gtxt[mode_i]",
+    "mid_txt = gtxt[mid_i]",
+    "fmed_txt = gtxt[fmed_i]",
+    "low_txt = gtxt[low_i]",
+    "gno = ans_i + 1",
+    "gno_prev = ans_i",
+    "f_ans = f[ans_i]",
+    "cum_ans = cum[ans_i]",
+    "cum_prev = cum[ans_i] - f[ans_i]",
+    "vmin = bnd[0]",
+    "vmax = bnd[6]",
+    "vmid = bnd[3]",
+    "mode_no = mode_i + 1",
+    "fmed_val = fmid",
+    "fmed_no = fmed_i + 1",
+    "low_no = low_i + 1"
+   ],
+   "constraints": [
+    "n % 2 == 1",
+    "n >= 15",
+    "n <= 33",
+    "fmax <= 6",
+    "ans_i >= 1",
+    "ans_i <= 4",
+    "mode_i != ans_i",
+    "len([x for x in f if x == fmax]) == 1",
+    "len([x for x in f if x == fmin]) == 1",
+    "n_below >= 2",
+    "n_above >= 2",
+    "n_below >= 3 or n_above >= 3"
+   ],
+   "stem": "圖(一)為{c_who}{c_person}{c_item}的直方圖。根據圖中資料，這些{c_person}{c_short}的中位數落在下列哪一組？（單位：{c_unit}）",
+   "figure": {
+    "kind": "chart",
+    "chart": "hist",
+    "title": "{c_title}",
+    "labels": "$glab",
+    "data": "$f",
+    "xlabel": "{c_short}（{c_unit}）",
+    "ylabel": "人數"
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans_txt}",
+     "correct": true,
+     "value": "ans_i"
+    },
+    {
+     "text": "{mode_txt}",
+     "error": "挑了人數最多（{fmax} 人）的第 {mode_no} 組，那是眾數所在的組，不是中位數所在的組",
+     "value": "mode_i"
+    },
+    {
+     "text": "{prev_txt}",
+     "error": "累積人數只到 {cum_prev} 人、還沒到第 {pos} 筆就停下來，少算了一組",
+     "value": "prev_i"
+    },
+    {
+     "text": "{next_txt}",
+     "error": "累積人數到第 {gno} 組已達 {cum_ans} 人（已含第 {pos} 筆），卻又多往後算了一組",
+     "value": "next_i"
+    },
+    {
+     "text": "{mid_txt}",
+     "error": "用橫軸數值範圍的正中間（{vmin} 與 {vmax} 的平均 {vmid}）當中位數，那是全距的中點不是中位數",
+     "value": "mid_i"
+    },
+    {
+     "text": "{fmed_txt}",
+     "error": "把六組的「人數」由小到大排、取中間的 {fmed_val} 人，再選人數是 {fmed_val} 的第 {fmed_no} 組，排錯對象了（要排的是資料不是人數）",
+     "value": "fmed_i"
+    },
+    {
+     "text": "{low_txt}",
+     "error": "挑了人數最少（{fmin} 人）的第 {low_no} 組，一樣是把統計量算在「人數」上而不是資料上",
+     "value": "low_i"
+    }
+   ],
+   "solution": "由圖(一)讀出六組人數依序為 {f1}、{f2}、{f3}、{f4}、{f5}、{f6}，總共 {n} 人。{n} 為奇數，把 {n} 筆資料由小到大排列後，中位數是第 ({n}＋1)÷2 ＝ {pos} 筆。由左往右累積人數：前 {gno_prev} 組共 {cum_prev} 人，還不到第 {pos} 筆；再加上第 {gno} 組的 {f_ans} 人後累積為 {cum_ans} 人，已包含第 {pos} 筆。故中位數落在「{ans_txt}」這一組。",
+   "steps": [
+    "先把各組人數相加：{f1}＋{f2}＋{f3}＋{f4}＋{f5}＋{f6} ＝ {n}（人）",
+    "{n} 為奇數，中位數是由小到大排序後的第 ({n}＋1)÷2 ＝ {pos} 筆",
+    "由左往右累積人數：前 {gno_prev} 組共 {cum_prev} 人（不足 {pos}），累積到第 {gno} 組變成 {cum_ans} 人（已達 {pos}）",
+    "所以第 {pos} 筆落在第 {gno} 組，中位數落在「{ans_txt}」"
+   ],
+   "trap": "中位數看的是「把資料由小到大排好後位在中間的那一筆」，不是「人數最多的那一組」（那是眾數所在組），也不是「橫軸範圍的正中間」（那是全距的中點）。",
+   "notes": "設計說明：題幹刻意不給總人數，逼學生自己把六個長條加起來；再用 mode_i != ans_i 把「眾數所在組」推離正解，讓「挑最高的長條」這條捷徑失效。與 C-B2-01（列聯表判讀）、C-B2-04（長條圖成長率）的差別在於這裡要的是「累積次數」而不是「讀單一格」或「兩數相比」。\n【n 恆為奇數】是硬需求，不可拿掉：n 為偶數時中位數是第 n/2 與第 n/2＋1 兩筆的平均，這兩筆可能分屬相鄰兩組，此時「中位數落在哪一組」在分組資料下無法判定，會出現兩個都對或都不對的爭議。n 為奇數則第 (n+1)/2 筆必定落在唯一一組內（組界是「以上未滿」，值不會落在兩組交界）。\n【fmax <= 6 與 y 軸刻度的相依】直方圖沒有數值標籤（figures.py 的 hist 分支只有 bar／line 有 value_labels），人數必須靠 y 軸格線讀。實測 matplotlib 在最大次數 ≤ 6 時 y 軸刻度剛好每格 1、長條頂端壓在格線上；一旦人數上限放寬到 7 以上，刻度會變成每格 2，奇數高度的長條頂端落在兩條格線之間，就可能被讀錯而整題算錯。所以 fmax <= 6 是**顯式**約束，params 的候選值也一律 ≤ 6，改動任一處都要同時改另一處（或先幫 figures.py 的 hist 加上 value_labels）。\n【干擾項池與正解字母的結構上限】選項是六個組別的區間文字、option_order=sorted，所以正解字母由「有幾個被選中的干擾項組號比正解小」決定：排到 A 要三個干擾項都在正解右邊，排到 D 要三個都在正解左邊。池中 prev_i 恆在左、next_i 恆在右，另外四個（mid_i／mode_i／fmed_i／low_i）最多再補四個位置，因此「同時湊得出 3 左與 3 右」在數學上不可能——這張卡**做不到** C-B2-05／C-B3-02 那種 A/B/C/D 全部 100% 可指定，只能做到 B、C 恆可指定、A 與 D 各約一半可指定。組數改成 7、8 組也救不回來（要 3 左＋3 右就得有 6 個互異的干擾項組號，池裡只有 4 個非固定成員）。\n【2026-08-06 審題修正】原稿只有「len(set(...) - {ans_i}) >= 3」一條，實測 4000 題自然分布 A 2.4%／B 44.8%／C 49.3%／D 3.6%，用 target_idx 指定也只有 A 11%／D 19% 命中，字母幾乎鎖死在 B/C（同批已定稿的卡多半是四個字母 100% 可指定）。修法：改成 n_below >= 2、n_above >= 2、且至少一側 >= 3，並重挑六組人數的候選值。修正後 248 組可用參數中，B、C 100% 可指定、A 48%／D 52%，四個字母都到得了。副作用是 ans_i 恆為 2 或 3（第 3 或第 4 組）——原稿本來就有 98% 落在這兩組（六組資料的中位數本來就靠中間，官方 109-13 同型題亦然），且學生看到的只有四個區間選項、仍須算過才知道是哪一組，判定可接受。\n【平均數所在組不能當干擾項】試算過：六組、每組人數 1～6 時，用組中點算出的分組平均恆落在第 3 或第 4 組，與 mid_i／prev_i／next_i 必定重號（實測 4866 組無一例外），加進池裡不會多出任何一個新的組號，故不採用。\n【為何每個 f 只給 5 個候選值（f5 給 6 個）】try_card 的參數空間掃描上限是 20000 組，6^6 = 46656 會被截斷成前 20000 組（且偏向 f1 小的那一段），報出來的空間數會失真；5×5×5×5×6×5 = 18750 剛好在上限內，掃描結果才是真值。候選值的取捨是以「A 與 D 的可指定率盡量各半」為目標挑出來的，調整前請重跑一次全空間掃描。"
+  },
+  {
+   "id": "C-B3-03",
+   "skeleton": "純計算",
+   "book": "B3",
+   "chapter": "第1章 乘法公式與多項式",
+   "topic": "二次多項式除以一次式求餘式",
+   "codes": [
+    "A-8-3"
+   ],
+   "perf": [
+    "a-IV-5"
+   ],
+   "difficulty": "易",
+   "slot": "1-8",
+   "key_idea": "直式除法做到「剩下的次數比除式低」為止；最後一步是被除式的常數項減去（除式的常數）×（商的常數），剩下的那個常數才是餘式",
+   "source_ref": "115-07 多項式除法求商式與餘式、114-02 多項式減法（同屬 A-8-3 多項式四則運算；改問「餘式之值」讓選項為整數，與既有 B3 兩張卡的骨架不重疊）",
+   "contexts": [
+    {
+     "rsym": "r"
+    },
+    {
+     "rsym": "k"
+    },
+    {
+     "rsym": "m"
+    },
+    {
+     "rsym": "t"
+    }
+   ],
+   "params": {
+    "d": {
+     "choices": [
+      1,
+      2,
+      3
+     ]
+    },
+    "q1": {
+     "range": [
+      1,
+      4
+     ]
+    },
+    "q0": {
+     "range": [
+      -5,
+      5
+     ]
+    },
+    "e": {
+     "range": [
+      -5,
+      5
+     ]
+    },
+    "r": {
+     "range": [
+      -6,
+      6
+     ]
+    }
+   },
+   "derive": [
+    "A = d*q1",
+    "B = d*q0 + e*q1",
+    "C = e*q0 + r",
+    "mid = d*q0",
+    "eq0 = e*q0",
+    "eq1 = e*q1",
+    "ans = r",
+    "d_q0 = q0",
+    "d_C = C",
+    "d_noe = C - q0",
+    "d_plus = C + eq0",
+    "d_nq0 = C - e",
+    "d_rev = -r",
+    "d_e = e",
+    "d_negq0 = -q0",
+    "vals = [ans, d_q0, d_C, d_noe, d_plus, d_nq0, d_rev, d_e, d_negq0]",
+    "wrongs = [d_q0, d_C, d_noe, d_plus, d_nq0, d_rev, d_e, d_negq0]",
+    "n_up = sum([1 for w in wrongs if w > ans])",
+    "n_dn = sum([1 for w in wrongs if w < ans])",
+    "xs = 'x' if d == 1 else str(d)+'x'",
+    "Dstr = xs + ('＋' if e > 0 else '－') + str(abs(e))",
+    "Astr = 'x²' if A == 1 else str(A)+'x²'",
+    "Bs = ('＋' if B > 0 else '－') + ('' if abs(B) == 1 else str(abs(B))) + 'x'",
+    "Cs = ('＋' if C > 0 else '－') + str(abs(C))",
+    "Pstr = Astr + Bs + Cs",
+    "q1s = 'x' if q1 == 1 else str(q1)+'x'",
+    "Qstr = q1s + ('＋' if q0 > 0 else '－') + str(abs(q0))",
+    "midstr = ('－' if mid < 0 else '') + ('x' if abs(mid) == 1 else str(abs(mid))+'x')",
+    "eq0s = ('＋' if eq0 > 0 else '－') + str(abs(eq0))",
+    "prod1 = Astr + ('＋' if eq1 > 0 else '－') + ('' if abs(eq1) == 1 else str(abs(eq1))) + 'x'",
+    "prod2 = midstr + eq0s",
+    "rem1 = midstr + Cs",
+    "t_ans = '－'+str(-ans) if ans < 0 else str(ans)",
+    "t_q0 = '－'+str(-q0) if q0 < 0 else str(q0)",
+    "t_e = '－'+str(-e) if e < 0 else str(e)",
+    "t_C = '－'+str(-C) if C < 0 else str(C)",
+    "t_eq0 = '－'+str(-eq0) if eq0 < 0 else str(eq0)",
+    "t_dC = '－'+str(-d_C) if d_C < 0 else str(d_C)",
+    "t_noe = '－'+str(-d_noe) if d_noe < 0 else str(d_noe)",
+    "t_plus = '－'+str(-d_plus) if d_plus < 0 else str(d_plus)",
+    "t_nq0 = '－'+str(-d_nq0) if d_nq0 < 0 else str(d_nq0)",
+    "t_rev = '－'+str(-d_rev) if d_rev < 0 else str(d_rev)",
+    "t_negq0 = '－'+str(-d_negq0) if d_negq0 < 0 else str(d_negq0)"
+   ],
+   "constraints": [
+    "q0 != 0",
+    "e != 0",
+    "r != 0",
+    "gcd(d, abs(e)) == 1",
+    "B != 0",
+    "C != 0",
+    "abs(B) <= 25",
+    "abs(C) <= 40",
+    "len(set(vals)) == 9",
+    "max([abs(v) for v in vals]) <= 45",
+    "n_up >= 3",
+    "n_dn >= 3"
+   ],
+   "stem": "若多項式 {Pstr} 除以 {Dstr} 的餘式為 {c_rsym}，則 {c_rsym} 之值為何？",
+   "figure": null,
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{t_ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{t_q0}",
+     "error": "把商式 {Qstr} 的常數項 {t_q0} 當成餘式（除法只做到求出商，最後一步的相減還沒做）",
+     "value": "d_q0"
+    },
+    {
+     "text": "{t_dC}",
+     "error": "沒有真的做除法，直接把被除式的常數項 {t_C} 抄成餘式",
+     "value": "d_C"
+    },
+    {
+     "text": "{t_noe}",
+     "error": "最後一步相減時，忘了把商的常數項 {t_q0} 乘上除式的常數 {t_e}，只把 {t_q0} 減掉",
+     "value": "d_noe"
+    },
+    {
+     "text": "{t_plus}",
+     "error": "最後一步該減卻寫成加（減括號沒變號），算成 {t_C} ＋（{t_eq0}）",
+     "value": "d_plus"
+    },
+    {
+     "text": "{t_nq0}",
+     "error": "最後一步只減掉除式的常數 {t_e}，忘了它要先乘上商的常數項 {t_q0}",
+     "value": "d_nq0"
+    },
+    {
+     "text": "{t_rev}",
+     "error": "最後一步相減的順序寫反，算成（{t_eq0}）－（{t_C}），得到正確餘式的相反數",
+     "value": "d_rev"
+    },
+    {
+     "text": "{t_e}",
+     "error": "沒有做除法，直接把除式 {Dstr} 的常數項 {t_e} 當成餘式",
+     "value": "d_e"
+    },
+    {
+     "text": "{t_negq0}",
+     "error": "把商式 {Qstr} 的常數項當成餘式（最後一步的相減還沒做），又把符號抄反，把 {t_q0} 寫成 {t_negq0}",
+     "value": "d_negq0"
+    }
+   ],
+   "solution": "用直式除法：{Pstr} 除以 {Dstr}。先看二次項，{Astr} ÷ {xs} = {q1s}，減去（{Dstr}）×{q1s} = {prod1}，剩下 {rem1}；再看一次項，{midstr} ÷ {xs} = {t_q0}，減去（{Dstr}）×（{t_q0}）= {prod2}，剩下 {t_ans}。{t_ans} 的次數比除式 {Dstr} 低，除法到此結束，所以商式為 {Qstr}、餘式 {c_rsym} = {t_ans}。驗算：（{Dstr}）×（{Qstr}）＋（{t_ans}）= {Pstr}。",
+   "steps": [
+    "把 {Pstr} 除以 {Dstr} 排成直式",
+    "二次項：{Astr} ÷ {xs} = {q1s}，所以商的一次項是 {q1s}；減去（{Dstr}）×{q1s} = {prod1}，剩下 {rem1}",
+    "一次項：{midstr} ÷ {xs} = {t_q0}，所以商的常數項是 {t_q0}；減去（{Dstr}）×（{t_q0}）= {prod2}",
+    "剩下 {t_C} －（{t_eq0}）= {t_ans}，次數已比除式低，除法結束",
+    "商式 {Qstr}、餘式 {c_rsym} = {t_ans}；驗算（{Dstr}）×（{Qstr}）＋（{t_ans}）= {Pstr}"
+   ],
+   "trap": "餘式是「最後減完剩下的常數」，不是商式的常數項，也不是被除式的常數項。最後一步要算「被除式的常數項 － 除式的常數 × 商的常數」：少乘一個、順序寫反、或該減寫成加，答案都會跑掉。"
+  },
+  {
+   "id": "C-B3-04",
+   "skeleton": "純計算",
+   "book": "B3",
+   "chapter": "第4章 一元二次方程式",
+   "topic": "提共同因式解一元二次方程式（兩根的大小順序）",
+   "codes": [
+    "A-8-7",
+    "A-8-6"
+   ],
+   "perf": [
+    "a-IV-6"
+   ],
+   "difficulty": "中",
+   "slot": "9-16",
+   "key_idea": "兩式相乘等於 0，則其中至少一式為 0；提出共同因式後，兩個一次因式各給一個根",
+   "source_ref": "115-09 提公因式解 2x(x＋7)－10(x＋7)＝0 求 a＋2b（該題本庫標為「中」，故本卡同列中／9-16；且本卡多了「兩根同號需真的比大小」的情形，不低於原題）、114-13 兩根的大小順序",
+   "contexts": [
+    {
+     "p": "a",
+     "q": "b"
+    },
+    {
+     "p": "p",
+     "q": "q"
+    },
+    {
+     "p": "s",
+     "q": "t"
+    },
+    {
+     "p": "u",
+     "q": "v"
+    }
+   ],
+   "params": {
+    "m": {
+     "choices": [
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    "r": {
+     "range": [
+      2,
+      12
+     ]
+    },
+    "k": {
+     "range": [
+      2,
+      12
+     ]
+    },
+    "s": {
+     "choices": [
+      1,
+      -1
+     ]
+    },
+    "cf": {
+     "choices": [
+      2,
+      3
+     ]
+    }
+   },
+   "derive": [
+    "op = '＋' if s == 1 else '－'",
+    "n = m * r",
+    "r1 = -s * k",
+    "r2 = r",
+    "a = max(r1, r2)",
+    "b = min(r1, r2)",
+    "ans = a + cf * b",
+    "d_swap = b + cf * a",
+    "w1 = s * k",
+    "d_sign = max(w1, r2) + cf * min(w1, r2)",
+    "w2 = n",
+    "d_nodiv = max(r1, w2) + cf * min(r1, w2)",
+    "w3 = -r2",
+    "d_signn = max(r1, w3) + cf * min(r1, w3)",
+    "d_sum = a + b",
+    "d_onlya = a",
+    "d_onlyb = cf * b",
+    "pool = [d_swap, d_sign, d_nodiv, d_sum, d_onlya, d_signn, d_onlyb]",
+    "vals = [ans] + pool",
+    "t_ans = '－'+str(-ans) if ans < 0 else str(ans)",
+    "t_swap = '－'+str(-d_swap) if d_swap < 0 else str(d_swap)",
+    "t_sign = '－'+str(-d_sign) if d_sign < 0 else str(d_sign)",
+    "t_nodiv = '－'+str(-d_nodiv) if d_nodiv < 0 else str(d_nodiv)",
+    "t_signn = '－'+str(-d_signn) if d_signn < 0 else str(d_signn)",
+    "t_sum = '－'+str(-d_sum) if d_sum < 0 else str(d_sum)",
+    "t_onlya = '－'+str(-d_onlya) if d_onlya < 0 else str(d_onlya)",
+    "t_onlyb = '－'+str(-d_onlyb) if d_onlyb < 0 else str(d_onlyb)",
+    "t_r1 = '－'+str(-r1) if r1 < 0 else str(r1)",
+    "t_w1 = '－'+str(-w1) if w1 < 0 else str(w1)",
+    "t_w3 = '－'+str(-w3) if w3 < 0 else str(w3)",
+    "t_a = '－'+str(-a) if a < 0 else str(a)",
+    "t_b = '－'+str(-b) if b < 0 else str(b)"
+   ],
+   "constraints": [
+    "r1 != r2",
+    "not (m == 2 and k == 7 and r == 5 and s == 1)",
+    "abs(ans) <= 80",
+    "abs(d_nodiv) <= 120",
+    "abs(d_signn) <= 120",
+    "len(set(vals)) == 8",
+    "len([v for v in pool if v < ans]) >= 2",
+    "len([v for v in pool if v > ans]) >= 2"
+   ],
+   "stem": "已知一元二次方程式 {m}x(x{op}{k}) － {n}(x{op}{k}) ＝ 0 的兩根為 {c_p}、{c_q}，且 {c_p} 大於 {c_q}，則 {c_p} ＋ {cf}{c_q} 之值為何？",
+   "figure": null,
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{t_ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{t_swap}",
+     "error": "兩根的大小順序弄反了，把較小的 {t_b} 當成 {c_p}、較大的 {t_a} 當成 {c_q}，算成 {t_b} ＋ {cf}×({t_a})",
+     "value": "d_swap"
+    },
+    {
+     "text": "{t_sign}",
+     "error": "由 x{op}{k} ＝ 0 解出 x 時忘了變號，把根寫成 {t_w1}（正確是 {t_r1}）",
+     "value": "d_sign"
+    },
+    {
+     "text": "{t_nodiv}",
+     "error": "由 {m}x － {n} ＝ 0 解出 x 時忘了除以係數 {m}，把根寫成 {n}（正確是 {r2}）",
+     "value": "d_nodiv"
+    },
+    {
+     "text": "{t_signn}",
+     "error": "提共同因式時把減號帶錯，寫成 (x{op}{k})({m}x ＋ {n}) ＝ 0，第二個根變成 {t_w3}",
+     "value": "d_signn"
+    },
+    {
+     "text": "{t_sum}",
+     "error": "把 {c_p} ＋ {cf}{c_q} 看成兩根之和 {c_p} ＋ {c_q}，漏掉 {c_q} 要乘 {cf}",
+     "value": "d_sum"
+    },
+    {
+     "text": "{t_onlya}",
+     "error": "只解出較大的根 {t_a} 就作答，沒有再加上 {cf}{c_q}",
+     "value": "d_onlya"
+    },
+    {
+     "text": "{t_onlyb}",
+     "error": "只算出 {cf}{c_q} ＝ {cf}×({t_b}) ＝ {t_onlyb} 就作答，忘了還要加上較大的根 {t_a}",
+     "value": "d_onlyb"
+    }
+   ],
+   "solution": "兩項都有共同因式 (x{op}{k})，提出來得 {m}x(x{op}{k}) － {n}(x{op}{k}) ＝ (x{op}{k})({m}x － {n}) ＝ 0。兩式相乘為 0，表示其中至少一式為 0：由 x{op}{k} ＝ 0 得 x ＝ {t_r1}；由 {m}x ＝ {n} 得 x ＝ {r2}。兩根為 {t_r1} 與 {r2}，其中較大的是 {t_a}、較小的是 {t_b}，故 {c_p} ＝ {t_a}、{c_q} ＝ {t_b}，{c_p} ＋ {cf}{c_q} ＝ {t_a} ＋ {cf}×({t_b}) ＝ {t_ans}。",
+   "steps": [
+    "觀察到兩項都含有 (x{op}{k})，把它當成共同因式提出來",
+    "{m}x(x{op}{k}) － {n}(x{op}{k}) ＝ (x{op}{k})({m}x － {n}) ＝ 0",
+    "兩式相乘為 0 → x{op}{k} ＝ 0 得 x ＝ {t_r1}；{m}x － {n} ＝ 0 得 {m}x ＝ {n}，x ＝ {r2}",
+    "比大小：兩根 {t_r1}、{r2} 中較大的是 {t_a}、較小的是 {t_b}，所以 {c_p} ＝ {t_a}、{c_q} ＝ {t_b}",
+    "{c_p} ＋ {cf}{c_q} ＝ {t_a} ＋ {cf}×({t_b}) ＝ {t_ans}"
+   ],
+   "trap": "三個常見失誤：一是不比大小就把先解出的根當成 {c_p}（題目已言明 {c_p} 大於 {c_q}，要先排序）；二是由 x{op}{k} ＝ 0 解 x 時忘了變號；三是由 {m}x － {n} ＝ 0 解出的是 x ＝ {r2}，不是 x ＝ {n}。"
+  },
+  {
+   "id": "C-B4-04",
+   "skeleton": "圖形求值",
+   "book": "B4",
+   "chapter": "第4章 平行與四邊形",
+   "topic": "平行線截角性質求角度（同位角、內錯角、同側內角）",
+   "codes": [
+    "S-8-3",
+    "S-8-1"
+   ],
+   "perf": [
+    "s-IV-3"
+   ],
+   "difficulty": "易",
+   "slot": "1-8",
+   "key_idea": "兩平行線被一直線所截：同位角相等、內錯角相等、同側內角互補（相加為 180°）——先判斷是哪一種關係，再決定要「照抄」還是「用 180° 減」",
+   "source_ref": "112-08 平行線內錯角、111-17 平行線截角求內角",
+   "contexts": [
+    {
+     "l1": "L1",
+     "l2": "L2",
+     "t": "L3"
+    },
+    {
+     "l1": "L",
+     "l2": "M",
+     "t": "N"
+    }
+   ],
+   "params": {
+    "g": {
+     "range": [
+      62,
+      84
+     ],
+     "step": 1
+    },
+    "rel": {
+     "choices": [
+      0,
+      1,
+      2
+     ]
+    },
+    "side": {
+     "choices": [
+      0,
+      1
+     ]
+    },
+    "swap": {
+     "choices": [
+      0,
+      1
+     ]
+    }
+   },
+   "derive": [
+    "same = 1 if rel < 2 else 0",
+    "ans = g if same == 1 else 180 - g",
+    "d_rel = 180 - ans",
+    "d_comp = 90 - g",
+    "d_borrow = 180 - g + 2 * (g % 10)",
+    "d_tri = 180 - 2 * g",
+    "d_double = 2 * g",
+    "vals = [ans, d_rel, d_comp, d_borrow, d_tri, d_double]",
+    "gap = min([abs(u - v) for u in vals for v in vals if u != v])",
+    "w = g if side == 0 else 180 - g",
+    "rname = ['同位角', '內錯角', '同側內角'][rel]",
+    "rrule = ['兩平行線被一直線所截，同位角相等', '兩平行線被一直線所截，內錯角相等', '兩平行線被一直線所截，同側內角互補（兩角相加為 180°）'][rel]",
+    "calc = ('∠2 = ∠1 = %d°' % ans) if same == 1 else ('∠2 = 180° － %d° = %d°' % (g, ans))",
+    "pos_k = [['lower_left', 'lower_right'], ['upper_right', 'upper_left']][swap][side]",
+    "pos_a = [[['lower_left', 'lower_right'], ['upper_right', 'upper_left'], ['upper_left', 'upper_right']], [['upper_right', 'upper_left'], ['lower_left', 'lower_right'], ['lower_right', 'lower_left']]][swap][rel][side]",
+    "marks = [{'line': swap, 'position': pos_k, 'label': '∠1'}, {'line': 1 - swap, 'position': pos_a, 'label': '∠2'}]",
+    "cfg = {'n_parallel': 2, 'line_labels': [c_l1, c_l2], 'transversal_angle': w, 'transversal_labels': [c_t], 'angle_marks': marks}",
+    "e_rel = ('∠1 與 ∠2 是%s，本來就相等，這裡卻多取了一次補角（誤當成同側內角）' % rname) if same == 1 else ('∠1 與 ∠2 是同側內角要互補，這是誤當成同位角或內錯角，直接把 ∠1 的 %d° 抄下來（少做最後一步）' % g)",
+    "e_borrow = ('%s，根本不必相減；這是既誤用互補、又在算 180° － %d° 時個位沒有借位（該得 %d°）' % (rrule, g, d_rel)) if same == 1 else ('180° － %d° 直式相減時個位沒有借位，算成 %d°（正確為 %d°）' % (g, d_borrow, ans))",
+    "e_comp = ('∠1 與 ∠2 是%s、照抄就好，這裡多做了一步，而且把「互補」（兩角和 180°）記成「互餘」（兩角和 90°），算成 90° － %d° = %d°' % (rname, g, d_comp)) if same == 1 else ('同側內角是「互補」（兩角和 180°），這裡誤記成「互餘」（兩角和 90°），算成 90° － %d° = %d°' % (g, d_comp))",
+    "e_tri = ('∠1 與 ∠2 是%s、照抄就好，這裡卻誤用互補、還把 %d° 減了兩次，算成 180° － %d° － %d° = %d°' % (rname, g, g, g, d_tri)) if same == 1 else ('同側內角只要減一次：180° － %d°；這裡把 ∠1 和與它相等的那個角都扣掉，算成 180° － %d° － %d° = %d°' % (g, g, g, d_tri))",
+    "e_double = ('已經看出 ∠2 = ∠1 = %d°，卻把兩個角加起來當答案，算成 2 × %d° = %d°（題目只問 ∠2 一個角）' % (g, g, d_double)) if same == 1 else ('把 ∠1 和它的對頂角（也是 %d°）加起來，算成 2 × %d° = %d°，並沒有用到同側內角互補' % (g, g, d_double))"
+   ],
+   "constraints": [
+    "d_comp >= 6",
+    "d_tri >= 12",
+    "d_double < 180",
+    "len(set(vals)) == 6",
+    "gap >= 3"
+   ],
+   "stem": "如圖，直線 {c_l1} 與直線 {c_l2} 互相平行，直線 {c_t} 分別與 {c_l1}、{c_l2} 相交。若 ∠1 = {g}°，則 ∠2 的度數為何？",
+   "figure": {
+    "kind": "parallel",
+    "width": 400,
+    "height": 280,
+    "config": "$cfg"
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{d_rel}",
+     "error": "{e_rel}",
+     "value": "d_rel"
+    },
+    {
+     "text": "{d_comp}",
+     "error": "{e_comp}",
+     "value": "d_comp"
+    },
+    {
+     "text": "{d_borrow}",
+     "error": "{e_borrow}",
+     "value": "d_borrow"
+    },
+    {
+     "text": "{d_tri}",
+     "error": "{e_tri}",
+     "value": "d_tri"
+    },
+    {
+     "text": "{d_double}",
+     "error": "{e_double}",
+     "value": "d_double"
+    }
+   ],
+   "solution": "因為 {c_l1} 與 {c_l2} 平行、{c_t} 為截線，∠1 與 ∠2 是{rname}。{rrule}，所以 {calc}。",
+   "steps": [
+    "{c_l1} 與 {c_l2} 平行、{c_t} 是截線 → 先判斷 ∠1 與 ∠2 的位置關係",
+    "∠1 與 ∠2 是{rname}",
+    "{rrule}",
+    "{calc}"
+   ],
+   "trap": "同位角、內錯角是「相等」，同側內角是「互補」。看到平行線就把度數照抄，遇到同側內角一定會錯；反過來每次都用 180° 減，遇到同位角、內錯角也會錯——先認位置關係，再決定要不要減。",
+   "notes": [
+    "圖是按參數畫的：figure 的 transversal_angle 直接吃 derive 算出的 w，所以圖上 ∠1 的開口就真的是 {g}°（∠1 標在銳角側時 w = g，標在鈍角側時 w = 180 － g），不會有「圖與數字不符」的問題。即使如此仍比照全庫慣例，圖上只標 ∠1、∠2，度數一律只寫在題幹。",
+    "config 用 \"$cfg\" 整包丟進去（prep_figure 只在最外層認 $ 開頭的變數）。若把 transversal_angle、angle_marks 寫在 JSON 裡，會被 render_text 轉成字串，geometry_renderer 拿字串去做 math.tan 與 line_i >= len(...) 會直接爆掉。",
+    "位置對照（geometry_renderer 的 parallel_lines：upper_right 與 lower_left 的角 = transversal_angle，upper_left 與 lower_right = 180 － transversal_angle）：\n  swap = 0 → ∠1 在上面那條線的 lower_left / lower_right（兩線之間），∠2 在下面那條線；swap = 1 → 反過來。\n  rel = 0 同位角（位置名稱相同）、1 內錯角（LL 對 UR、LR 對 UL）、2 同側內角（LL 對 UL、LR 對 UR）。\n  side 決定截線往右斜還是往左斜。全部 216 組合法參數都用程式驗過三件事：圖上 ∠1 的實際開口等於題幹的 g、∠2 的實際開口等於答案、位置關係符合三種角的定義（同位／內錯／同側內角的判定是另寫一份「由 line 與 position 反推關係」的程式做的，不是照抄 derive）。",
+    "⚠ 標籤會不會壓到截線，是這張卡唯一的死穴，也是 g 下限的真正理由。渲染器不畫角弧、不畫平行記號，∠1／∠2 純粹靠文字落在正確的楔形內來辨認；四個 position 的文字偏移量換算成方向角，離水平線分別是 upper_left 32.5°、lower_left 36.0°、upper_right 37.9°、lower_right 41.6°。文字必須落在「水平線」與「截線」夾出的楔形內，離水平線那一側的餘裕就是上面那個偏移角本身（32.5°～41.6°，永遠夠），離截線那一側的餘裕 = 該角的度數 － 偏移角，這一側才是會出事的。∠1 的開口恆等於 g，四個 position 都會用到，最緊的是 lower_right，餘裕 = g － 41.6。實際渲染出來校準過：餘裕 5°～16° 時「∠」的第一筆會被截線切過（讀者無法判斷標的是哪一邊，答案就會多解），18° 剛好擦過，20° 以上才有可見空隙。所以 g 下限訂 62（因 gap 約束 g = 62 本身被擋掉，實際最小 g = 63 → 最小餘裕 21.4°）。原稿的 g ≥ 46 會讓最小餘裕掉到 5.4°，圖上 ∠1 直接騎在截線上——這不是美觀問題，是「∠1 到底是 47° 還是 133°」的多解問題。若要改 g 範圍或渲染器的 pos_offsets 有變動，務必重跑這個餘裕計算並實際看圖。",
+    "干擾項池 5 個，兩個分支都同時有「比正解大」與「比正解小」的：相等分支（rel 0/1，正解 = g）比正解小的有 d_comp = 90 － g 與 d_tri = 180 － 2g（兩者都因為 g > 60 而小於 g），比正解大的有 d_rel、d_borrow、d_double；互補分支（rel 2，正解 = 180 － g）比正解大的有 d_borrow（= 正解 ＋ 2×個位數，個位 0 與 1 的 g 會被 len(set) 與 gap 擋掉，所以一定拉開 4° 以上）與 d_double = 2g（因為 g > 60），比正解小的有 d_rel、d_comp、d_tri。相等分支是「2 小 3 大」→ 正解落 A/B/C，互補分支是「3 小 2 大」→ 正解落 B/C/D，合起來四個字母都抽得到。但自然傾向嚴重偏 B、C（掃完 216 組實測 A7 B108 C94 D7），整卷均衡一定要靠 gen_choice 的 target_idx；實測 target_idx = 0/1/2/3 每 400 次抽樣的成功數為 265/400/400/131，最差的 D 也有三分之一，配上 make_paper 的 40 次重抽綽綽有餘。",
+    "g 只取 62～84：(1) 下限 62 是標籤餘裕（見上一則），順帶保證 d_comp = 90 － g 與 d_tri = 180 － 2g 都小於正解，正解不會卡在 A；(2) 上限 84 讓 d_comp ≥ 6、d_tri ≥ 12，同時避開 90°（正解與 d_rel 太接近會失去鑑別度）。g 越靠近 84 截線越接近垂直，圖看起來會比較呆板，但角度仍然精準、不影響作答。改範圍前這兩件事都要重算。",
+    "constraints 的 gap >= 3 是「六個候選值兩兩至少差 3」，避免出現 129 與 131 這種只差 2° 的選項（看起來像打錯字）。個位是 0 的 g 會讓 d_borrow = d_rel（被 len(set) 擋掉）、個位是 1 的只差 2（被 gap 擋掉），所以 g = 70、80、71、81 用不到；g = 62 則是 d_borrow 與 d_double 只差 2 被擋掉。276 組原始組合擋掉 60 組，剩 216 組可用（門檻 200）。若要放寬 g 範圍，記得 gap、len(set) 與標籤餘裕三件事都要重跑。",
+    "難度守在「易」：只有一個轉折（認出關係 → 相等或互補），沒有第二步、沒有生活情境建模，份量比照 115-01／115-03／115-05，比 112-08（還要先把 140° 拆成 90°＋50°）再淺一階，放 1–8 題剛好。若要加難，正確做法是另開一張卡（例如把已知角改寫成 (x＋k)° 之類的一次式），不要改這張。",
+    "渲染器不畫平行記號（∥ 箭頭），平行這件事只靠題幹文字交代——這是可接受的，因為兩條線畫出來就真的是水平且平行，沒有「圖說一套、題幹說一套」的問題；比照 C-B4-01 的處理（圖上只放位置資訊，數字與性質一律寫在題幹）。圖上也不寫度數，度數只在題幹出現。",
+    "rel = 0/1 的分支（佔 2/3）正解剛好等於題幹印出來的 {g}，「照抄題目的數字」這個猜法會中；rel = 2 的分支則把 g 放進干擾項 d_rel 懲罰同一個猜法。單題出現時沒問題，但若同一份卷用到兩題本卡（gen_choice 的 usage 排序在易題卡不夠多時會重複抽），請人工確認兩題不要都落在相等分支。"
+   ]
+  },
+  {
+   "id": "C-B5-04",
+   "skeleton": "圖形求值",
+   "book": "B5",
+   "chapter": "第2章 圓",
+   "topic": "圓心角、圓周角與弧度加總",
+   "codes": [
+    "S-9-6"
+   ],
+   "perf": [
+    "s-IV-14"
+   ],
+   "difficulty": "中",
+   "slot": "9-16",
+   "key_idea": "同一段弧所對的圓周角是圓心角的一半（反過來：弧的度數是圓周角的兩倍）；相鄰兩段弧的度數可以直接相加",
+   "source_ref": "110-17、105-14、112-19 圓心角圓周角與弧度加總（本卡只取核心關係，不加切線或等腰的第二層轉折，難度降為中）",
+   "contexts": [
+    {
+     "intro": "如圖，"
+    },
+    {
+     "intro": "數學課上，老師在黑板上畫出如圖的圖形，"
+    },
+    {
+     "intro": "小柔用電腦繪圖軟體畫出如圖的圖形，"
+    },
+    {
+     "intro": "阿哲在圓形紙板上標出四個點，畫成如圖的圖形，"
+    },
+    {
+     "intro": "小妍把校慶闖關用的圓形轉盤畫成如圖的示意圖，"
+    },
+    {
+     "intro": "阿翰用圓規畫出如圖的圖形，"
+    }
+   ],
+   "params": {
+    "m": {
+     "range": [
+      24,
+      100
+     ],
+     "step": 2
+    },
+    "k": {
+     "range": [
+      12,
+      60
+     ],
+     "step": 2
+    }
+   },
+   "derive": [
+    "half_m = m // 2",
+    "arc_bc = 2 * k",
+    "arc_ac = m + arc_bc",
+    "ans = arc_ac // 2",
+    "d_arc = arc_ac",
+    "d_no_half = m + k",
+    "d_wrongarc = 180 - ans",
+    "arc_adc = 360 - arc_ac",
+    "d_half_k = half_m + k // 2",
+    "d_only_m = half_m",
+    "d_only_k = k",
+    "d_diff = abs(half_m - k)",
+    "d_arcangle = half_m + arc_bc",
+    "vals = [ans, d_arc, d_no_half, d_wrongarc, d_half_k, d_only_m, d_only_k, d_diff, d_arcangle]",
+    "fa = 90 - arc_ac // 2",
+    "fb = 90 + half_m - k",
+    "fc = 90 + arc_ac // 2",
+    "fd = 260 if half_m > k else 280",
+    "figcfg = {\"center_label\": \"O\", \"points\": {\"A\": fa, \"B\": fb, \"C\": fc, \"D\": fd}, \"radius_lines\": [\"A\", \"B\"], \"central_angle\": [\"A\", \"B\"], \"inscribed_angle\": {\"vertex\": \"D\", \"arc\": [\"A\", \"B\", \"C\"]}, \"show_center\": True}"
+   ],
+   "constraints": [
+    "arc_ac >= 70",
+    "arc_ac <= 170",
+    "d_diff >= 15",
+    "len(set(vals)) == 9"
+   ],
+   "stem": "{c_intro}A、B、C、D 四點依序在圓 O 上。已知 ∠AOB = {m}°，∠BDC = {k}°，則 ∠ADC 的度數為何？",
+   "figure": {
+    "kind": "circle",
+    "width": 360,
+    "height": 340,
+    "config": "$figcfg"
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans",
+     "error": ""
+    },
+    {
+     "text": "{d_arc}",
+     "value": "d_arc",
+     "error": "算出弧 ABC = {arc_ac}° 就作答，忘了圓周角只有它所對的弧的一半"
+    },
+    {
+     "text": "{d_no_half}",
+     "value": "d_no_half",
+     "error": "把圓心角 ∠AOB 直接當成圓周角，用 {m}° ＋ {k}° 相加（∠AOB 要先換算成 ∠ADB = {half_m}°）"
+    },
+    {
+     "text": "{d_wrongarc}",
+     "value": "d_wrongarc",
+     "error": "取錯弧：用了含 D 的那段弧 ADC（{arc_adc}°）的一半，圓周角 ∠ADC 對的是不含 D 的弧 ABC"
+    },
+    {
+     "text": "{d_half_k}",
+     "value": "d_half_k",
+     "error": "把已經是圓周角的 ∠BDC 又除以 2（分不清題目給的哪個是圓心角、哪個是圓周角）"
+    },
+    {
+     "text": "{d_only_m}",
+     "value": "d_only_m",
+     "error": "只算出 ∠ADB = {half_m}° 就作答，漏掉 ∠BDC 這一塊"
+    },
+    {
+     "text": "{d_only_k}",
+     "value": "d_only_k",
+     "error": "直接抄題目給的 ∠BDC = {k}°，漏掉 ∠ADB 這一塊"
+    },
+    {
+     "text": "{d_diff}",
+     "value": "d_diff",
+     "error": "把 ∠ADB 與 ∠BDC 相減而不是相加（∠ADC 是這兩個角合起來）"
+    },
+    {
+     "text": "{d_arcangle}",
+     "value": "d_arcangle",
+     "error": "前半段對了（∠ADB = {half_m}°），但把弧 BC 的 {arc_bc}° 直接當成角加上去，該加的是圓周角 ∠BDC = {k}°"
+    }
+   ],
+   "solution": "∠AOB 是弧 AB 所對的圓心角，所以弧 AB = {m}°。∠BDC 是弧 BC 所對的圓周角，圓周角是同弧圓心角的一半，反過來弧的度數就是圓周角的兩倍，所以弧 BC = 2 × {k}° = {arc_bc}°。∠ADC 所對的是不含 D 的那段弧，也就是弧 AB 與弧 BC 接起來：弧 ABC = {m}° ＋ {arc_bc}° = {arc_ac}°。故 ∠ADC = {arc_ac}° ÷ 2 = {ans}°。（也可以拆開看：∠ADB = {m}° ÷ 2 = {half_m}°，∠ADC = ∠ADB ＋ ∠BDC = {half_m}° ＋ {k}° = {ans}°。）",
+   "steps": [
+    "圓心角 ∠AOB = {m}° → 弧 AB = {m}°",
+    "圓周角 ∠BDC = {k}° → 弧 BC = 2 × {k}° = {arc_bc}°（弧是圓周角的兩倍）",
+    "∠ADC 對的是不含 D 的弧 ABC：弧 ABC = {m}° ＋ {arc_bc}° = {arc_ac}°",
+    "∠ADC = 弧 ABC 的一半 = {arc_ac}° ÷ 2 = {ans}°",
+    "驗算：∠ADB = {half_m}°，{half_m}° ＋ {k}° = {ans}°，兩種算法一致"
+   ],
+   "trap": "題目給的兩個角一個是圓心角、一個是圓周角，換算方向剛好相反（圓心角要除以 2 才是圓周角，圓周角要乘 2 才是弧），別一律乘 2 或一律除以 2；另外圓周角對的是「不含頂點的那一段弧」，∠ADC 要用弧 ABC，不是含 D 的那段。",
+   "notes": "【圖是照參數畫的】derive 裡的 figcfg 直接算出四個點在圓上的角度：把弧 ABC 置中在正上方（A = 90 − 弧ABC/2、C = 90 + 弧ABC/2、B = 90 + m/2 − k），因此 A→B 的弧剛好是 m°、B→C 的弧剛好是 2k°，圖上量到的角度與題目數字一致。figure.config 寫成 \"$figcfg\" 是必要的：prep_figure 只在 spec 的最上層認 $ 前綴，若把 points 寫成 {變數} 會被 render_text 轉成字串，geometry_renderer 的 math.radians() 就會炸掉。A、B、C 三點的間隔就是 m 與 2k，約束已保證各 ≥ 24°，標籤不會疊在一起。【D 的位置＋d_diff ≧ 15：兩道護圖】圖上會畫 DA、DB、DC 三條弦，只要 D 落在 A／B／C 的對徑點附近，那條弦就會從圓心壓過去 —— 學生會看成「這條是直徑」（一個題目沒給的假條件），而且 OB 與 BD 幾乎疊成一條線、圓心角的邊看不出來，O 的標籤（geometry_renderer 寫死在圓心左方 14px）也會被線劃到。原稿把 D 固定在 270° 且只用 d_diff ≧ 8 擋，實測 d_diff＝8～9 時 B、O、D 看起來就是共線（已用 m=56,k=20 重畫確認）。現在改成兩件事一起做：(1) fd = 260 if m/2 > k else 280，也就是把 D 往「離 B 的對徑點比較遠」的那一側偏 10°；(2) d_diff ≧ 15。於是 D 距三個對徑點都 ≥ 25°：B 的對徑點在 270＋(m/2−k)，偏開後差 10＋d_diff ≥ 25（這是最緊的一項）；A 的對徑點 270−弧ABC/2 只在 m/2 > k 的分支才會靠近 D，該分支 m ≥ 2k+30 ⇒ 弧ABC ≥ 78，差 ≥ 29；C 的對徑點 270＋弧ABC/2 只在 m/2 < k 的分支才會靠近，該分支 k ≥ m/2+15 ⇒ 弧ABC ≥ 80，差 ≥ 30。半徑 138px 下 25° 對應圓心到弦約 30px，O 的字不會被劃到。要改 fd 的 10° 或放寬 d_diff 前，先重算這三個間距，並用 (m,k)=(26,28) 與 (94,32) 兩組（d_diff 剛好 15、分別走 fd=280 與 fd=260 兩個分支）重畫確認；弧的兩個極端 (24,28) 與 (70,50) 也一併看過。D 的位置怎麼挪都不影響答案（∠ADC 只由弧 ABC 決定）。【參數為何都取偶數】m 要偶數才有整數的 ∠ADB＝m/2；k 要偶數才有整數的 d_half_k＝m/2＋k/2。【為何鎖 70 ≦ 弧ABC ≦ 170】上限 170 保證弧 ABC 是劣弧（ans < 90°），這一來四個「比正解大」的干擾項（d_arc＝2·ans、d_wrongarc＝180−ans、d_no_half＝ans＋m/2、d_arcangle＝ans＋k）都恆大於正解；下限 70 除了避免 A、B、C 擠成一小段，也是上面 D 與 A／C 對徑點間距的來源。【干擾項池】8 個：恆大於正解 4 個（d_arc、d_no_half、d_wrongarc、d_arcangle），恆小於正解 4 個（d_half_k、d_only_m、d_only_k、d_diff）。刻意配成 4 大 4 小，sorted 排序下正解落 A／D 的機率各 4/56 ≒ 7%、B／C 各 ≒ 43%（原本 3 大 4 小時 A 只有 1/35 ≒ 3%）。仍偏中間是 sorted 的結構性結果，出整卷時用 gen_choice 的 target_idx 指定字母即可，不動任何數學。【正解唯一】∠ADC 只由弧 ABC 決定，與 D 的確切位置無關；八個干擾項都恆不等於 ans（d_wrongarc 只有在 ans＝90 時才會相等，已被 弧ABC ≦ 170 排除），另加 len(set(vals))＝9 保證九個數值互異。參數空間 357 組（975 組中）。"
   }
  ]
 }

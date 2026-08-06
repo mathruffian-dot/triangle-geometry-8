@@ -100,8 +100,7 @@ def build_options(card, env, rnd, target_idx=None):
     return fallback
 
 
-def make_question(card, env, qid, tag, num, rnd, img_rel, dry=False, target_idx=None,
-                  passage=None, passage_title=None, passage_figure=None):
+def make_question(card, env, qid, tag, num, rnd, img_rel, target_idx=None):
     built = build_options(card, env, rnd, target_idx=target_idx)
     if built is None:
         return None
@@ -109,10 +108,6 @@ def make_question(card, env, qid, tag, num, rnd, img_rel, dry=False, target_idx=
     stem = render_text(card["stem"], env)
     fig = prep_figure(card.get("figure"), env)
     opts = [f"({LETTERS[i]}) {t}" for i, t in enumerate(texts)]
-    if not dry:
-        render_question_png(BASE / img_rel, num, stem, opts, figure=fig,
-                            passage=passage, passage_title=passage_title,
-                            passage_figure=passage_figure)
     return {
         "id": qid,
         "year": tag,
@@ -134,7 +129,7 @@ def make_question(card, env, qid, tag, num, rnd, img_rel, dry=False, target_idx=
                 "options": [{"opt": LETTERS[i], "text": t, "error": e or ("正解" if i == idx else "")}
                             for i, (t, e) in enumerate(zip(texts, errors))],
                 "params": {k: str(v) for k, v in env.items() if not k.startswith("c_")}},
-    }, stem, opts
+    }, stem, opts, fig
 
 
 def _num(v):
@@ -144,7 +139,7 @@ def _num(v):
         return v
 
 
-def make_group(card, env, tag, start_num, rnd, targets, dry=False):
+def make_group(card, env, tag, start_num, rnd, targets):
     """題組：一份共用選文 ＋ 2–3 個小題。每題的圖都會重印選文（與官方卷面一致）。"""
     items = card["items"]
     end_num = start_num + len(items) - 1
@@ -159,13 +154,12 @@ def make_group(card, env, tag, start_num, rnd, targets, dry=False):
         qid = f"{tag}-{num:02d}"
         target = targets[num - 1] if num - 1 < len(targets) else None
         r = make_question(sub, env, qid, tag, num, rnd, f"01_題目圖片/GEN/{qid}.png",
-                          dry=dry, target_idx=target, passage=passage,
-                          passage_title=ptitle, passage_figure=pfig)
+                          target_idx=target)
         if r is None:
             return None
-        q, stem, opts = r
+        q, stem, opts, fig = r
         q["gen"]["group"] = f"{tag}-{start_num:02d}~{end_num:02d}"
-        made.append((q, stem, opts))
+        made.append((q, stem, opts, fig, passage, ptitle, pfig))
     return made
 
 
@@ -254,24 +248,35 @@ def main():
         if num > n:
             break
         is_group = card.get("skeleton") == "題組"
-        made = None
-        for _ in range(40):                          # 選項可能撞號，重抽幾次
+        made, fallback = None, None
+        want = LETTERS[targets[num - 1]] if num - 1 < len(targets) else None
+        for _ in range(40):     # 選項可能撞號、或這組參數放不到目標字母 → 換一組再試
             env, _sig = gen_one(card, rnd, used)
             if env is None:
                 break
             if is_group:
-                made = make_group(card, env, tag, num, rnd, targets, dry=args.dry)
+                got = make_group(card, env, tag, num, rnd, targets)
             else:
                 r = make_question(card, env, f"{tag}-{num:02d}", tag, num, rnd,
-                                  f"01_題目圖片/GEN/{tag}-{num:02d}.png", dry=args.dry,
+                                  f"01_題目圖片/GEN/{tag}-{num:02d}.png",
                                   target_idx=targets[num - 1])
-                made = [r] if r else None
-            if made:
+                got = [r] if r else None
+            if not got:
+                continue
+            fallback = fallback or got
+            if want is None or got[0][0]["answer"] == want:   # 目標字母達成
+                made = got
                 break
+        made = made or fallback
         if not made:
             print(f"✗ 模板 {card['id']} 生不出合格題目（選項重複或約束太緊）")
             return 2
-        for q, stem, opts in made:
+        for item in made:
+            q, stem, opts, fig = item[0], item[1], item[2], item[3]
+            psg, ptitle, pfig = (item[4], item[5], item[6]) if len(item) > 4 else (None, None, None)
+            if not args.dry:
+                render_question_png(BASE / q["img"], q["num"], stem, opts, figure=fig,
+                                    passage=psg, passage_title=ptitle, passage_figure=pfig)
             questions.append(q)
             previews.append((card, q, stem, opts))
             num += 1
