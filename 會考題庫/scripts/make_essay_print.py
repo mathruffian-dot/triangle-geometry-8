@@ -24,8 +24,9 @@ ROOT = HERE.parent
 
 # 中文字型（微軟正黑體 ttc）
 FONT = "JhengHei"
-for fp, idx in [("C:/Windows/Fonts/msjh.ttc", 0), ("C:/Windows/Fonts/msjhbd.ttc", 0),
-                ("C:/Windows/Fonts/mingliu.ttc", 0)]:
+sys.path.insert(0, str(HERE))
+from config import get as _cfg  # noqa: E402  字型清單集中在 data/config.json
+for fp, idx in [(f, 0) for f in _cfg("font_files")]:
     try:
         pdfmetrics.registerFont(TTFont(FONT, fp, subfontIndex=idx)); break
     except Exception:

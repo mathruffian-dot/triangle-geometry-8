@@ -710,3 +710,41 @@ C-B3-04 補了 `d_onlyb`；C-B1-04 補了 `d_leftmid`）。設計新卡時要主
 - Obsidian：系統文件（換電腦、交接、對外分享時看）
 
 `CLAUDE.md` 已補上 Obsidian 那一列與「文件分工」表，並在「每次對話開始請先做」加第 4 條。
+
+### ✅ 2026-08-06（十）可分享化：集中設定、vendor 幾何渲染器、重建指南改寫
+需求：讓別的老師能用**自己的 OpenAI key、自己的 Google 試算表**建立屬於他的題庫系統。
+用 4 個 agent 稽核重建文件，找到 3 個 blocking＋6 個 major，全部修掉。
+
+**1. 集中設定 `scripts/config.py`（新）**
+原本 GAS 收卷網址寫死在 **8 支腳本**、字型路徑寫死在 **4 支共 11 行**，換人要逐支改。
+現在讀取順序：環境變數 `MATH809_*` → `data/config.json` → 內建預設（＝本班現值，**行為完全不變**）。
+- `data/config.example.json` 是範本，`config.json` 已 gitignore
+- `python scripts/config.py` 印出每個值與**來源**，並在必改項目還停在預設值時警告
+  → 這條警告專門擋「沒建 config.json 就靜默把資料送進原作者試算表」這個坑
+- 已收斂：`submit_url`／`quiz_project`／`bank_project`／`quiz_site_url`／`bank_site_url`／
+  `openai_env_file`／`grade_model`／`font_files`
+- 改吃 config 的腳本：build_html（含前端 `__SUBMIT_URL__` 佔位）、build_quiz_site（`--project`／`--site-url`，
+  **紙本 QR code 就是取這裡**）、grade_essays、make_redpen、make_feedback_pdf、make_review_sheet、
+  reset_review、gen_reviews、figures、annotate_redpen、make_essay_print
+
+**2. 幾何渲染器 vendor 進專案**
+`scripts/vendor/geometry_renderer.py`（附 README 說明來源與更新方式）。
+原本 `figures.py` 指向 `~/.claude-skills/jh-math-geometry/scripts/`——那是開發者本機的全域技能，
+別人拿到專案時**沒有那個檔案**，8 種幾何配圖會在渲染當下才丟 ModuleNotFoundError。
+現在載入順序：先找 `vendor/`，找不到才回頭找全域技能。
+
+**3. 其他修正**
+- `requirements.txt`（新）：套件與版本對照，`pymupdf` 的 import 名稱是 `fitz` 有註明
+- `netlify_deploy/index.html`／`practice.html` 從版控移除（`git rm --cached`）——
+  這兩個建置產物**烤入了收卷網址與 token**，別人誤部署會把學生資料寫進原作者的試算表
+- `deploy_bank.py` 加停用警告（Netlify 時期的腳本，SITE_ID 是原作者的站）
+- **參數空間枯竭修正**：`gen_one` 第一輪跳過用過的簽章，全部撞完時第二輪允許重用
+  → 之前 C-B5-01 的 27 組全被 gen_log 用光，整份 25 題卷就生不出來。
+  同時加大 C-B5-01（27→41）、C-B1-01（→640）、C-B6-01（→90）的參數空間
+
+**4. Obsidian `01 系統重建指南` 大改寫**
+新增：五分鐘版、GAS 從零部署（**強調 token 要自己改**、試算表是 `?setup=1` 自動建的不要手建）、
+輕量路線（只用題庫不用 AI 批改需要什麼）、**打包分享前必刪清單**（.wrangler 含帳號、redpen_out 含個資、
+翰林卷版權、config.json）、對方拿到後要清空 quizzes.json 的提醒、字型症狀對照表。
+
+`selftest_all.py` 全過。

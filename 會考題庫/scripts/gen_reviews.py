@@ -3,6 +3,9 @@
 已存在的檔案不覆蓋（保留審題結果）。"""
 import json, re
 from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+from config import get as _cfg  # 集中設定
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "觀念補強"
@@ -24,7 +27,7 @@ for u in concepts:
         "",
         "> 給審題 AI／審題者：請逐項檢查下列內容，回報格式見文末。",
         f"> 資料來源：`會考題庫/data/concepts.json`（單元 id：{u['id']}）",
-        "> 線上預覽：https://math809-bank.netlify.app →「觀念補強」分頁",
+        f"> 線上預覽：{_cfg('bank_site_url')} →「觀念補強」分頁",
         "",
         "## 審題重點",
         "1. **數學正確性**：每題的答案、詳解計算是否正確？選項中是否誤含第二個正確答案？",

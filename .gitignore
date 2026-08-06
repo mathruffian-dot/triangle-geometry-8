@@ -41,3 +41,6 @@ __pycache__/
 
 # 覆核彙整頁（含學生姓名與手寫作答，個資，只在本機看）
 會考題庫/review_sheet.html
+
+# 個人化設定（每個人自己的 GAS 網址、Cloudflare 專案名等）
+會考題庫/data/config.json

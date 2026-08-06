@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 """將 data/questions_*.json 與課綱資料嵌入 HTML 模板，產生離線可用的 index.html"""
 import json
+import sys as _sys
 from pathlib import Path
+
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+from config import SUBMIT_URL as _CFG_SUBMIT_URL  # noqa: E402  集中設定：換人只要改 data/config.json
 
 BASE = Path(__file__).resolve().parent.parent
 DATA = BASE / "data"
@@ -329,7 +333,7 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
 const DB = JSON.parse(document.getElementById('bank-data').textContent);
 const QS = DB.questions, CURR = DB.curriculum;
 // 收卷網址：預設值內建（換網域／換電腦都免再設定）；老師若在設定頁另存，以其為準
-const DEFAULT_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809";
+const DEFAULT_SUBMIT_URL = "__SUBMIT_URL__";
 function submitUrl(){ return ((localStorage.getItem('submitUrl')||'').trim()) || DEFAULT_SUBMIT_URL; }
 const CONCEPTS = DB.concepts || [];                    // 觀念補強單元
 const CONCEPT_PERF = {};                               // 學習表現代碼 -> 單元索引
@@ -1903,7 +1907,8 @@ function renderMyResult(rows, choice){
 import base64 as _b64
 quiz_b64 = _b64.b64encode(QUIZ_TEMPLATE.encode("utf-8")).decode()
 
-html = TEMPLATE.replace("__PAYLOAD__", payload.replace("</", "<\\/")).replace("__QUIZB64__", quiz_b64)
+html = (TEMPLATE.replace("__PAYLOAD__", payload.replace("</", "<\\/"))
+        .replace("__QUIZB64__", quiz_b64).replace("__SUBMIT_URL__", _CFG_SUBMIT_URL()))
 out = BASE / "index.html"
 out.write_text(html, encoding="utf-8")
 print("written", out, f"{out.stat().st_size/1024:.0f} KB")
@@ -1919,7 +1924,8 @@ for q in q_embed:
     q["img"] = "data:image/png;base64," + base64.b64encode(img_path.read_bytes()).decode()
 payload2 = json.dumps({"questions": q_embed, "curriculum": curr, "concepts": concepts,
                        "essay_rubrics": essay_rubrics}, ensure_ascii=False)
-html2 = TEMPLATE.replace("__PAYLOAD__", payload2.replace("</", "<\\/")).replace("__QUIZB64__", quiz_b64)
+html2 = (TEMPLATE.replace("__PAYLOAD__", payload2.replace("</", "<\\/"))
+         .replace("__QUIZB64__", quiz_b64).replace("__SUBMIT_URL__", _CFG_SUBMIT_URL()))
 out2 = BASE / "會考題庫單檔版.html"
 out2.write_text(html2, encoding="utf-8")
 print("written", out2, f"{out2.stat().st_size/1024/1024:.1f} MB")
@@ -1965,7 +1971,7 @@ sample_ids = [q["id"] for q in questions
 make_quiz(sample_ids, "會考數學示範卷（最近5屆 第1-10題）", BASE / "backup" / "示範卷_最近5屆1-10題_index.html")
 
 # ---- 非選練習卷：104–115 全部非選題（手寫作答卷，收卷網址已烤入，可直接部署測試）----
-ESSAY_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809"
+ESSAY_SUBMIT_URL = _CFG_SUBMIT_URL()
 essay_ids = [q["id"] for q in questions if q["type"] == "essay"]
 # 同步產生紙本作答卷 PDF（放 backup/，部署時一起複製到 essay_deploy/）
 import subprocess as _sp, sys as _sys
@@ -1979,7 +1985,7 @@ make_quiz(essay_ids, "會考數學非選題練習卷（104-115）", BASE / "back
 # 每次 build 從 concepts.json 重新生成（與掛卷用的 index.html 無關，可安全覆蓋）
 # 做完一個單元自動 POST 成績到試算表，卷名「觀念-<代碼>-<名稱>」
 # =====================================================================
-PRACTICE_SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809"
+PRACTICE_SUBMIT_URL = _CFG_SUBMIT_URL()
 
 PRACTICE_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="zh-Hant">

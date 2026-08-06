@@ -142,28 +142,39 @@ def gen_one(card, rnd, used_sigs, tries=400):
     """抽一組合法的（情境, 參數）並算出所有衍生量；回傳 (env, 簽章)。
 
     簽章記在 data/gen_log.json，確保之後不會生出一模一樣的題。
+
+    ⚠ 參數空間有限的卡（例如只有二三十組合法組合）用久了會**枯竭**——所有組合都在 gen_log 裡。
+    這時第一輪一定失敗，若直接放棄，整份卷就生不出來。
+    所以第二輪允許重用舊組合（仍會檢查 constraints），系統不會因為出過太多次而卡死；
+    真正的解法是把那張卡的參數空間加大，`try_card.py` 的「參數空間」欄位就是在提醒這件事。
     """
-    for _ in range(tries):
-        env = {}
-        ctx = rnd.choice(card.get("contexts", [{}]))
-        for k, v in ctx.items():
-            env["c_" + k] = v
-        for k, spec in card.get("params", {}).items():
-            env[k] = pick_params(spec, rnd)
-        sig = card["id"] + "|" + json.dumps({k: str(v) for k, v in env.items()},
-                                            ensure_ascii=False, sort_keys=True)
-        if sig in used_sigs:
-            continue
-        try:
-            run_derive(card.get("derive", []), env)
-        except Exception:
-            continue
-        ok, _bad = check_constraints(card.get("constraints", []), env)
-        if not ok:
-            continue
-        used_sigs.add(sig)
+    def _draw(skip_used):
+        for _ in range(tries):
+            env = {}
+            ctx = rnd.choice(card.get("contexts", [{}]))
+            for k, v in ctx.items():
+                env["c_" + k] = v
+            for k, spec in card.get("params", {}).items():
+                env[k] = pick_params(spec, rnd)
+            sig = card["id"] + "|" + json.dumps({k: str(v) for k, v in env.items()},
+                                                ensure_ascii=False, sort_keys=True)
+            if skip_used and sig in used_sigs:
+                continue
+            try:
+                run_derive(card.get("derive", []), env)
+            except Exception:
+                continue
+            ok, _bad = check_constraints(card.get("constraints", []), env)
+            if not ok:
+                continue
+            used_sigs.add(sig)
+            return env, sig
+        return None, None
+
+    env, sig = _draw(skip_used=True)
+    if env is not None:
         return env, sig
-    return None, None
+    return _draw(skip_used=False)          # 簽章用盡 → 允許重用，至少生得出題
 
 
 # ───────────────────────────────── 圖 spec 前處理

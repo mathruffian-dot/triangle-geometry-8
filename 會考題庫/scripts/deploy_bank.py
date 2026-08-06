@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""⚠ 已停用：本專案已改用 Cloudflare Pages。
+此檔內的 SITE_ID 是原作者的 Netlify 站，請勿執行。
+部署題庫改用：npx wrangler pages deploy bank_site --project-name <你的專案名>
+"""
 """部署題庫系統到 Netlify（math809-bank）
 作法：把 index.html + 01_題目圖片 複製到暫存資料夾再部署（不在雲端硬碟內堆疊副本）
 

@@ -1,0 +1,19 @@
+{
+  "_說明": "複製這個檔案成 data/config.json 並填入自己的值。config.json 已 gitignore，不會被上傳。",
+
+  "submit_url": "https://script.google.com/macros/s/【你的部署ID】/exec?token=【你自己設的token】",
+  "_submit_url_說明": "Google Apps Script 部署後的 exec 網址，必須帶 ?token=；token 要與 Code.gs 裡的 TOKEN 一致。不可用短網址（301 轉址會把 POST 變 GET）。",
+
+  "quiz_project": "你的-quiz",
+  "bank_project": "你的-bank",
+  "_project_說明": "Cloudflare Pages 的專案名稱（npx wrangler pages deploy 用）。",
+
+  "quiz_site_url": "https://你的-quiz.pages.dev",
+  "bank_site_url": "https://你的-bank.pages.dev",
+
+  "openai_env_file": "~/.openai.env",
+  "_openai_說明": "存放 OPENAI_API_KEY=sk-... 的檔案路徑。也可以直接設環境變數 OPENAI_API_KEY。",
+
+  "grade_model": "gpt-5.6-luna",
+  "_model_說明": "非選 AI 批改用的模型。gpt-5.x／o 系列是推理型（用 max_completion_tokens、不吃 temperature）。"
+}

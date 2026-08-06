@@ -27,10 +27,7 @@ ROOT = HERE.parent
 RUBRICS = ROOT / "data" / "essay_rubrics.json"
 ANNOTATOR = HERE / "annotate_redpen.py"
 
-DEFAULT_URL = os.environ.get(
-    "KAOKAO_SUBMIT_URL",
-    "https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809",
-)
+DEFAULT_URL = os.environ.get("KAOKAO_SUBMIT_URL", _CFG_SUBMIT_URL())
 MODEL = os.environ.get("KAOKAO_GRADE_MODEL", "gpt-5.6-luna")
 API = "https://api.openai.com/v1/chat/completions"
 

@@ -58,6 +58,7 @@ import math
 import os
 import random
 import sys
+from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
@@ -71,15 +72,14 @@ PEN_ALPHA = 242              # 紅筆不透明度（略低於 255，看起來像
 PANEL_ALPHA = 178            # 批註白底不透明度（讓底下手寫字仍隱約可見）
 HALO_ALPHA = 232             # 文字白色描邊不透明度
 
-FONT_REGULAR = [
-    r"C:/Windows/Fonts/msjh.ttc",
-    r"C:/Windows/Fonts/msjhl.ttc",
-    r"C:/Windows/Fonts/mingliu.ttc",
-]
-FONT_BOLD = [
-    r"C:/Windows/Fonts/msjhbd.ttc",
-    r"C:/Windows/Fonts/msjh.ttc",
-]
+# 字型清單集中在 data/config.json（換 macOS／Linux 只要改那裡）
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from config import get as _cfg  # noqa: E402
+
+_FONTS = _cfg("font_files")
+FONT_REGULAR = [f for f in _FONTS if "bd" not in Path(f).name.lower()]
+FONT_BOLD = ([f for f in _FONTS if "bd" in Path(f).name.lower()]
+             + [f for f in _FONTS if "bd" not in Path(f).name.lower()])
 
 
 # --------------------------------------------------------------------------

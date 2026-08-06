@@ -23,7 +23,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 FONT = "JhengHei"
-for fp in ["C:/Windows/Fonts/msjh.ttc", "C:/Windows/Fonts/msjhbd.ttc", "C:/Windows/Fonts/mingliu.ttc"]:
+for fp in _cfg("font_files"):
     try:
         pdfmetrics.registerFont(TTFont(FONT, fp, subfontIndex=0)); break
     except Exception:
@@ -31,10 +31,7 @@ for fp in ["C:/Windows/Fonts/msjh.ttc", "C:/Windows/Fonts/msjhbd.ttc", "C:/Windo
 else:
     FONT = "Helvetica"
 
-DEFAULT_URL = os.environ.get(
-    "KAOKAO_SUBMIT_URL",
-    "https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809",
-)
+DEFAULT_URL = os.environ.get("KAOKAO_SUBMIT_URL", _CFG_SUBMIT_URL())
 CW = A4[0] - 2 * 18 * mm   # 內容寬度
 ORDER_KEY = lambda q: (str(q).split('N')[0], str(q).split('N')[-1])
 LV_COLOR = {"3": colors.HexColor("#059669"), "2": colors.HexColor("#0891b2"),

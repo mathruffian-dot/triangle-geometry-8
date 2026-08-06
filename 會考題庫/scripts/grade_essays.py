@@ -32,10 +32,7 @@ ROOT = HERE.parent
 RUBRICS = ROOT / "data" / "essay_rubrics.json"
 
 # 收卷／回寫後端（GAS 網頁應用程式 URL，含 ?token=）。可用 --url 或環境變數覆蓋。
-DEFAULT_URL = os.environ.get(
-    "KAOKAO_SUBMIT_URL",
-    "https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809",
-)
+DEFAULT_URL = os.environ.get("KAOKAO_SUBMIT_URL", _CFG_SUBMIT_URL())
 MODEL = os.environ.get("KAOKAO_GRADE_MODEL", "gpt-5.6-luna")   # 預設用最新推理型；可換 gpt-4o(便宜) / gpt-5.6-sol / gpt-5.6-terra / gpt-5.5 等
 API = "https://api.openai.com/v1/chat/completions"
 REVIEW_CONF = 0.60   # 低於此信心 → 標記需老師覆核

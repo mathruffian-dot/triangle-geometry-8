@@ -20,8 +20,7 @@ import urllib.request
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-DEFAULT_URL = ("https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845q"
-               "IoKhH9xtRNuxu29wN/exec?token=math809")
+DEFAULT_URL = _CFG_SUBMIT_URL()
 
 
 def main():

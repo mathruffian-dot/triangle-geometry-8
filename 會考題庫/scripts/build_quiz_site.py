@@ -28,12 +28,13 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from config import SUBMIT_URL as _CFG_SUBMIT_URL, get as _cfg  # noqa: E402  集中設定
 ROOT = HERE.parent
 SITE = ROOT / "quiz_site"
 REG = ROOT / "data" / "quizzes.json"
 
-SUBMIT_URL = ("https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0Ic"
-              "fwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809")
+SUBMIT_URL = _CFG_SUBMIT_URL()
 
 INDEX_TPL = """<!DOCTYPE html>
 <html lang="zh-Hant">
@@ -116,8 +117,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--deploy", choices=["netlify", "cloudflare"], default="")
     ap.add_argument("--site-id", default="", help="Netlify site id")
-    ap.add_argument("--project", default="math809-quiz", help="Cloudflare Pages 專案名")
-    ap.add_argument("--site-url", default="https://math809-quiz.pages.dev",
+    ap.add_argument("--project", default=_cfg("quiz_project"), help="Cloudflare Pages 專案名")
+    ap.add_argument("--site-url", default=_cfg("quiz_site_url"),
                     help="站台網址（用來產生紙本封面的 QR code）")
     args = ap.parse_args()
 

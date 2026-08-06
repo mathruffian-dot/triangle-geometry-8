@@ -31,10 +31,14 @@ sys.stdout.reconfigure(encoding="utf-8")
 import cairosvg
 from PIL import Image
 
-# jh-math-geometry 技能的渲染器（純 Python，可直接 import）
-GEO_SCRIPTS = Path("C:/Users/user/.claude-skills/jh-math-geometry/scripts")
-if GEO_SCRIPTS.exists() and str(GEO_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(GEO_SCRIPTS))
+# 幾何渲染器：優先用隨專案附帶的 scripts/vendor/，沒有才回頭找開發者本機的全域技能目錄。
+# （別人拿到專案時沒有全域技能，8 種幾何配圖會壞在 import，所以 vendor 一份進來）
+for _geo_dir in (Path(__file__).resolve().parent / "vendor",
+                 Path("C:/Users/user/.claude-skills/jh-math-geometry/scripts")):
+    if (_geo_dir / "geometry_renderer.py").exists():
+        if str(_geo_dir) not in sys.path:
+            sys.path.insert(0, str(_geo_dir))
+        break
 
 CJK = "Microsoft JhengHei, PMingLiU, Noto Sans CJK TC, sans-serif"
 INK = "#111827"
@@ -640,8 +644,9 @@ def render_image(spec: dict, max_width: int) -> Image.Image:
 
 from PIL import ImageDraw, ImageFont  # noqa: E402
 
-FONT_FILES = [("C:/Windows/Fonts/msjh.ttc", 0), ("C:/Windows/Fonts/mingliu.ttc", 0),
-              ("C:/Windows/Fonts/simsun.ttc", 0)]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from config import get as _cfg  # noqa: E402  字型清單集中在 data/config.json
+FONT_FILES = [(fp, 0) for fp in _cfg("font_files")]
 
 
 def load_font(size):

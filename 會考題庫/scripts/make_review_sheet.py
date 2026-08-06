@@ -23,9 +23,8 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 ROOT = Path(__file__).resolve().parent.parent
 RUBRICS = ROOT / "data" / "essay_rubrics.json"
-DEFAULT_URL = ("https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845q"
-               "IoKhH9xtRNuxu29wN/exec?token=math809")
-BANK_URL = "https://math809-bank.pages.dev"
+DEFAULT_URL = _CFG_SUBMIT_URL()
+BANK_URL = _cfg("bank_site_url")
 LOW_CONF = 0.7
 
 
