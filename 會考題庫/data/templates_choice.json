@@ -1657,6 +1657,303 @@
     "剩下的 {ans_txt} 就是答案"
    ],
    "trap": "夾擠題要同時檢查上下兩個界線，只檢查一邊就會多選。"
+  },
+  {
+   "id": "C-G-01",
+   "skeleton": "題組",
+   "book": "B2",
+   "chapter": "第4章 一元一次不等式",
+   "topic": "資費方案比較（題組）",
+   "codes": [
+    "A-7-8",
+    "N-7-9"
+   ],
+   "perf": [
+    "a-IV-3",
+    "n-IV-4"
+   ],
+   "difficulty": "中",
+   "slot": "23-25",
+   "key_idea": "分段計費：先判斷有沒有超出免費額度，再比較兩方案的臨界用量",
+   "source_ref": "115-23~25 時速錶題組的形式（選文＋自訂公式＋三小題）",
+   "contexts": [
+    {
+     "co": "某電信公司",
+     "plan1": "甲方案",
+     "plan2": "乙方案",
+     "res": "上網流量",
+     "unit": "GB",
+     "who": "小柔",
+     "item": "手機資費"
+    },
+    {
+     "co": "某租車平台",
+     "plan1": "輕量型",
+     "plan2": "常用型",
+     "res": "行駛里程",
+     "unit": "公里",
+     "who": "阿哲",
+     "item": "月租方案"
+    }
+   ],
+   "params": {
+    "ma": {
+     "choices": [
+      199,
+      299,
+      349
+     ]
+    },
+    "ga": {
+     "choices": [
+      5,
+      6,
+      8
+     ]
+    },
+    "ra": {
+     "choices": [
+      30,
+      40,
+      50
+     ]
+    },
+    "tden": {
+     "choices": [
+      10,
+      15
+     ]
+    },
+    "extra_g": {
+     "choices": [
+      4,
+      6,
+      10
+     ]
+    },
+    "t": {
+     "choices": [
+      20,
+      24,
+      25,
+      30
+     ]
+    },
+    "u1": {
+     "choices": [
+      9,
+      10,
+      12
+     ]
+    },
+    "u2": {
+     "choices": [
+      38,
+      40,
+      44
+     ]
+    }
+   },
+   "derive": [
+    "rb = ra - tden",
+    "gb = ga + extra_g",
+    "extra_m = tden * (t - gb) + extra_g * ra",
+    "mb = ma + extra_m",
+    "tnum = extra_m + ga * ra - gb * rb",
+    "f1 = ma + (u1 - ga) * ra",
+    "fa2 = ma + (u2 - ga) * ra",
+    "fb2 = mb + (u2 - gb) * rb",
+    "gap = fa2 - fb2",
+    "t_next = t + 1",
+    "fa_t = ma + (t - ga) * ra",
+    "fb_t = mb + (t - gb) * rb",
+    "fa_t1 = ma + (t_next - ga) * ra",
+    "fb_t1 = mb + (t_next - gb) * rb",
+    "u1_over = u1 - ga",
+    "u1_cost = (u1 - ga) * ra",
+    "d_f1a = ma + u1 * ra",
+    "d_f1b = ma + (u1 - ga) * rb",
+    "d_f1c = ma",
+    "d_f1d = ma + (u1 - ga) * ra * 2",
+    "d_gap1 = abs(fa2 - mb)",
+    "d_gap2 = extra_m",
+    "d_gap3 = abs((u2 - ga) * ra - (u2 - gb) * rb)",
+    "d_gap4 = gap + extra_m",
+    "d_t1 = int(extra_m // tden)",
+    "d_t2 = gb",
+    "d_t3 = t + extra_g",
+    "d_t4 = int(tnum // ra)"
+   ],
+   "constraints": [
+    "rb > 0",
+    "extra_m > 0",
+    "extra_m <= 600",
+    "t > gb + 2",
+    "u1 > ga",
+    "u1 < gb",
+    "u2 > t",
+    "gap > 0",
+    "fa_t == fb_t",
+    "fb_t1 < fa_t1",
+    "len(set([f1, d_f1a, d_f1b, d_f1c, d_f1d])) >= 4",
+    "len(set([gap, d_gap1, d_gap2, d_gap3, d_gap4])) >= 4",
+    "len(set([t, d_t1, d_t2, d_t3, d_t4])) >= 4"
+   ],
+   "passage": "{c_co}推出{c_plan1}、{c_plan2}兩種{c_item}，兩種方案的計費方式如下：\n・{c_plan1}：月租費 {ma} 元，含 {ga} {c_unit}的{c_res}；超出的部分，每 1 {c_unit}加收 {ra} 元。\n・{c_plan2}：月租費 {mb} 元，含 {gb} {c_unit}的{c_res}；超出的部分，每 1 {c_unit}加收 {rb} 元。\n兩種方案的計費公式皆為：\n　　當月費用 ＝ 月租費 ＋（當月{c_res} － 免費額度）× 每 1 {c_unit}加收的費用\n（當月{c_res}未超過免費額度時，只需付月租費；未用完的額度不能留到下個月。）",
+   "passage_figure": {
+    "kind": "table",
+    "title": "表(一)　兩種方案的計費",
+    "headers": [
+     "方案",
+     "月租費（元）",
+     "免費額度（{c_unit}）",
+     "超出每 1 {c_unit}（元）"
+    ],
+    "rows": [
+     [
+      "{c_plan1}",
+      "{ma}",
+      "{ga}",
+      "{ra}"
+     ],
+     [
+      "{c_plan2}",
+      "{mb}",
+      "{gb}",
+      "{rb}"
+     ]
+    ],
+    "head_col": true
+   },
+   "items": [
+    {
+     "topic": "資費方案計算（題組）",
+     "difficulty": "易",
+     "key_idea": "代入分段計費公式",
+     "stem": "{c_who}某月的{c_res}為 {u1} {c_unit}。若{c_who}選擇{c_plan1}，則該月的費用為多少元？",
+     "figure": null,
+     "option_order": "sorted",
+     "options": [
+      {
+       "text": "{f1}",
+       "correct": true,
+       "value": "f1"
+      },
+      {
+       "text": "{d_f1a}",
+       "error": "沒有扣掉免費額度 {ga} {c_unit}就直接乘加收費用",
+       "value": "d_f1a"
+      },
+      {
+       "text": "{d_f1b}",
+       "error": "用錯了加收單價（拿{c_plan2}的 {rb} 元來算）",
+       "value": "d_f1b"
+      },
+      {
+       "text": "{d_f1c}",
+       "error": "只算月租費，忘了超出的部分要加收",
+       "value": "d_f1c"
+      },
+      {
+       "text": "{d_f1d}",
+       "error": "超出的費用多算了一倍",
+       "value": "d_f1d"
+      }
+     ],
+     "solution": "{c_plan1}含 {ga} {c_unit}，超出 {u1} － {ga} = {u1_over} {c_unit}，每 1 {c_unit}加收 {ra} 元。故費用 = {ma} ＋ {u1_over}×{ra} = {f1} 元。",
+     "steps": [
+      "先看有沒有超出免費額度：{u1} > {ga}，超出 {u1_over} {c_unit}",
+      "超出部分費用 = {u1_over} × {ra} = {u1_cost} 元",
+      "當月費用 = 月租費 {ma} ＋ {u1_cost} = {f1} 元"
+     ],
+     "trap": "免費額度要先扣掉再乘加收單價，不是整個用量都收費。"
+    },
+    {
+     "topic": "資費方案比較（題組）",
+     "difficulty": "中",
+     "key_idea": "兩方案都要各自分段計費後再相減",
+     "stem": "若{c_who}某月的{c_res}為 {u2} {c_unit}，則選擇{c_plan2}會比選擇{c_plan1}少付多少元？",
+     "figure": null,
+     "option_order": "sorted",
+     "options": [
+      {
+       "text": "{gap}",
+       "correct": true,
+       "value": "gap"
+      },
+      {
+       "text": "{d_gap1}",
+       "error": "只把{c_plan1}的費用與{c_plan2}的月租費相減",
+       "value": "d_gap1"
+      },
+      {
+       "text": "{d_gap2}",
+       "error": "只比較兩個月租費的差 {extra_m} 元",
+       "value": "d_gap2"
+      },
+      {
+       "text": "{d_gap3}",
+       "error": "只比較超出部分的費用，忘了月租費也不同",
+       "value": "d_gap3"
+      },
+      {
+       "text": "{d_gap4}",
+       "error": "把月租費差額重複加了一次",
+       "value": "d_gap4"
+      }
+     ],
+     "solution": "{c_plan1}：{ma} ＋（{u2} － {ga}）×{ra} = {fa2} 元；{c_plan2}：{mb} ＋（{u2} － {gb}）×{rb} = {fb2} 元。兩者相差 {fa2} － {fb2} = {gap} 元，故{c_plan2}少付 {gap} 元。",
+     "steps": [
+      "{c_plan1}費用 = {ma} ＋（{u2}－{ga}）×{ra} = {fa2} 元",
+      "{c_plan2}費用 = {mb} ＋（{u2}－{gb}）×{rb} = {fb2} 元",
+      "兩者相減：{fa2} － {fb2} = {gap} 元"
+     ],
+     "trap": "兩個方案的免費額度與加收單價都不同，必須各自算完再相減。"
+    },
+    {
+     "topic": "資費方案臨界點（題組）",
+     "difficulty": "難",
+     "key_idea": "令兩方案費用相等解出臨界用量，再判斷超過臨界後哪一方較便宜",
+     "stem": "當某月的{c_res}超過多少{c_unit}時，{c_plan2}的費用就會比{c_plan1}低？",
+     "figure": null,
+     "option_order": "sorted",
+     "options": [
+      {
+       "text": "{t}",
+       "correct": true,
+       "value": "t"
+      },
+      {
+       "text": "{d_t1}",
+       "error": "只用月租費差 ÷ 加收單價差，沒把兩邊的免費額度算進去",
+       "value": "d_t1"
+      },
+      {
+       "text": "{d_t2}",
+       "error": "誤以為只要超過{c_plan2}的免費額度 {gb} {c_unit}就比較便宜",
+       "value": "d_t2"
+      },
+      {
+       "text": "{d_t3}",
+       "error": "臨界值又多加了一次免費額度的差",
+       "value": "d_t3"
+      },
+      {
+       "text": "{d_t4}",
+       "error": "分母只用{c_plan1}的加收單價 {ra}，沒有相減",
+       "value": "d_t4"
+      }
+     ],
+     "solution": "設當月{c_res}為 x {c_unit}（x 大於兩方案的免費額度）。令兩方案費用相等：{ma} ＋（x － {ga}）×{ra} ＝ {mb} ＋（x － {gb}）×{rb}，解得 x = {t}。當 x = {t} 時兩者皆為 {fa_t} 元；當 x = {t_next} 時，{c_plan1} 為 {fa_t1} 元、{c_plan2} 為 {fb_t1} 元，{c_plan2}較低。故超過 {t} {c_unit} 時{c_plan2}較便宜。",
+     "steps": [
+      "設用量 x（超過兩方案的免費額度），列出兩方案的費用式",
+      "{ma} ＋（x－{ga}）×{ra} ＝ {mb} ＋（x－{gb}）×{rb}",
+      "整理得 x（{ra}－{rb}）＝ {tnum} → x = {t}",
+      "驗證 x = {t} 時兩者同為 {fa_t} 元；再多 1 {c_unit}就是{c_plan2}較低"
+     ],
+     "trap": "臨界點要讓「兩邊的完整費用」相等，不能只比月租費差或只看免費額度。"
+    }
+   ]
   }
  ]
 }

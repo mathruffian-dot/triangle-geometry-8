@@ -53,6 +53,18 @@ def main():
     print(f"共 {len(cards)} 張選擇題模板卡，每張試生成 {args.n} 組\n")
     all_letters = collections.Counter()
 
+    # 題組卡：把每個小題展開成獨立的「虛擬卡」來驗（共用同一份 derive／params）
+    expanded = []
+    for c in cards:
+        if c.get("skeleton") == "題組":
+            for i, it in enumerate(c["items"]):
+                sub = {**c, **it}
+                sub["id"] = f"{c['id']}#{i+1}"
+                expanded.append(sub)
+        else:
+            expanded.append(c)
+    cards = expanded
+
     for card in cards:
         cid = card["id"]
         rnd = random.Random(20260806)

@@ -464,11 +464,12 @@ def wrap_px(draw, s, font, max_w):
     """PIL 版換行：中文逐字，英數字（含小數）不拆詞。"""
     import re
     toks = re.findall(r"[0-9A-Za-z]+(?:[.,][0-9]+)*|\n|.", s)
+    TAIL = "。，、；：？！）」』%"          # 避頭尾：這些字不落在行首，寧可讓該行稍微超寬
     lines, cur = [], ""
     for t in toks:
         if t == "\n":
             lines.append(cur); cur = ""; continue
-        if draw.textlength(cur + t, font=font) > max_w and cur:
+        if draw.textlength(cur + t, font=font) > max_w and cur and t not in TAIL:
             lines.append(cur); cur = t
         else:
             cur += t
@@ -477,11 +478,14 @@ def wrap_px(draw, s, font, max_w):
 
 
 def render_question_png(out: Path, num, stem, items, figure=None, lead=None,
-                        width=1000, font_size=27, indent_items=True):
+                        width=1000, font_size=27, indent_items=True,
+                        passage=None, passage_title=None, passage_figure=None):
     """把一題（題號＋題幹＋圖＋小題／選項）畫成 PNG，沿用題庫既有的 <img> 顯示管線。
 
     items：非選＝兩個小題；選擇題＝四個選項（短選項會自動排成一行）。
     figure：figures 的 spec dict（None 代表無圖）。
+    passage：題組的共用選文（會考 23–25 題那種），畫成有外框的區塊放在題幹上方；
+             passage_figure 是選文自己的附圖（例如費率表）。
     """
     pad = 44
     font = load_font(font_size)
@@ -489,6 +493,18 @@ def render_question_png(out: Path, num, stem, items, figure=None, lead=None,
     d0 = ImageDraw.Draw(tmp)
     max_w = width - pad * 2
     lh = int(font_size * 1.72)
+
+    # ── 題組選文區塊（先量高度，稍後畫）
+    pass_lines, pass_font, pass_lh, pass_fig = [], None, 0, None
+    if passage:
+        pass_font = load_font(font_size - 3)
+        pass_lh = int((font_size - 3) * 1.66)
+        for para in passage.split("\n"):
+            pass_lines += wrap_px(d0, para, pass_font, max_w - 44) if para else [""]
+        if passage_figure:
+            pass_fig = render_image(passage_figure, int(max_w * 0.78))
+    pass_h = (len(pass_lines) * pass_lh + 40 + (pass_fig.height + 18 if pass_fig else 0)) if passage else 0
+    title_h = lh if passage_title else 0
 
     # 選項若都很短，排成一行（會考的純數值選項就是這樣）
     one_line_opts = None
@@ -518,11 +534,26 @@ def render_question_png(out: Path, num, stem, items, figure=None, lead=None,
 
     fig_im = render_image(figure, int(max_w * 0.86)) if figure else None
     fig_h = (fig_im.height + 26) if fig_im else 0
-    H = pad * 2 + lh * (len(body_lines) + len(tail_lines)) + fig_h
+    H = pad * 2 + lh * (len(body_lines) + len(tail_lines)) + fig_h + pass_h + title_h + (18 if passage else 0)
     im = Image.new("RGB", (width, H), "white")
     d = ImageDraw.Draw(im)
 
     y = pad
+    if passage_title:
+        d.text((pad, y), passage_title, font=font, fill="black")
+        y += lh
+    if passage:                                   # 選文區塊：淺色底＋外框，與題幹區隔
+        box_top = y
+        d.rounded_rectangle([pad, box_top, width - pad, box_top + pass_h], radius=12,
+                            fill="#f8fafc", outline="#94a3b8", width=2)
+        ty = box_top + 20
+        for ln in pass_lines:
+            d.text((pad + 22, ty), ln, font=pass_font, fill="black")
+            ty += pass_lh
+        if pass_fig:
+            im.paste(pass_fig, ((width - pass_fig.width) // 2, ty + 6))
+        y = box_top + pass_h + 18
+
     for ln in body_lines:
         d.text((pad, y), ln, font=font, fill="black")
         y += lh

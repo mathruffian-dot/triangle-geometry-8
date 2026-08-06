@@ -100,21 +100,31 @@ def build_options(card, env, rnd, target_idx=None):
     return fallback
 
 
-def make_question(card, env, qid, tag, num, rnd, img_rel, dry=False, target_idx=None):
+def prep_figure(spec, env):
+    """render_text 之後，圖 spec 裡的數值欄位是字串，要還原成數字才畫得出來。"""
+    if not spec:
+        return None
+    fig = render_text(spec, env)
+    fig = {k: (_num(v) if k in ("n", "r", "count", "a1", "d", "width", "h") else v)
+           for k, v in fig.items()}
+    if fig.get("kind") == "chart":
+        fig["data"] = [_num(x) for x in fig.get("data", [])]
+    return fig
+
+
+def make_question(card, env, qid, tag, num, rnd, img_rel, dry=False, target_idx=None,
+                  passage=None, passage_title=None, passage_figure=None):
     built = build_options(card, env, rnd, target_idx=target_idx)
     if built is None:
         return None
     texts, idx, errors = built
     stem = render_text(card["stem"], env)
-    fig = render_text(card.get("figure"), env) if card.get("figure") else None
-    if fig:                                     # 圖的數值欄位要還原成數字
-        fig = {k: (_num(v) if k in ("n", "r", "count", "a1", "d", "width", "h") else v)
-               for k, v in fig.items()}
-        if fig.get("kind") == "chart":
-            fig["data"] = [_num(x) for x in fig.get("data", [])]
+    fig = prep_figure(card.get("figure"), env)
     opts = [f"({LETTERS[i]}) {t}" for i, t in enumerate(texts)]
     if not dry:
-        render_question_png(BASE / img_rel, num, stem, opts, figure=fig)
+        render_question_png(BASE / img_rel, num, stem, opts, figure=fig,
+                            passage=passage, passage_title=passage_title,
+                            passage_figure=passage_figure)
     return {
         "id": qid,
         "year": tag,
@@ -144,6 +154,31 @@ def _num(v):
         return int(float(v))
     except (TypeError, ValueError):
         return v
+
+
+def make_group(card, env, tag, start_num, rnd, targets, dry=False):
+    """題組：一份共用選文 ＋ 2–3 個小題。每題的圖都會重印選文（與官方卷面一致）。"""
+    items = card["items"]
+    end_num = start_num + len(items) - 1
+    ptitle = f"請閱讀下列選文後，回答第 {start_num}～{end_num} 題"
+    passage = render_text(card["passage"], env)
+    pfig = prep_figure(card.get("passage_figure"), env)
+
+    made = []
+    for i, item in enumerate(items):
+        sub = {**card, **item}                      # 小題欄位覆蓋整組的共同欄位
+        num = start_num + i
+        qid = f"{tag}-{num:02d}"
+        target = targets[num - 1] if num - 1 < len(targets) else None
+        r = make_question(sub, env, qid, tag, num, rnd, f"01_題目圖片/GEN/{qid}.png",
+                          dry=dry, target_idx=target, passage=passage,
+                          passage_title=ptitle, passage_figure=pfig)
+        if r is None:
+            return None
+        q, stem, opts = r
+        q["gen"]["group"] = f"{tag}-{start_num:02d}~{end_num:02d}"
+        made.append((q, stem, opts))
+    return made
 
 
 def main():
@@ -210,29 +245,36 @@ def main():
             plan.append(rnd.choice(fresh))
 
     # 全卷正解字母目標：A/B/C/D 平均分配後洗牌（會考近10年 A59 B66 C65 D65，本來就均勻）
-    targets = [i % 4 for i in range(len(plan))]
+    targets = [i % 4 for i in range(len(plan) + 8)]
     rnd.shuffle(targets)
 
     questions, previews = [], []
-    for i, card in enumerate(plan):
-        num = i + 1
-        qid = f"{tag}-{num:02d}"
+    num = 1
+    for card in plan:
+        if num > n:
+            break
+        is_group = card.get("skeleton") == "題組"
         made = None
         for _ in range(40):                          # 選項可能撞號，重抽幾次
             env, _sig = gen_one(card, rnd, used)
             if env is None:
                 break
-            made = make_question(card, env, qid, tag, num, rnd,
-                                 f"01_題目圖片/GEN/{qid}.png", dry=args.dry,
-                                 target_idx=targets[i])
+            if is_group:
+                made = make_group(card, env, tag, num, rnd, targets, dry=args.dry)
+            else:
+                r = make_question(card, env, f"{tag}-{num:02d}", tag, num, rnd,
+                                  f"01_題目圖片/GEN/{tag}-{num:02d}.png", dry=args.dry,
+                                  target_idx=targets[num - 1])
+                made = [r] if r else None
             if made:
                 break
         if not made:
             print(f"✗ 模板 {card['id']} 生不出合格題目（選項重複或約束太緊）")
             return 2
-        q, stem, opts = made
-        questions.append(q)
-        previews.append((card, q, stem, opts))
+        for q, stem, opts in made:
+            questions.append(q)
+            previews.append((card, q, stem, opts))
+            num += 1
 
     for card, q, stem, opts in previews:
         print("=" * 74)
