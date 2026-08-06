@@ -65,7 +65,7 @@ def main():
                 "steps": " ".join(render_text(card["steps"], env)),
                 "trap": render_text(card.get("trap", ""), env),
             }
-            guide, cps = build_rubric(card, env)
+            guide, cps, _errs = build_rubric(card, env)
             texts.update({f"guide.{k}": v for k, v in guide.items()})
             texts["checkpoints"] = " ".join(c["text"] for c in cps)
 

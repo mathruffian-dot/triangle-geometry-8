@@ -129,7 +129,7 @@ def check_essay(card, n, seed=20260806):
             break
         stem = render_text(card["stem"], env)
         subs = render_text(card["subs"], env)
-        guide, cps = build_rubric(card, env)
+        guide, cps, _errs = build_rubric(card, env)
         parts = {"題幹": stem, "小題": " ".join(subs), "答案": render_text(card["answer"], env),
                  "詳解": render_text(card["solution"], env),
                  "L3": guide["l3"], "L2": guide["l2"], "L1": guide["l1"]}

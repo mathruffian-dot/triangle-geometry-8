@@ -55,35 +55,60 @@ L0_TEXT = "1. 只有答案或與題目無關。\n2. 策略模糊不清或錯誤�
 
 
 def build_rubric(card, env):
-    """由四個錨點 A/B/C/D 生成 guide(L3/L2/L1/L0) 與 checkpoints。"""
+    """由四個錨點 A/B/C/D 生成 guide(L3/L2/L1/L0) 與 checkpoints。
+
+    模板卡可另外提供兩樣東西，讓生成的規準更貼近官方（官方靠樣卷才寫得出來的那兩層）：
+      alt_paths      等價解法路徑。官方 L3 常列兩三條路（列方程式／文字說明推導／列舉檢驗），
+                     只寫一條會害 AI 把換方法的學生誤判。
+      common_errors  典型錯誤樣態 [{text, level}]。官方 L2 會寫「誤以 2 為調整倍率」這種
+                     從真實答案歸納的具體誤答；沒有它，L2 只剩抽象的「出現計算錯誤」。
+    """
     a = render_text(card["anchors"]["A"], env)  # 第(1)小題的答案
     b = render_text(card["anchors"]["B"], env)  # 第(2)小題的關鍵關係式（建模那一步）
     c = render_text(card["anchors"]["C"], env)  # 第(2)小題的關鍵轉化／推理步驟
     d = render_text(card["anchors"]["D"], env)  # 第(2)小題的最終判斷
     l1e = render_text(card.get("l1_element", "正確列出解題所需的關係式"), env)
+    alts = [render_text(x, env) for x in (card.get("alt_paths") or [])]
+    errs = [{"text": render_text(e["text"], env), "level": int(e.get("level", 2))}
+            for e in (card.get("common_errors") or [])]
+    e2 = [e["text"] for e in errs if e["level"] == 2]
+    e1 = [e["text"] for e in errs if e["level"] == 1]
 
     l3 = (f"第一小題正確得出 {a}；第二小題{c}，並{d}，"
           "解題步驟呈現完整或大致完整的推導／推理或解釋。")
+    if alts:
+        l3 += ("\n另：第二小題改用下列任一等價解法並得到正確結果，推理完整者，同樣給三級分：\n"
+               + "\n".join(f"（{i + 1}）{x}" for i, x in enumerate(alts)))
+
     l2 = ("第一小題正確得出 " + a + "，且第二小題呈現下列情形之一：\n"
           f"1. 策略適切、步驟詳細（{b}），但過程出現計算錯誤，仍依所得數值做出合理的判斷。\n"
-          f"2. 正確完成{c}，但未能做出正確判斷。\n"
+          f"2. 已{c}，但未能做出正確判斷。\n"
           f"3. 做出正確判斷，但未呈現{c}，缺少解題過程中的關鍵步驟或其合理性說明。\n"
           "另：第一小題未正確，但第二小題解題過程達到上述三級分之要求者，亦為二級分。")
+    if e2:
+        l2 += "\n本題常見的二級分情形：" + "；".join(e2) + "。"
+
     l1 = ("未達二級分標準，但呈現下列其一：\n"
           f"1. 第一小題根據已知條件以算式推導出 {a}，或呈現答案並解釋理由。\n"
           f"2. 呈現非題目已知的解題要素，例如：{l1e}。")
+    if e1:
+        l1 += "\n本題常見的一級分情形：" + "；".join(e1) + "。"
 
     cps = [
         {"id": "c1", "text": f"第(1)小題以算式推導或說明理由，正確得出 {a}（非僅寫答案）。", "primary_level": 1},
         {"id": "c2", "text": f"第(2)小題正確建立關鍵關係式：{b}。", "primary_level": 3},
-        {"id": "c3", "text": f"第(2)小題正確完成關鍵步驟：{c}。", "primary_level": 3},
+        {"id": "c3", "text": f"第(2)小題的關鍵步驟：{c}。", "primary_level": 3},
         {"id": "c4", "text": f"第(2)小題做出正確判斷：{d}。", "primary_level": 3},
         {"id": "c5", "text": "解題步驟呈現完整或大致完整的推導／推理或解釋。", "primary_level": 3},
         {"id": "c6", "text": "策略方向正確但出現計算錯誤，或缺少關鍵步驟的合理性說明，仍依所得數值做出合理判斷。",
          "primary_level": 2},
         {"id": "c7", "text": f"僅呈現非題目已知的解題要素（如：{l1e}），未達二級分標準。", "primary_level": 1},
     ]
-    return {"l3": l3, "l2": l2, "l1": l1, "l0": L0_TEXT}, cps
+    for i, x in enumerate(alts):
+        cps.append({"id": f"a{i + 1}",
+                    "text": f"（等價解法，達成 c2/c3 同等效力）以下列方式完成第(2)小題並得到正確結果：{x}",
+                    "primary_level": 3})
+    return {"l3": l3, "l2": l2, "l1": l1, "l0": L0_TEXT}, cps, errs
 
 
 # ---------------------------------------------------------------- 題幹渲染
@@ -160,7 +185,7 @@ def build_question(card, env, qid, year, num, img_rel):
 
 
 def build_rubric_entry(card, env, qid, year, num, stem, subs):
-    guide, cps = build_rubric(card, env)
+    guide, cps, errs = build_rubric(card, env)
     return {
         "qid": qid,
         "year": year,
@@ -178,6 +203,8 @@ def build_rubric_entry(card, env, qid, year, num, stem, subs):
                   "AI 初評後仍需老師覆核。"),
         "stem": stem,
         "subs": subs,
+        "alt_paths": [render_text(x, env) for x in (card.get("alt_paths") or [])],
+        "common_errors": errs,
     }
 
 

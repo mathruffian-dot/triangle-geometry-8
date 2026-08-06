@@ -69,6 +69,16 @@ def build_user_text(r, student_ans):
     if g:
         L += ["【評分規準（每題滿分3級分）】",
               f"3級分：{g['l3']}", f"2級分：{g['l2']}", f"1級分：{g['l1']}", f"0級分：{g['l0']}"]
+    alts = r.get("alt_paths") or []
+    if alts:
+        L.append("【等價解法（學生改用這些方法且結果正確，同樣視為完整解答，不可因方法不同扣分）】")
+        for i, x in enumerate(alts, 1):
+            L.append(f"- 解法{i}：{x}")
+    cerr = r.get("common_errors") or []
+    if cerr:
+        L.append("【本題常見錯誤樣態（判 2 級／1 級時參考；出現這些情形不代表策略錯誤）】")
+        for e in cerr:
+            L.append(f"- （常見於{e.get('level', 2)}級）{e.get('text', '')}")
     cps = r.get("checkpoints") or []
     if cps:
         L.append("【逐條判準（判定學生是否達成）】")
