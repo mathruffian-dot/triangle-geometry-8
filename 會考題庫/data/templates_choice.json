@@ -2172,6 +2172,1472 @@
     "看甲與丙在展開圖上的相對位置 → {rel13}"
    ],
    "trap": "一個面只有一個對面，其他四個面都與它垂直；別把「展開圖上看起來遠」當成對面。"
+  },
+  {
+   "id": "C-B2-05",
+   "skeleton": "生活列式",
+   "book": "B2",
+   "chapter": "第4章 一元一次不等式",
+   "topic": "團體票門檻計價的最少人數（不等式應用）",
+   "codes": [
+    "A-7-8",
+    "A-7-7"
+   ],
+   "perf": [
+    "a-IV-3"
+   ],
+   "difficulty": "難",
+   "slot": "17-22",
+   "key_idea": "未滿門檻人數仍以門檻人數計價 → 團體票總金額是「定值」，只有個人票那一邊隨人數變；且「比較少」是嚴格不等式，兩邊剛好相等的人數不算，要再多 1 人",
+   "source_ref": "103-22 KTV 方案比較「至少幾人」＋ 106-10 門檻優惠（改成數量門檻，避開 C-G-01 的臨界用量骨架）",
+   "contexts": [
+    {
+     "place": "某美術館",
+     "event": "夏日特展",
+     "who": "小柔",
+     "fee": "專人導覽費",
+     "act": "參觀"
+    },
+    {
+     "place": "某休閒農場",
+     "event": "生態體驗營",
+     "who": "阿哲",
+     "fee": "接駁專車費",
+     "act": "參加"
+    },
+    {
+     "place": "某科學教育館",
+     "event": "科學遊樂場",
+     "who": "小妍",
+     "fee": "教學活動費",
+     "act": "參觀"
+    },
+    {
+     "place": "某劇場",
+     "event": "兒童音樂劇",
+     "who": "阿翰",
+     "fee": "團體服務費",
+     "act": "觀賞"
+    }
+   ],
+   "params": {
+    "a": {
+     "choices": [
+      200,
+      220,
+      240,
+      250,
+      260,
+      280,
+      300,
+      320,
+      350,
+      360,
+      400,
+      450
+     ]
+    },
+    "b": {
+     "choices": [
+      120,
+      130,
+      140,
+      150,
+      160,
+      180,
+      200,
+      210,
+      220,
+      240,
+      250,
+      280
+     ]
+    },
+    "k": {
+     "choices": [
+      20,
+      24,
+      25,
+      30,
+      35,
+      40
+     ]
+    },
+    "m": {
+     "range": [
+      11,
+      28
+     ]
+    }
+   },
+   "derive": [
+    "kb = k * b",
+    "f = a * m - kb",
+    "grp = kb + f",
+    "n_ans = m + 1",
+    "ind_ans = n_ans * a",
+    "gap = ind_ans - grp",
+    "save = a - b",
+    "d_eq = m",
+    "d_rev = m - 1",
+    "d_nof = kb // a + 1",
+    "d_own = f // save + 1",
+    "d_plus = m + 2",
+    "d_k = k",
+    "d_kp1 = k + 1",
+    "d_b = grp // b + 1"
+   ],
+   "constraints": [
+    "b <= a - 50",
+    "5 * b >= 2 * a",
+    "f >= 2 * a + 50",
+    "f <= 3000",
+    "f % 50 == 0",
+    "m + 3 <= k",
+    "n_ans >= 12",
+    "n_ans <= 24",
+    "d_nof >= 10",
+    "d_own >= 10",
+    "d_b <= n_ans + 30",
+    "k <= n_ans + 22",
+    "len(set([n_ans, d_eq, d_rev, d_nof, d_own, d_plus, d_k, d_kp1, d_b])) == 9"
+   ],
+   "stem": "圖(一)為{c_place}「{c_event}」的售票公告。{c_who}和同學打算一起去{c_act}。若他們全部以團體票入場，則這群人至少要有多少人，所付的總金額才會比每人各買 1 張個人票時少？",
+   "figure": {
+    "kind": "notice",
+    "width": 620,
+    "title": "{c_place}「{c_event}」售票公告",
+    "lines": [
+     {
+      "mark": "1",
+      "text": "個人票：每人 {a} 元。"
+     },
+     {
+      "mark": "2",
+      "text": "團體票：{k} 人（含）以上適用，每人 {b} 元。"
+     },
+     {
+      "mark": "3",
+      "text": "人數未滿 {k} 人也可購買團體票，但一律以 {k} 人計價。"
+     },
+     {
+      "mark": "4",
+      "text": "購買團體票者，每團另收{c_fee} {f} 元（只收一次）。"
+     }
+    ],
+    "footnote": "＊購買個人票不加收{c_fee}"
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{n_ans}",
+     "correct": true,
+     "value": "n_ans",
+     "error": ""
+    },
+    {
+     "text": "{d_eq}",
+     "value": "d_eq",
+     "error": "算到兩邊總金額剛好相等（都是 {grp} 元）就停手，但「比較少」不包含「一樣多」，要再多 1 人"
+    },
+    {
+     "text": "{d_rev}",
+     "value": "d_rev",
+     "error": "把問法看反，算成「每人各買個人票反而比較便宜」的最多人數"
+    },
+    {
+     "text": "{d_nof}",
+     "value": "d_nof",
+     "error": "漏掉每團另收的{c_fee} {f} 元，只拿 {k}×{b} = {kb} 元去比"
+    },
+    {
+     "text": "{d_own}",
+     "value": "d_own",
+     "error": "沒看到「未滿 {k} 人仍以 {k} 人計價」，誤以為有幾人就買幾張團體票，變成看每人省下的 {save} 元夠不夠付{c_fee}"
+    },
+    {
+     "text": "{d_plus}",
+     "value": "d_plus",
+     "error": "知道相等不算，卻多退了一步，人數又多算 1 人"
+    },
+    {
+     "text": "{d_k}",
+     "value": "d_k",
+     "error": "直接把公告上的門檻人數 {k} 人當成答案；其實未滿 {k} 人也能買團體票（仍以 {k} 人計價），{n_ans} 人時就已經比較便宜了"
+    },
+    {
+     "text": "{d_kp1}",
+     "value": "d_kp1",
+     "error": "把「未滿 {k} 人仍以 {k} 人計價」誤讀成「要超過 {k} 人才能買團體票」，於是從 {k} 人再加 1 人"
+    },
+    {
+     "text": "{d_b}",
+     "value": "d_b",
+     "error": "拿團體票的每人 {b} 元去除團體總金額 {grp} 元，比較的對象用錯（應該用個人票的 {a} 元）"
+    }
+   ],
+   "solution": "設這群人有 n 人。當 n 未滿 {k} 人時，依公告團體票一律以 {k} 人計價，總金額固定為 {k}×{b} ＋ {f} = {grp} 元，與實際人數無關；而每人各買 1 張個人票要 n×{a} 元。要團體票比較少，需 n×{a} 大於 {grp}，即 n 大於 {grp} ÷ {a} = {m}。n 必須是整數，且 n = {m} 時兩邊都是 {grp} 元（一樣多，不算比較少），故 n 最少為 {n_ans}，而 {n_ans} 確實未滿 {k}，合乎前提。至於 {k} 人以上的情形，人數本來就比 {n_ans} 多，不可能更少。故答案為 {n_ans} 人；此時個人票要 {ind_ans} 元，比團體票多 {gap} 元。",
+   "steps": [
+    "設有 n 人。若 n 未滿 {k} 人，團體票以 {k} 人計價，總金額固定 = {k}×{b} ＋ {f} = {grp} 元（不隨人數改變）",
+    "個人票總金額 = n×{a} 元（會隨人數變多）",
+    "團體票較少：n×{a} 大於 {grp}，兩邊同除以 {a} 得 n 大於 {m}",
+    "n = {m} 時兩邊都是 {grp} 元，是「一樣多」不是「比較少」，所以最小的整數是 n = {n_ans}（{n_ans} 未滿 {k}，前提成立；驗算：{n_ans}×{a} = {ind_ans} 元，比 {grp} 元多 {gap} 元）"
+   ],
+   "trap": "兩道關卡：一是要看出人數未滿 {k} 人時團體票仍以 {k} 人計價，總金額變成與人數無關的定值 {grp} 元（還要記得加{c_fee} {f} 元）；二是「比較少」為嚴格不等式，{grp} ÷ {a} 剛好整除成 {m} 時，{m} 人只是打平，必須再多 1 人。",
+   "notes": "設計說明：f 由 a×m － k×b 反推，讓團體票總金額必能被個人票價整除，使「兩邊相等的人數不算便宜」這個邊界每次都出現——這是本卡的教學重點，也是與 C-G-01 資費題組（解等式求臨界用量）最大的差異：這裡是數量門檻，團體票那一側完全不含未知數。\n【2026-08-06 審題修正】原稿題幹寫死「人數未滿 k 人」，但干擾項池裡 d_k = k、d_kp1 = k + 1、d_b = grp // b + 1（因 f > 0 故恆 ≧ k + 2）三項恆 ≧ k，與題幹自己的前提直接牴觸：全空間 419 組每一組都是這三項踩雷，抽 200 題實測有 28% 退化成二選一、2% 三個干擾項全可刪（完全不必計算就選得出來）。修法是把人數上界從題幹拿掉，改由公告的分段規則承擔，並把原本擠在同一行的規則拆成第 2、3 兩行，順帶降低設計者自述的「語意單點」風險。拿掉上界後答案仍唯一為 m + 1：n 未滿 k 人時團體票成本是定值 a×m，較便宜 ⟺ n > m；n ≧ k 人時成本為 n×b + f，較便宜 ⟺ n > f ÷ (a－b)，而 f ÷ (a－b) < m < k ≦ n 恆成立，故「團體票較便宜」的人數集合恰為 n ≧ m + 1，最小值 m + 1，且 m + 1 < k。八個干擾項現在全是合法人數，沒有一個能靠前提白刪。\n干擾項池 8 個，恆比正解小的 4 個（d_eq／d_rev／d_nof／d_own，其中 d_own < n_ans 可證：f < m×(a－b) ⟺ m < k，而 m + 3 ≦ k 已保證）、恆比正解大的 4 個（d_plus／d_k／d_kp1／d_b），A~D 四個位置都到得了。後四項雖然「買團體票確實比較划算」，但都不是最少人數，所以不構成多重正解。因為選項是數值且照大小排（option_order: sorted），實際整卷的字母均衡由 gen_choice 的 target_idx 機制達成。"
+  },
+  {
+   "id": "C-B3-02",
+   "skeleton": "圖形求值",
+   "book": "B3",
+   "chapter": "第2章 平方根與畢氏定理",
+   "topic": "長方體表面最短路徑（展開後用畢氏定理）",
+   "codes": [
+    "S-8-6",
+    "S-9-13"
+   ],
+   "perf": [
+    "s-IV-7",
+    "s-IV-16"
+   ],
+   "difficulty": "難",
+   "slot": "17-22",
+   "key_idea": "立體表面上的最短路徑＝把經過的兩個面展開成平面後的直線；三種展開結果中，把「兩條較短的邊相加」當一股的那一種最短",
+   "source_ref": "112-23 矩形對角線與最短距離（難）、107-15 直角柱展開圖（難）",
+   "contexts": [
+    {
+     "who": "小柔",
+     "box": "紙箱",
+     "bug": "螞蟻"
+    },
+    {
+     "who": "阿哲",
+     "box": "禮物盒",
+     "bug": "瓢蟲"
+    },
+    {
+     "who": "阿宏",
+     "box": "木箱",
+     "bug": "小甲蟲"
+    },
+    {
+     "who": "小妍",
+     "box": "收納盒",
+     "bug": "螞蟻"
+    }
+   ],
+   "params": {
+    "p": {
+     "range": [
+      6,
+      20
+     ]
+    },
+    "q": {
+     "range": [
+      6,
+      20
+     ]
+    },
+    "r": {
+     "range": [
+      6,
+      20
+     ]
+    }
+   },
+   "derive": [
+    "srt = sorted([p, q, r])",
+    "a = srt[0]",
+    "b = srt[1]",
+    "c = srt[2]",
+    "n_ans = (a + b)**2 + c**2",
+    "n_unf2 = (a + c)**2 + b**2",
+    "n_unf3 = (b + c)**2 + a**2",
+    "n_base = a**2 + b**2",
+    "n_fac1 = a**2 + c**2",
+    "n_fac2 = b**2 + c**2",
+    "n_spc = a**2 + b**2 + c**2",
+    "ans = sqrt(n_ans)",
+    "d_unf2 = sqrt(n_unf2)",
+    "d_unf3 = sqrt(n_unf3)",
+    "d_base = sqrt(n_base)",
+    "d_fac1 = sqrt(n_fac1)",
+    "d_fac2 = sqrt(n_fac2)",
+    "d_spc = sqrt(n_spc)",
+    "d_climb = d_base + c",
+    "d_edge = a + b + c",
+    "fv = sorted([float(ans), float(d_unf2), float(d_unf3), float(d_base), float(d_climb), float(d_edge), float(d_fac1), float(d_fac2), float(d_spc)])",
+    "gap = min(fv[1] - fv[0], fv[2] - fv[1], fv[3] - fv[2], fv[4] - fv[3], fv[5] - fv[4], fv[6] - fv[5], fv[7] - fv[6], fv[8] - fv[7])"
+   ],
+   "constraints": [
+    "p != q",
+    "q != r",
+    "p != r",
+    "c - a >= 4",
+    "c <= 2 * a",
+    "math.isqrt(n_ans)**2 != n_ans",
+    "math.isqrt(n_unf2)**2 != n_unf2",
+    "math.isqrt(n_unf3)**2 != n_unf3",
+    "math.isqrt(n_base)**2 != n_base",
+    "math.isqrt(n_fac1)**2 != n_fac1",
+    "math.isqrt(n_fac2)**2 != n_fac2",
+    "math.isqrt(n_spc)**2 != n_spc",
+    "gap > 0.6"
+   ],
+   "stem": "如圖，{c_who}有一個長方體的{c_box} ABCD－EFGH，其中 AB = {p} 公分、BC = {q} 公分、AE = {r} 公分。一隻{c_bug}停在頂點 E，牠要沿著{c_box}的表面爬到頂點 C，則牠爬行的最短距離為多少公分？",
+   "figure": {
+    "kind": "solid",
+    "width": 330,
+    "height": 260,
+    "config": {
+     "subtype": "rectangular_prism",
+     "show_hidden": true,
+     "vertex_labels": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+     ],
+     "side_labels": {
+      "AB": "{p}",
+      "BC": "{q}",
+      "AE": "{r}"
+     }
+    }
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans",
+     "error": ""
+    },
+    {
+     "text": "{d_spc}",
+     "error": "把 E、C 直接連成一條直線穿過{c_box}內部（{c_bug}只能沿著表面爬，不能穿過去）",
+     "value": "d_spc"
+    },
+    {
+     "text": "{d_fac2}",
+     "error": "展開後漏掉另一個面的寬 {a} 公分，只用 {b} 與 {c} 當兩股",
+     "value": "d_fac2"
+    },
+    {
+     "text": "{d_fac1}",
+     "error": "展開後漏掉另一個面的寬 {b} 公分，只用 {a} 與 {c} 當兩股",
+     "value": "d_fac1"
+    },
+    {
+     "text": "{d_base}",
+     "error": "只算了 {a}×{b} 那一面的對角線，但 E、C 不在同一個面上，還差了 {c} 公分那一段沒算",
+     "value": "d_base"
+    },
+    {
+     "text": "{d_unf2}",
+     "error": "展開時把 {a} 與 {c} 相加當一股，沒有讓兩條較短的邊相加，路徑會比較長",
+     "value": "d_unf2"
+    },
+    {
+     "text": "{d_unf3}",
+     "error": "展開時把兩條較長的邊 {b}、{c} 相加當一股，三種展開中路徑最長",
+     "value": "d_unf3"
+    },
+    {
+     "text": "{c}＋{d_base}",
+     "error": "先走完 {a}×{b} 那一面的對角線，再沿著與這個面垂直的稜爬 {c} 公分，走的是折線而不是展開後的直線",
+     "value": "d_climb"
+    },
+    {
+     "text": "{d_edge}",
+     "error": "沿著 {a}、{b}、{c} 三條稜爬過去（{a}＋{b}＋{c}），完全沒有展開成平面走直線，是所有走法中最長的",
+     "value": "d_edge"
+    }
+   ],
+   "solution": "把{c_bug}經過的兩個面展開成同一個平面後，E、C 兩點間以直線最短，這條直線就是直角三角形的斜邊。三個邊長由小到大為 {a}、{b}、{c} 公分；看「哪一條邊單獨當一股」，展開後得到的直線長共有三種，兩股分別是 {a}＋{b} 與 {c}、{a}＋{c} 與 {b}、{b}＋{c} 與 {a}，長度依序為 √(({a}＋{b})²＋{c}²) = {ans}、√(({a}＋{c})²＋{b}²) = {d_unf2}、√(({b}＋{c})²＋{a}²) = {d_unf3}。因為三式展開後都含 {a}²＋{b}²＋{c}²，只差在多出來的 2×（被加在一起的那兩邊之積），把兩條較短的邊（{a} 與 {b}）相加時最小，故最短距離為 {ans} 公分。",
+   "steps": [
+    "立體表面上的最短路徑，要先把{c_bug}經過的兩個面展開成同一個平面",
+    "展開後 E、C 是一個長方形的兩個對角，兩點間直線最短，用畢氏定理算斜邊",
+    "三個邊長 {a}、{b}、{c} 中，哪一條單獨當一股就得到一種結果，兩股分別是「{a}＋{b} 與 {c}」「{a}＋{c} 與 {b}」「{b}＋{c} 與 {a}」",
+    "三式展開後都含 {a}²＋{b}²＋{c}²，差別只在多出來的 2×（被加在一起的那兩邊之積），所以把兩條較短的邊相加時最小",
+    "最短距離 = √(({a}＋{b})²＋{c}²) = {ans} 公分"
+   ],
+   "trap": "三個陷阱：一是把 E、C 連成直線穿過{c_box}內部（{d_spc}），但{c_bug}只能沿表面爬；二是沿著三條稜爬（{d_edge}），沒有展開就沒有「兩點之間直線最短」；三是展開方式選錯——一定要把「兩條較短的邊」相加當一股，得到的直線才最短。"
+  },
+  {
+   "id": "C-B4-03",
+   "skeleton": "圖形求值",
+   "book": "B4",
+   "chapter": "第4章 平行與四邊形",
+   "topic": "平行四邊形中對角線平分內角（角平分線造出等腰）",
+   "codes": [
+    "S-8-9",
+    "S-8-3",
+    "S-8-8"
+   ],
+   "perf": [
+    "s-IV-8",
+    "s-IV-3"
+   ],
+   "difficulty": "難",
+   "slot": "17-22",
+   "key_idea": "角平分線遇到平行線 → 內錯角相等 → 等腰三角形（於是這個平行四邊形其實是菱形，四邊等長）",
+   "source_ref": "115-22 平行四邊形對稱中心與角平分線、113-23 等腰梯形摺紙",
+   "contexts": [
+    {
+     "who": "小柔",
+     "q": "張",
+     "obj": "色紙",
+     "unit": "公分"
+    },
+    {
+     "who": "阿哲",
+     "q": "塊",
+     "obj": "木板",
+     "unit": "公分"
+    },
+    {
+     "who": "小妍",
+     "q": "塊",
+     "obj": "地磚",
+     "unit": "公分"
+    },
+    {
+     "who": "阿翰",
+     "q": "片",
+     "obj": "草皮",
+     "unit": "公尺"
+    }
+   ],
+   "params": {
+    "p": {
+     "range": [
+      5,
+      40
+     ],
+     "step": 1
+    },
+    "m": {
+     "range": [
+      6,
+      56
+     ],
+     "step": 1
+    }
+   },
+   "derive": [
+    "ans = 2*p + m",
+    "d_miss = p + m",
+    "d_equi = 3*p",
+    "d_two = 2*p",
+    "d_wrong_leg = p + 2*m",
+    "d_quad = 4*p",
+    "d_par = 2*(p + m)",
+    "vals = [ans, d_miss, d_equi, d_two, d_wrong_leg, d_quad, d_par]"
+   ],
+   "constraints": [
+    "8*m >= 9*p",
+    "5*m <= 7*p",
+    "len(set(vals)) == 7"
+   ],
+   "stem": "如圖，{c_who}有一{c_q}平行四邊形的{c_obj} ABCD，其對角線 AC 恰好平分 ∠BAD。若 AD = {p} {c_unit}、AC = {m} {c_unit}，則 △ABC 的周長為多少{c_unit}？",
+   "figure": {
+    "kind": "quad",
+    "width": 400,
+    "height": 300,
+    "config": {
+     "subtype": "parallelogram",
+     "vertex_labels": [
+      "A",
+      "B",
+      "C",
+      "D"
+     ],
+     "diagonals": true,
+     "show_dots": true
+    }
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{d_miss}",
+     "error": "只用到「對邊相等」得 BC = AD = {p}，沒發現 AB 也等於 {p}，周長少加了一邊",
+     "value": "d_miss"
+    },
+    {
+     "text": "{d_equi}",
+     "error": "誤以為對角線 AC 也和邊一樣長，把 △ABC 當成三邊都是 {p} 的正三角形",
+     "value": "d_equi"
+    },
+    {
+     "text": "{d_two}",
+     "error": "只算 AB ＋ BC，忘了周長還要加上對角線 AC",
+     "value": "d_two"
+    },
+    {
+     "text": "{d_wrong_leg}",
+     "error": "等腰的邊認錯：把對角線當成腰，以為相等的是 CA 與 CB，再把 AB 直接抄成 AD 的 {p}，算成 {m} ＋ {m} ＋ {p}",
+     "value": "d_wrong_leg"
+    },
+    {
+     "text": "{d_quad}",
+     "error": "求成整個平行四邊形 ABCD 的周長（四邊都是 {p}），不是 △ABC 的周長",
+     "value": "d_quad"
+    },
+    {
+     "text": "{d_par}",
+     "error": "把對角線當成邊，硬套平行四邊形周長公式 2 ×（{p} ＋ {m}）",
+     "value": "d_par"
+    }
+   ],
+   "solution": "因為 AD 與 BC 平行，AC 是截線，所以 ∠DAC = ∠BCA（內錯角）；又 AC 平分 ∠BAD，得 ∠BAC = ∠DAC。兩式合起來得 ∠BAC = ∠BCA，故 △ABC 是等腰三角形，AB = BC（也就是說 ABCD 其實是菱形）。再由平行四邊形對邊相等，BC = AD = {p}，所以 AB = BC = {p}。△ABC 的周長 = AB ＋ BC ＋ CA = {p} ＋ {p} ＋ {m} = {ans}（{c_unit}）。",
+   "steps": [
+    "AD 與 BC 平行、AC 為截線 → ∠DAC = ∠BCA（內錯角）",
+    "AC 平分 ∠BAD → ∠BAC = ∠DAC；兩式合併得 ∠BAC = ∠BCA",
+    "△ABC 兩個底角相等 → 等腰 → AB = BC",
+    "平行四邊形對邊相等：BC = AD = {p} → AB = BC = {p}（鄰邊相等，ABCD 是菱形）",
+    "周長 = AB ＋ BC ＋ CA = {p} ＋ {p} ＋ {m} = {ans}"
+   ],
+   "trap": "鑰匙是「角平分線＋平行 → 內錯角相等 → 等腰」：相等的是 AB 與 BC，不是 CA 與 CB；求的是 △ABC 的周長，別漏掉對角線 AC，也別算成整個平行四邊形的周長。",
+   "notes": [
+    "干擾項池 6 個：比正解小的 3 個（d_two、d_equi、d_miss）、比正解大的 3 個（d_wrong_leg、d_quad、d_par），四個字母都抽得到（已用 target_idx 測過 A/B/C/D 各 200/200）。但因為選項照大小排、池子恰好 3 小 3 大，自然抽樣時正解會集中在 B、C（各 9/20），A、D 各只有 1/20；要整卷字母均衡請靠 gen_choice 的 target_idx，勿只看自然傾向。",
+    "constraints 的 8*m >= 9*p 與 5*m <= 7*p 保證 1.125p <= m <= 1.4p，也就是 p < m < 2p：菱形一定存在（三角形不等式），六個干擾項與正解的大小關係固定不會撞號，而且 ∠BAD 落在 91°～112°（鈍角）、AC 一定是較短的那條對角線 —— 這三件事正好是圖上看得出來的。改參數範圍前先重算：m > 1.414p 會讓 ∠BAD 變銳角、AC 變成較長的對角線，圖就跟題目矛盾了。",
+    "⚠ 圖是「固定版型」，不按參數變形，只能當頂點命名＋對角線示意用，不可掛任何數字標籤。geometry_renderer 的 parallelogram 版型是寫死的四點，畫出來 AB 只有 AD 的 0.84 倍、∠BAD 約 98.4°、AC 把 ∠BAD 切成約 55°/43.4°（離真正的角平分線差 5.8°）。本題的答案卻要求 AB = AD（ABCD 其實是菱形），所以原稿在圖上標 AD = {p} 是錯的：學生會看到一條標了數字的邊，旁邊那條「也該等於這個數字」的 AB 卻明顯短一截。已移除 side_labels，改為比照 C-B4-01（三角形版型的實際角度和題目給的 x°、y° 最多差 21°，但圖上只畫角弧、不寫數字）—— 全庫既有的幾何卡沒有一張在固定版型上寫長度數字，這是慣例。長度一律只在題幹給。",
+    "為什麼不乾脆畫成真正的菱形？(1) 渲染器的 rhombus 版型是正方形轉 45°（∠BAD 剛好 90°），畫出來像正方形，比現在更糟；(2) 就算畫得出按比例的菱形，四邊等長會被學生一眼看穿，本題「角平分線＋平行 → 等腰 → 其實是菱形」這個轉彎就白設計了，難度會從『難』掉到『中』。官方 115-22 的處理方式是反過來：故意把 AB=20、AD=21 設成不是菱形，把菱形放進 trap。所以這裡的示意圖是刻意的取捨，不是疏漏。",
+    "figure 用 diagonals:true 會同時畫出 AC 與 BD（渲染器不能只畫一條）；BD 沒用到但確實存在，不影響題意。渲染器雖然有 diagonal_labels，但平行四邊形兩條對角線的中點重合，兩個標籤會疊在交叉點分不清標哪一條，加上上一則的理由，AC 的長度也只在題幹給。quad 渲染器沒有 angle_arcs，「AC 平分 ∠BAD」畫不出角弧，只能靠文字。"
+   ]
+  },
+  {
+   "id": "C-B5-02",
+   "skeleton": "圖形求值",
+   "book": "B5",
+   "chapter": "第1章 相似形",
+   "topic": "平行截線的相似面積比與同高換底",
+   "codes": [
+    "S-9-2",
+    "S-9-3"
+   ],
+   "perf": [
+    "s-IV-10",
+    "s-IV-6"
+   ],
+   "difficulty": "難",
+   "slot": "17-22",
+   "key_idea": "先用「面積比＝相似比平方」求出 △ABC，再用「同高三角形面積比＝底邊比」把 △ABC 依 AE：EC 切成 △ABE 與 △BCE",
+   "source_ref": "112-22、109-24 相似面積比與同高換底",
+   "contexts": [
+    {
+     "intro": "如圖，"
+    },
+    {
+     "intro": "數學課上，老師在黑板上畫出如圖的圖形，"
+    },
+    {
+     "intro": "小妍用繪圖軟體畫出如圖的圖形，"
+    },
+    {
+     "intro": "阿翰在海報紙上畫出如圖的圖形，"
+    }
+   ],
+   "params": {
+    "p": {
+     "range": [
+      2,
+      9
+     ]
+    },
+    "q": {
+     "range": [
+      3,
+      14
+     ]
+    },
+    "u": {
+     "choices": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ]
+    },
+    "s": {
+     "choices": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+     ]
+    }
+   },
+   "derive": [
+    "g = gcd(p, q)",
+    "psum = p + q",
+    "ad = p * u",
+    "db = q * u",
+    "ab = ad + db",
+    "s_ade = p * p * s",
+    "ans = q * psum * s",
+    "d_abc = psum * psum * s",
+    "d_trap = d_abc - s_ade",
+    "d_nodbe = d_abc - p * q * s",
+    "d_cut = d_trap - s_ade",
+    "d_abe = p * psum * s",
+    "d_sq = q * q * s",
+    "d_dbe = p * q * s",
+    "d_mis = d_sq - d_dbe",
+    "vals = [s_ade, ans, d_abc, d_trap, d_nodbe, d_cut, d_abe, d_sq, d_dbe, d_mis]"
+   ],
+   "constraints": [
+    "g == 1",
+    "q > p",
+    "100 * p >= 36 * psum",
+    "100 * p <= 46 * psum",
+    "ad >= 4",
+    "u >= 2",
+    "ab <= 55",
+    "s_ade >= 4",
+    "d_abc <= 900",
+    "1000 * s >= 185 * u * u",
+    "1000 * s <= 1250 * u * u",
+    "d_mis >= 4",
+    "len(set(vals)) == 10"
+   ],
+   "stem": "{c_intro}△ABC 中，D、E 兩點分別在 AB、AC 上，且 DE 與 BC 平行，連接 BE。若 AD = {ad} 公分，DB = {db} 公分，且 △ADE 的面積為 {s_ade} 平方公分，則 △BCE 的面積為多少平方公分？",
+   "figure": {
+    "kind": "triangle",
+    "width": 430,
+    "height": 418,
+    "config": {
+     "vertex_labels": [
+      "A",
+      "D",
+      "B",
+      " ",
+      "E",
+      "  ",
+      "C",
+      "   "
+     ],
+     "vertices": {
+      "A": [
+       0.19,
+       0.04
+      ],
+      "D": [
+       0.1568,
+       0.3969
+      ],
+      "B": [
+       0.11,
+       0.9
+      ],
+      " ": [
+       0.1568,
+       0.3969
+      ],
+      "E": [
+       0.52615,
+       0.1479
+      ],
+      "  ": [
+       0.11,
+       0.9
+      ],
+      "C": [
+       1.0,
+       0.3
+      ],
+      "   ": [
+       0.52615,
+       0.1479
+      ]
+     },
+     "side_labels": {
+      "AD": "{ad}",
+      "DB": "{db}"
+     },
+     "show_dots": true
+    }
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans",
+     "error": ""
+    },
+    {
+     "text": "{d_abc}",
+     "error": "算出 △ABC 的面積 {d_abc} 就作答，忘了 BE 只切出其中一塊",
+     "value": "d_abc"
+    },
+    {
+     "text": "{d_trap}",
+     "error": "答成梯形 DBCE 的面積（△ABC 只扣掉 △ADE），沒再扣掉 △DBE",
+     "value": "d_trap"
+    },
+    {
+     "text": "{d_nodbe}",
+     "error": "只從 △ABC 扣掉 △DBE，忘了 △ADE 也在 BE 的另一側",
+     "value": "d_nodbe"
+    },
+    {
+     "text": "{d_cut}",
+     "error": "用梯形面積再扣一次已知的 △ADE（扣錯圖形，該扣的是 △DBE）",
+     "value": "d_cut"
+    },
+    {
+     "text": "{d_abe}",
+     "error": "答成 BE 另一側的 △ABE（AE：EC = {p}：{q} 的比例套反）；也可能是面積比忘了平方，直接用 {psum}／{p} 乘 △ADE",
+     "value": "d_abe"
+    },
+    {
+     "text": "{d_sq}",
+     "error": "把 △BCE 誤當成與 △ADE 相似，直接用 (DB／AD)² = ({q}／{p})² 去乘；或把 EC：AC 的比也拿去平方後乘 △ABC",
+     "value": "d_sq"
+    },
+    {
+     "text": "{d_dbe}",
+     "error": "答成 △DBE（梯形 DBCE 中的另一小塊）：只做了同高換底、用 {q}／{p} 乘 △ADE 就停手",
+     "value": "d_dbe"
+    },
+    {
+     "text": "{d_mis}",
+     "error": "把梯形 DBCE 誤當成與 △ADE 相似（梯形算成 {s_ade} × ({q}／{p})² = {d_sq}），再扣掉 △DBE {d_dbe}",
+     "value": "d_mis"
+    }
+   ],
+   "solution": "因為 DE 與 BC 平行，所以 △ADE 與 △ABC 相似，相似比 AD：AB = {ad}：{ab} = {p}：{psum}。面積比是相似比的平方，故 △ABC 的面積 = {s_ade} × ({psum}／{p})² = {d_abc} 平方公分。又由 DE 與 BC 平行可得 AE：EC = AD：DB = {p}：{q}；△ABE 與 △BCE 分別以 AE、EC 為底，頂點都是 B，高相同，所以面積比 = 底邊比 = {p}：{q}。故 △BCE 的面積 = {d_abc} × {q}／{psum} = {ans} 平方公分。",
+   "steps": [
+    "DE 與 BC 平行 → △ADE 與 △ABC 相似，相似比 AD：AB = {ad}：{ab} = {p}：{psum}",
+    "面積比 = 相似比的平方 → △ABC = {s_ade} × ({psum}／{p})² = {d_abc} 平方公分",
+    "平行也把 AC 截成同比例：AE：EC = AD：DB = {p}：{q}",
+    "△ABE 與 △BCE 同高（都是 B 到 AC 的距離），面積比 = 底邊比 = {p}：{q}",
+    "△BCE = {d_abc} × {q}／{psum} = {ans} 平方公分（檢查：△ADE {s_ade} ＋ △DBE {d_dbe} ＋ △BCE {ans} = {d_abc}）"
+   ],
+   "trap": "BE 把 △ABC 分成的兩塊不是相似形，面積比要用「同高換底」看 AE：EC，不能用 (DB／AD)² 去乘；也別停在 △ABC 或梯形 DBCE 就作答。",
+   "notes": "【圖的畫法】幾何渲染器只畫一條封閉折線，故用 A→D→B→D→E→B→C→E→A 走一圈把 7 條線段（AD、DB、BC、CE、EA、DE、BE）補齊；vertex_labels 中三個空白字串就是 D、B、E 的重覆點，重疊處只是同一條線畫兩次，看不出來。vertices 必須是 JSON 裡的實數（render_text 不動數字），一旦寫成 {變數} 會被轉成字串而畫不出來。【頂點標籤為何要斜擺】render_triangle 算「形心」時固定除以 3，但本圖列了 8 個點，算出來的假形心會落在畫布右下角外面，於是每個頂點標籤都被往左上方推 20px。若照課本習慣把 A 畫在正上方、BC 水平在下，E（在右側的 AC 上）與 C 的標籤就會被推到 AC 線上（實測離線段只有 1.9px 與 3.3px，字被線劃過）。因此改成整個三角形往左傾：A 左上、B 左下、C 右中，讓 AB、AC 兩邊都朝左上方，五個標籤離最近線段都有 15px 以上。改動 vertices 時務必重畫確認，不要只看數字。【圖與數字要對得上】圖上 DE 固定畫在 AD：AB ＝ 0.415 處，故約束把 p／(p+q) 鎖在 0.36～0.46；另外圖的形狀決定了「面積 ÷ AB² ＝ 0.481」，因此加了 185u² ≦ 1000s ≦ 1250u²，讓題目數字推得的 AC 與圖上畫的 AC 相差不超過 2.6 倍，避免出現「AD＝5、△ADE 面積 75」這種圖上畫得瘦、實際卻是細長三角形的情形。【u 不可以是 1】詳解與步驟把相似比寫成「AD：AB ＝ ad：ab ＝ p：psum」（先原式再約分），u＝1 時 ad 就等於 p、ab 就等於 psum，會印出「7：16 ＝ 7：16」這種同一個比抄兩次的句子。故 u 從 2 起跳，並加了 u >= 2 的護欄約束；要放寬 u 之前先確認詳解文字改成不會重覆的寫法。【干擾項池】8 個干擾項，4 個一定比正解大（△ABC、梯形 DBCE、△ABC－△DBE、梯形－△ADE）、4 個一定比正解小（△DBE、△ABE、q²s、誤算梯形再扣 △DBE），正解永遠落在九個數值的正中間。【正解字母】因為正解夾在大小干擾項中間，sorted 排序下自然傾向約 A7％ B46％ C40％ D7％（實測 738 題；理論值 A、D 各 4／56，B、C 各 24／56），B、C 偏高是「中間位置的組合數本來就多」的結構性結果，不是設計缺陷；實測指定 target_idx＝A/B/C/D 各 300 次都 100％ 達成，故全卷字母均衡完全由 gen_choice 的 target_idx 機制掌控。"
+  },
+  {
+   "id": "C-B5-03",
+   "skeleton": "圖形求值",
+   "book": "B5",
+   "chapter": "第3章 推理與證明（三心）",
+   "topic": "等腰三角形的重心：面積三等分與中線 2:1",
+   "codes": [
+    "S-9-10",
+    "S-8-8"
+   ],
+   "perf": [
+    "s-IV-11",
+    "s-IV-8"
+   ],
+   "difficulty": "難",
+   "slot": "17-22",
+   "key_idea": "重心把三角形分成三個等面積三角形（先把 △ABG 還原成整個 △ABC）；等腰三角形頂點到底邊的中線同時是高（才能由面積求出中線長）；重心把中線分成 2:1（AG 是中線的 2/3）",
+   "source_ref": "114-22 重心與面積比、113-22 重心等分面積（同樣以『重心分三塊等面積』為鑰匙）",
+   "contexts": [
+    {
+     "obj": "木板"
+    },
+    {
+     "obj": "鐵片"
+    },
+    {
+     "obj": "壓克力板"
+    },
+    {
+     "obj": "厚紙板"
+    }
+   ],
+   "params": {
+    "a": {
+     "range": [
+      10,
+      100
+     ]
+    },
+    "w": {
+     "range": [
+      1,
+      8
+     ]
+    }
+   },
+   "derive": [
+    "h = 18*w",
+    "tot = Rational(a*h, 2)",
+    "p = Rational(a*h, 6)",
+    "ans = Rational(2*h, 3)",
+    "d_gd = Rational(h, 3)",
+    "d_half = Rational(h, 2)",
+    "d_noth = Rational(2*h, 9)",
+    "d_med = h",
+    "d_six = Rational(4*h, 3)",
+    "d_two = 2*h"
+   ],
+   "constraints": [
+    "3*h <= 5*a",
+    "3*a <= 5*h",
+    "a % 2 == 0 or a % 3 == 0 or a % 5 == 0",
+    "p == int(p)",
+    "d_noth == int(d_noth)",
+    "ans == int(ans)",
+    "len(set([ans, d_gd, d_half, d_noth, d_med, d_six, d_two])) == 7"
+   ],
+   "stem": "如圖，有一塊三角形{c_obj} ABC，其中 AB = AC，G 為 △ABC 的重心。已知 △ABG 的面積為 {p} 平方公分，BC = {a} 公分，則 AG 的長度為多少公分？",
+   "figure": {
+    "kind": "center",
+    "width": 380,
+    "height": 320,
+    "config": {
+     "center_type": "centroid",
+     "center_label": "G",
+     "triangle": {
+      "subtype": "isosceles",
+      "vertex_labels": [
+       "B",
+       "C",
+       "A"
+      ]
+     }
+    }
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans",
+     "error": ""
+    },
+    {
+     "text": "{d_gd}",
+     "value": "d_gd",
+     "error": "2:1 記反，答成重心到 BC 中點的距離（中線的 1/3）"
+    },
+    {
+     "text": "{d_half}",
+     "value": "d_half",
+     "error": "以為重心是中線的中點，取中線的一半"
+    },
+    {
+     "text": "{d_noth}",
+     "value": "d_noth",
+     "error": "忘了 △ABG 只佔 △ABC 的 1/3，直接把 {p} 平方公分當成整塊{c_obj}的面積"
+    },
+    {
+     "text": "{d_med}",
+     "value": "d_med",
+     "error": "答成整條中線的長，忘了重心只取中線的 2/3"
+    },
+    {
+     "text": "{d_six}",
+     "value": "d_six",
+     "error": "把 △ABG 誤當成三中線分出的六個小三角形之一（以為面積只有整塊的 1/6）"
+    },
+    {
+     "text": "{d_two}",
+     "value": "d_two",
+     "error": "把「重心到頂點的距離是到對邊中點的 2 倍」誤用成「AG 是整條中線的 2 倍」"
+    }
+   ],
+   "solution": "重心把 △ABC 分成三個面積相等的三角形，所以 △ABC 的面積 ＝ 3 × {p} ＝ {tot} 平方公分。又 AB = AC，等腰三角形中頂點 A 到底邊 BC 的中線同時是高，設 BC 中點為 D，則 {tot} ＝ BC × AD ÷ 2 ＝ {a} × AD ÷ 2，得中線 AD ＝ {h} 公分。重心把中線分成 2:1（AG ＝ 2GD），故 AG ＝ {h} × 2/3 ＝ {ans} 公分。",
+   "steps": [
+    "重心把三角形分成三個等面積三角形 → △ABC 的面積 ＝ 3 × {p} ＝ {tot} 平方公分",
+    "AB = AC → 頂點 A 到 BC 的中線 AD 就是 BC 邊上的高（等腰三角形三線合一）",
+    "{tot} ＝ {a} × AD ÷ 2 → 中線 AD ＝ {h} 公分",
+    "重心把中線分成 AG:GD ＝ 2:1 → AG ＝ {h} × 2/3 ＝ {ans} 公分"
+   ],
+   "trap": "兩個都要轉一次彎：△ABG 只是整塊的 1/3（不是 1/6，也不是全部），而且只有在 AB = AC 時，那條中線才等於高；最後 AG 是中線的 2/3，不是中線本身。",
+   "notes": "干擾項池 6 個：比正解小的 3 個（d_noth＝4w、d_gd＝6w、d_half＝9w）、比正解大的 3 個（d_med＝18w、d_six＝24w、d_two＝36w）。⚠ option_order 是 sorted，3 小 3 大的池子會讓正解的「自然」位置集中在 B、C（各約 45%），A、D 各只有約 5%，所以出整卷時務必用 gen_choice 的 target_idx 指定字母（要 A 就抽 3 個大的、要 D 就抽 3 個小的，池子剛好各有一種組合湊得出來，不會動到任何數學）。答案 AG ＝ 12w 只由 w 決定（12、24、…、96 共 8 個值），但題面數字（面積 p ＝ 3aw、底 BC ＝ a）由 a、w 共同決定，222 組參數會配到 222 種不同題面；同一份卷仍建議這張卡只用一次。 約束 3h ≤ 5a、3a ≤ 5h 是把實際的「高:底」鎖在 0.6～1.67 之間，因為 figures.py 的 center 元件畫的是固定示意圖（高:底 約 0.95，不隨參數改變比例），這個區間讓示意圖與真實比例的落差不超過約 1.75 倍。（註：geometry_renderer 的 render_triangle_center 只讀 triangle.subtype、沒讀 triangle.vertices，所以無法用自訂頂點把圖畫成按比例，只能靠約束縮小落差。） 約束 a 是 2、3 或 5 的倍數，是因為會考不能用計算機：學生會先算 3p 再除以 a 求中線（AD ＝ 6p ÷ a），BC 若是 79、89 這種質數會變成硬做長除法；限成 2/3/5 的倍數後除法都可先約分。"
+  },
+  {
+   "id": "C-B6-02",
+   "skeleton": "圖形求值",
+   "book": "B6",
+   "chapter": "第1章 二次函數",
+   "topic": "拋物線平移與兩交點距離",
+   "codes": [
+    "F-9-2"
+   ],
+   "perf": [
+    "f-IV-3",
+    "f-IV-2"
+   ],
+   "difficulty": "難",
+   "slot": "17-22",
+   "key_idea": "拋物線與 x 軸兩交點的距離只由開口大小 a 與頂點的 y 坐標決定：左右平移完全不影響它，向上平移 t 只是把頂點的 y 坐標加上 t",
+   "source_ref": "111-22 拋物線平移與根的關係、107-21 用半個交點距離代入求係數",
+   "contexts": [
+    {
+     "pa": "A",
+     "pb": "B",
+     "v": "V"
+    },
+    {
+     "pa": "P",
+     "pb": "Q",
+     "v": "M"
+    },
+    {
+     "pa": "D",
+     "pb": "E",
+     "v": "F"
+    },
+    {
+     "pa": "R",
+     "pb": "S",
+     "v": "T"
+    }
+   ],
+   "params": {
+    "a": {
+     "choices": [
+      1,
+      2,
+      3,
+      4
+     ]
+    },
+    "d": {
+     "range": [
+      3,
+      8
+     ]
+    },
+    "e": {
+     "range": [
+      1,
+      7
+     ]
+    },
+    "h": {
+     "range": [
+      1,
+      5
+     ]
+    },
+    "p": {
+     "choices": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ]
+    }
+   },
+   "derive": [
+    "d2 = d*d",
+    "e2 = e*e",
+    "absk = a*d2",
+    "ae2 = a*e2",
+    "t = absk - ae2",
+    "x2 = h + d",
+    "x1n = d - h",
+    "x1txt = '-%d' % x1n",
+    "ktxt = '-%d' % absk",
+    "newktxt = '-%d' % ae2",
+    "AB = 2*d",
+    "L = 2*e",
+    "hp = h + p",
+    "d_addp = t + p",
+    "d_vertex = absk",
+    "d_sign = a*(d2 + e2)",
+    "d_newk = ae2",
+    "d_sqerr = a*(d - e)*(d - e)",
+    "d_shrink = AB - L",
+    "propmid = a*d*e",
+    "d_prop = a*d*(d - e)"
+   ],
+   "constraints": [
+    "e < d",
+    "h < d",
+    "2*e2 < d2",
+    "absk <= 100",
+    "len(set([t, d_addp, d_vertex, d_sign, d_newk, d_sqerr, d_shrink, d_prop])) == 8"
+   ],
+   "stem": "如圖，坐標平面上有一條拋物線，它與 x 軸相交於 {c_pa}、{c_pb} 兩點，頂點為 {c_v}。已知 {c_pa}({x1txt}, 0)、{c_pb}({x2}, 0)、{c_v}({h}, {ktxt})。若將此拋物線先向右平移 {p} 單位，再向上平移 t 單位，所得的拋物線與 x 軸兩交點的距離為 {L}，則 t 之值為何？",
+   "figure": {
+    "kind": "coord",
+    "width": 380,
+    "height": 300,
+    "config": {
+     "x_range": [
+      -2,
+      4
+     ],
+     "y_range": [
+      -5.5,
+      6.5
+     ],
+     "tick_interval": 1000,
+     "parabolas": [
+      {
+       "a": 1,
+       "b": -2,
+       "c": -3
+      }
+     ],
+     "points": [
+      {
+       "x": -1,
+       "y": 0,
+       "label": "{c_pa}"
+      },
+      {
+       "x": 3,
+       "y": 0,
+       "label": "{c_pb}"
+      },
+      {
+       "x": 1,
+       "y": -4,
+       "label": "{c_v}"
+      }
+     ]
+    }
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{t}",
+     "correct": true,
+     "value": "t"
+    },
+    {
+     "text": "{d_addp}",
+     "error": "把向右平移的 {p} 單位也加進 t；左右平移其實不會改變拋物線與 x 軸兩交點的距離",
+     "value": "d_addp"
+    },
+    {
+     "text": "{d_vertex}",
+     "error": "算成把頂點剛好平移到 x 軸上（那樣只會有一個交點），沒有用到兩交點距離為 {L} 的條件",
+     "value": "d_vertex"
+    },
+    {
+     "text": "{d_sign}",
+     "error": "符號弄反：把 t ＝ {absk} － {ae2} 算成 {absk} ＋ {ae2}",
+     "value": "d_sign"
+    },
+    {
+     "text": "{d_newk}",
+     "error": "只算出平移後頂點到 x 軸的深度 {ae2}（新頂點 y 坐標為 {newktxt}）就當答案，忘了平移量要用原本的深度 {absk} 減掉它",
+     "value": "d_newk"
+    },
+    {
+     "text": "{d_sqerr}",
+     "error": "把 {d}² － {e}² 誤算成（{d} － {e}）的平方",
+     "value": "d_sqerr"
+    },
+    {
+     "text": "{d_shrink}",
+     "error": "直接把兩交點距離縮短的量（{AB} － {L}）當成向上平移的量",
+     "value": "d_shrink"
+    },
+    {
+     "text": "{d_prop}",
+     "error": "以為兩交點的距離與頂點的深度成正比，把新深度算成 {absk}×{L}／{AB} ＝ {propmid}，再用 {absk} － {propmid} 當平移量；其實距離是隨深度開平方變化的",
+     "value": "d_prop"
+    }
+   ],
+   "solution": "由 {c_pa}({x1txt}, 0)、{c_pb}({x2}, 0) 可知對稱軸為 x ＝ {h}，兩交點到對稱軸的距離都是 {d}。由頂點 {c_v}({h}, {ktxt}) 設此二次函數為 y ＝ a(x － {h})² － {absk}，把 {c_pa}({x1txt}, 0) 代入得 a×{d}² ＝ {absk}，故 a ＝ {a}。向右平移 {p} 單位只會把整條拋物線往右搬，開口大小不變，與 x 軸兩交點的距離也不變，所以只需看向上平移：平移 t 單位後，頂點在 x 軸下方 {absk} － t 單位。新的兩交點距離為 {L}，表示它們到對稱軸的距離都是 {e}，代回可知新頂點在 x 軸下方 {a}×{e}² ＝ {ae2} 單位，故 {absk} － t ＝ {ae2}，t ＝ {absk} － {ae2} ＝ {t}。",
+   "steps": [
+    "{c_pa}、{c_pb} 對稱於對稱軸 → 對稱軸 x ＝ {h}，兩交點到對稱軸的距離都是 {d}",
+    "把 {c_pa} 代入頂點式：a×{d}² ＝ {absk} → a ＝ {a}",
+    "向右平移 {p} 單位不改變開口，也不改變與 x 軸兩交點的距離 → 只要處理上下平移",
+    "新的兩交點距離 {L} → 到對稱軸的距離都是 {e} → 新頂點在 x 軸下方 {a}×{e}² ＝ {ae2} 單位（y 坐標為 {newktxt}）",
+    "t ＝ 原本的深度 － 新的深度 ＝ {absk} － {ae2} ＝ {t}"
+   ],
+   "trap": "左右平移不會改變拋物線與 x 軸兩交點的距離，別把向右平移的量加進 t；另外題目給的 {L} 是兩交點的「距離」，要先除以 2 才是各自到對稱軸的距離。",
+   "notes": "干擾項池 7 個：比正解大的 3 個（d_addp／d_vertex／d_sign）、比正解小的 4 個（d_newk／d_sqerr／d_shrink／d_prop；其中 d_newk 是靠約束 2e² < d² 才保證恆小，其餘三個恆小可證：t － d_prop ＝ a(d－e)e > 0、t － d_sqerr ＝ 2ae(d－e) > 0、t － d_shrink ＝ (d－e)(a(d＋e)－2) > 0）。唯一解可證：向上平移 t 後兩交點距離 ＝ 2 乘上 (ad²－t)/a 的正平方根，對 t 嚴格遞減，故等於 L 的 t 只有一個；624 組參數全掃過，7 個干擾項沒有任何一個能再解出距離 L（另有約束強制 8 個值互異）。try_card 顯示的字母「自然傾向」偏 B、C，這是 option_order=sorted 的數值題本質——正解要排在 (A) 或 (D) 必須三個干擾項同方向，組合機率天生較低。實測 gen_choice 帶 target_idx 時，本卡每一組參數都能達成 A/B/C/D 四個位置（150 組樣本 4×150 全中），全卷字母均衡由生成器負責。圖為示意圖（tick_interval 設 1000 讓坐標軸不顯示刻度數字），約束 h < d、h ≥ 1 保證 A 在 y 軸左、B 在 y 軸右、頂點在 y 軸右下方，與示意圖的定性位置一致。示意圖刻意畫成開口較寬的碗：實際的深度／半距 ＝ a×d，範圍是 3 到 20，畫成等比例會變成一根針；而且審題時試過把示意圖加深（a＝2、頂點 (1,-8)），geometry_renderer 的點標籤固定畫在「右上 11px、上 9px」，加深後拋物線會從頂點標籤中間穿過去（實測 F 被紅線切開），所以維持寬碗版本——反正 tick 已關掉，圖只負責交代「開口向上、A 在左 B 在右、頂點在 y 軸右下」這四件定性的事。⚠ 渲染地雷：本卡的負坐標一律用 ASCII 連字號（-98），不可換成 U+2212「−」——實測 render_question_png 的字型沒有這個字，會變方框；全形「－」則會被排成前後帶空白的「 - 」，只適合當二元運算符號，不適合當負號。"
+  },
+  {
+   "id": "C-G-02",
+   "skeleton": "題組",
+   "book": "B1",
+   "chapter": "第1章 整數的運算",
+   "topic": "分段累進計費（題組）",
+   "codes": [
+    "N-7-3"
+   ],
+   "perf": [
+    "n-IV-2"
+   ],
+   "difficulty": "難",
+   "slot": "23-25",
+   "key_idea": "分段累進：每一段各有單價，用量跨段就要拆段算；合併計費時「用量被推進更貴的段」與「基本費只收一次」方向相反，要一起算",
+   "source_ref": "115-23~25 閱讀題組的形式（選文＋自訂公式＋三小題）；計費骨架取自生活中的分段累進水電費",
+   "contexts": [
+    {
+     "co": "某自來水公司",
+     "item": "水費",
+     "res": "用水量",
+     "unit": "度",
+     "meter": "水表",
+     "who": "小柔",
+     "who2": "阿哲"
+    },
+    {
+     "co": "某電力公司",
+     "item": "電費",
+     "res": "用電量",
+     "unit": "度",
+     "meter": "電表",
+     "who": "阿宏",
+     "who2": "小妍"
+    },
+    {
+     "co": "某天然氣公司",
+     "item": "瓦斯費",
+     "res": "用氣量",
+     "unit": "立方公尺",
+     "meter": "瓦斯表",
+     "who": "阿翰",
+     "who2": "小柔"
+    }
+   ],
+   "params": {
+    "k2": {
+     "choices": [
+      10,
+      15,
+      20
+     ]
+    },
+    "k1": {
+     "choices": [
+      5,
+      8,
+      12
+     ]
+    },
+    "bgap": {
+     "choices": [
+      25,
+      30
+     ]
+    },
+    "p3": {
+     "choices": [
+      18,
+      20,
+      24
+     ]
+    },
+    "p1": {
+     "choices": [
+      4,
+      5,
+      6
+     ]
+    },
+    "p2": {
+     "choices": [
+      10,
+      12,
+      15
+     ]
+    },
+    "a": {
+     "choices": [
+      25,
+      30,
+      40,
+      50
+     ]
+    },
+    "base": {
+     "choices": [
+      60,
+      80,
+      100
+     ]
+    },
+    "k3": {
+     "choices": [
+      12,
+      18,
+      25
+     ]
+    }
+   },
+   "derive": [
+    "b = a + bgap",
+    "u1 = a + k1",
+    "u2 = b + k2",
+    "v = a + k3",
+    "s = u1 + v",
+    "over1 = u1 - a",
+    "c1_t1 = a * p1",
+    "c1_t2 = over1 * p2",
+    "f1 = base + c1_t1 + c1_t2",
+    "da1 = base + u1 * p2",
+    "da2 = base + u1 * p1",
+    "da3 = c1_t1 + c1_t2",
+    "da5 = base + a * p2 + over1 * p1",
+    "da6 = base + c1_t1 + over1 * p3",
+    "da7 = base + c1_t2",
+    "g2 = b - u1",
+    "g3 = u2 - b",
+    "inc_t2 = g2 * p2",
+    "inc_t3 = g3 * p3",
+    "inc = inc_t2 + inc_t3",
+    "mid_full = (b - a) * p2",
+    "f2 = base + c1_t1 + mid_full + inc_t3",
+    "db1 = (u2 - u1) * p3",
+    "db2 = (u2 - u1) * p2",
+    "db4 = inc_t3",
+    "db5 = inc_t2",
+    "db6 = inc + base",
+    "db7 = mid_full + inc_t3",
+    "overv = v - a",
+    "bill2 = base + c1_t1 + overv * p2",
+    "sep_total = f1 + bill2",
+    "top = s - b",
+    "mrg_use = c1_t1 + mid_full + top * p3",
+    "mrg_total = base + mrg_use",
+    "diff = mrg_total - sep_total",
+    "gainA = a * (p2 - p1)",
+    "gainB = top * (p3 - p2)",
+    "dc1 = diff + base",
+    "dc2 = diff + 2 * base",
+    "dc3 = diff + (b - a) * (p3 - p2)",
+    "dc4 = diff - base",
+    "dc5 = gainA - base",
+    "dc6 = gainB",
+    "pool1 = [f1, da1, da2, da3, da5, da6, da7]",
+    "pool2 = [inc, db1, db2, db4, db5, db6, db7]",
+    "pool3 = [diff, dc1, dc2, dc3, dc4, dc5, dc6]"
+   ],
+   "constraints": [
+    "p1 < p2",
+    "p2 < p3",
+    "u1 < b",
+    "v > a",
+    "v <= b",
+    "v != u1",
+    "s > b",
+    "gainA > base",
+    "gainB > base",
+    "diff == gainA + gainB - base",
+    "len(set(pool1)) == 7",
+    "len(set(pool2)) == 7",
+    "len(set(pool3)) == 7",
+    "min(pool1) * 4 >= max(pool1)",
+    "min(pool2) * 4 >= max(pool2)",
+    "min(pool3) * 6 >= max(pool3)",
+    "len([x for x in pool1 if x < 0]) == 0",
+    "len([x for x in pool2 if x < 0]) == 0",
+    "len([x for x in pool3 if x < 0]) == 0",
+    "mrg_total <= 3000",
+    "f2 <= 2000"
+   ],
+   "passage": "{c_co}的{c_item}採「分段累進」計費：每一個{c_meter}每期先收基本費 {base} 元，該期的{c_res}再依表(一)分成三段各自計價。\n・前 {a} {c_unit}：每 1 {c_unit} {p1} 元\n・超過 {a} {c_unit}、未超過 {b} {c_unit}的部分：每 1 {c_unit} {p2} 元\n・超過 {b} {c_unit}的部分：每 1 {c_unit} {p3} 元\n也就是說，一期的費用可以這樣算：\n　　該期費用 ＝ 基本費 ＋ 第一段費用 ＋ 第二段費用 ＋ 第三段費用\n（{c_res}沒有到達某一段時，該段就不計費。例如某期的{c_res}不超過 {a} {c_unit}，費用就是基本費加上「該期{c_res}×{p1} 元」。）\n{c_who}家與隔壁的{c_who2}家原本各裝一個{c_meter}，兩戶的{c_item}分開計算。",
+   "passage_figure": {
+    "kind": "table",
+    "title": "表(一)　{c_item}的分段單價",
+    "headers": [
+     "{c_res}的分段",
+     "每 1 {c_unit}的費用（元）"
+    ],
+    "rows": [
+     [
+      "前 {a} {c_unit}",
+      "{p1}"
+     ],
+     [
+      "超過 {a} {c_unit}、未超過 {b} {c_unit}的部分",
+      "{p2}"
+     ],
+     [
+      "超過 {b} {c_unit}的部分",
+      "{p3}"
+     ]
+    ],
+    "head_col": true,
+    "note": "另收基本費：每個{c_meter}每期 {base} 元"
+   },
+   "items": [
+    {
+     "topic": "分段累進計費：代入計算（題組）",
+     "difficulty": "易",
+     "key_idea": "用量跨到第二段，就要拆成兩段各自乘單價，再加基本費",
+     "stem": "{c_who}家這一期的{c_res}為 {u1} {c_unit}，則{c_who}家這一期的{c_item}為多少元？",
+     "figure": null,
+     "option_order": "sorted",
+     "options": [
+      {
+       "text": "{f1}",
+       "correct": true,
+       "value": "f1"
+      },
+      {
+       "text": "{da1}",
+       "error": "把整個 {u1} {c_unit}都用第二段的 {p2} 元計價，沒有分段",
+       "value": "da1"
+      },
+      {
+       "text": "{da2}",
+       "error": "把整個 {u1} {c_unit}都用第一段的 {p1} 元計價，沒有分段",
+       "value": "da2"
+      },
+      {
+       "text": "{da3}",
+       "error": "分段算對了，但忘了再加基本費 {base} 元",
+       "value": "da3"
+      },
+      {
+       "text": "{da5}",
+       "error": "兩段的單價用反了（前 {a} {c_unit}用 {p2} 元、超出的部分用 {p1} 元）",
+       "value": "da5"
+      },
+      {
+       "text": "{da6}",
+       "error": "超出的 {over1} {c_unit}誤用最高段的 {p3} 元計價",
+       "value": "da6"
+      },
+      {
+       "text": "{da7}",
+       "error": "只算超出 {a} {c_unit}的部分，漏掉前 {a} {c_unit}的 {c1_t1} 元",
+       "value": "da7"
+      }
+     ],
+     "solution": "{u1} {c_unit}超過 {a} {c_unit}但未超過 {b} {c_unit}，只用到前兩段。前 {a} {c_unit}：{a}×{p1} ＝ {c1_t1} 元；超出的 {u1}－{a} ＝ {over1} {c_unit}：{over1}×{p2} ＝ {c1_t2} 元。再加基本費 {base} 元，共 {base} ＋ {c1_t1} ＋ {c1_t2} ＝ {f1} 元。",
+     "steps": [
+      "先判斷 {u1} {c_unit}落在哪一段：{a} ＜ {u1} ＜ {b}，只會用到前兩段",
+      "前 {a} {c_unit}：{a}×{p1} ＝ {c1_t1} 元；超出的 {over1} {c_unit}：{over1}×{p2} ＝ {c1_t2} 元",
+      "加上基本費：{base} ＋ {c1_t1} ＋ {c1_t2} ＝ {f1} 元"
+     ],
+     "trap": "分段累進不是「整個用量乘同一個單價」，超出的部分要先扣掉前一段的 {a} {c_unit}；最後別忘了基本費。"
+    },
+    {
+     "topic": "分段累進計費：跨段的增加量（題組）",
+     "difficulty": "中",
+     "key_idea": "增加的用量橫跨兩個計費段，要在 {b} {c_unit}這個分界點拆開算；兩期都收基本費，相減時會抵銷",
+     "stem": "{c_who}家下一期的{c_res}由 {u1} {c_unit}增加為 {u2} {c_unit}，則下一期的{c_item}會比這一期多多少元？",
+     "figure": null,
+     "option_order": "sorted",
+     "options": [
+      {
+       "text": "{inc}",
+       "correct": true,
+       "value": "inc"
+      },
+      {
+       "text": "{db1}",
+       "error": "把多用的 {u2}－{u1} 全部用最高段的 {p3} 元計價",
+       "value": "db1"
+      },
+      {
+       "text": "{db2}",
+       "error": "把多用的 {u2}－{u1} 全部用第二段的 {p2} 元計價",
+       "value": "db2"
+      },
+      {
+       "text": "{db4}",
+       "error": "只算超過 {b} {c_unit}的那 {g3} {c_unit}，漏掉 {u1} 到 {b} {c_unit}這 {g2} {c_unit}",
+       "value": "db4"
+      },
+      {
+       "text": "{db5}",
+       "error": "只算到 {b} {c_unit}為止，漏掉超過 {b} {c_unit}的那 {g3} {c_unit}",
+       "value": "db5"
+      },
+      {
+       "text": "{db6}",
+       "error": "多加了一次基本費 {base} 元（兩期都要收，相減時已經抵銷）",
+       "value": "db6"
+      },
+      {
+       "text": "{db7}",
+       "error": "第二段從 {a} {c_unit}起算，忘了這一期已經用掉到 {u1} {c_unit}",
+       "value": "db7"
+      }
+     ],
+     "solution": "多用的部分橫跨兩段：{u1} 到 {b} {c_unit}這 {b}－{u1} ＝ {g2} {c_unit}屬第二段，{g2}×{p2} ＝ {inc_t2} 元；超過 {b} {c_unit}的 {u2}－{b} ＝ {g3} {c_unit}屬第三段，{g3}×{p3} ＝ {inc_t3} 元。兩期各收一次基本費，相減後抵銷。故多付 {inc_t2} ＋ {inc_t3} ＝ {inc} 元。（驗算：下一期 {f2} 元，這一期 {f1} 元，{f2} － {f1} ＝ {inc} 元。）",
+     "steps": [
+      "{u2} ＞ {b}，代表多用的部分跨過了 {b} {c_unit}這個分界，要拆成兩段",
+      "{u1} 到 {b}：{g2}×{p2} ＝ {inc_t2} 元；{b} 到 {u2}：{g3}×{p3} ＝ {inc_t3} 元",
+      "兩期的基本費相同會抵銷，故多付 {inc_t2} ＋ {inc_t3} ＝ {inc} 元"
+     ],
+     "trap": "多用的 {u2}－{u1} 個{c_unit}並不是同一個單價：跨過 {b} {c_unit}之後才變成 {p3} 元。"
+    },
+    {
+     "topic": "分段累進計費：合併計費的增減（題組）",
+     "difficulty": "難",
+     "key_idea": "合併成一個{c_meter}後，兩戶原本各享一次便宜的前 {a} {c_unit}只剩一次，總量還被推進最高段，但基本費只收一次——一增一減必須一起算",
+     "stem": "{c_who}家這一期的{c_res}為 {u1} {c_unit}，{c_who2}家為 {v} {c_unit}。若兩戶改成共用一個{c_meter}（基本費只收一次，兩戶的{c_res}合計後再依同一份分段單價計費），則這一期兩戶合計要付的{c_item}，會比原本兩戶各自計費的兩筆費用總和多多少元？",
+     "figure": null,
+     "option_order": "sorted",
+     "options": [
+      {
+       "text": "{diff}",
+       "correct": true,
+       "value": "diff"
+      },
+      {
+       "text": "{dc1}",
+       "error": "合併後仍算兩次基本費，忘了共用一個{c_meter}只收一次 {base} 元",
+       "value": "dc1"
+      },
+      {
+       "text": "{dc2}",
+       "error": "各自計費時忘了兩戶各要收一次基本費，少算了 2×{base} 元",
+       "value": "dc2"
+      },
+      {
+       "text": "{dc3}",
+       "error": "合併後把超過 {a} {c_unit}的部分全部用最高段的 {p3} 元計價",
+       "value": "dc3"
+      },
+      {
+       "text": "{dc4}",
+       "error": "以為共用一個{c_meter}後連基本費都免收，把合併後那一次 {base} 元也扣掉了（實際仍要收一次）",
+       "value": "dc4"
+      },
+      {
+       "text": "{dc5}",
+       "error": "沒發現合併後的 {s} {c_unit}已超過 {b} {c_unit}，第二段一路算到底",
+       "value": "dc5"
+      },
+      {
+       "text": "{dc6}",
+       "error": "只算超過 {b} {c_unit}的 {top} {c_unit}由 {p2} 元跳成 {p3} 元多出來的 {gainB} 元，既漏掉{c_who2}家原本便宜的前 {a} {c_unit}被吃掉，也沒扣掉省下的一次基本費",
+       "value": "dc6"
+      }
+     ],
+     "solution": "各自計費：{c_who}家 {base}＋{a}×{p1}＋{over1}×{p2} ＝ {f1} 元；{c_who2}家 {base}＋{a}×{p1}＋{overv}×{p2} ＝ {bill2} 元，合計 {sep_total} 元。共用一個{c_meter}時，{c_res}合計 {u1}＋{v} ＝ {s} {c_unit}，已超過 {b} {c_unit}，三段都要用：{base}＋{a}×{p1}＋（{b}－{a}）×{p2}＋（{s}－{b}）×{p3} ＝ {mrg_total} 元。故多付 {mrg_total}－{sep_total} ＝ {diff} 元。（也可以這樣看：{c_who2}家原本便宜的前 {a} {c_unit}由 {p1} 元升成 {p2} 元，多 {a}×（{p2}－{p1}）＝ {gainA} 元；超過 {b} {c_unit}的 {top} {c_unit}由 {p2} 元升成 {p3} 元，多 {gainB} 元；但基本費少收一次，省 {base} 元。{gainA}＋{gainB}－{base} ＝ {diff} 元。）",
+     "steps": [
+      "各自計費：{f1} ＋ {bill2} ＝ {sep_total} 元（兩個{c_meter}，基本費收兩次）",
+      "合併後{c_res}為 {u1}＋{v} ＝ {s} {c_unit}，超過 {b} {c_unit}，費用 ＝ {base}＋{c1_t1}＋{mid_full}＋{top}×{p3} ＝ {mrg_total} 元",
+      "相減：{mrg_total} － {sep_total} ＝ {diff} 元"
+     ],
+     "trap": "合併不是把兩張帳單相加：用量合起來會被推進更貴的段（而且便宜的前 {a} {c_unit}只剩一次），但基本費省下一次，兩個效果方向相反，必須一起算。"
+    }
+   ],
+   "notes": "三個小題的干擾項池各 6 個，恆為「3 個比正解小 ＋ 3 個比正解大」：小題1 小＝da2/da3/da7、大＝da1/da5/da6；小題2 小＝db2/db4/db5、大＝db1/db6/db7；小題3 小＝dc4/dc5/dc6、大＝dc1/dc2/dc3（大小關係由 constraints 的 gainA > base、gainB > base 保證）。數值選項照大小排（option_order: sorted），正解字母＝被抽中的干擾項中比正解小的個數，因此「隨機抽三個」的自然傾向會集中在 B、C（A、D 各只有 1/20 的組合）——這是 sorted 型數值選項的共通現象，不是本卡的缺陷。實測四個字母都指定得到（A/B/C/D 各 40/40），派卷時 gen_choice.py 會用 target_idx 從池中挑出落在指定字母的組合，全卷仍然均衡。"
   }
  ]
 }

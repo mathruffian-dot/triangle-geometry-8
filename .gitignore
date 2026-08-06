@@ -35,3 +35,6 @@ __pycache__/
 # wrangler（Cloudflare CLI）本機快取
 .wrangler/
 會考題庫/.wrangler/
+
+# 命題模板的草稿卡（AI 設計中的中間產物，審過後由 merge_cards.py 併入正式庫）
+會考題庫/命題模板/_草稿/
