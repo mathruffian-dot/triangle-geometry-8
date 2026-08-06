@@ -1200,6 +1200,401 @@
     "ring_label": "{c_ring}（寬 {w} 公尺）",
     "core_label": "{c_core}"
    }
+  },
+  {
+   "id": "E-B1-N1-07",
+   "role": "N1",
+   "book": "B1",
+   "chapter": "第2章 分數的運算",
+   "topic": "最小公倍數與整數解判斷",
+   "codes": [
+    "N-7-2",
+    "A-7-3"
+   ],
+   "perf": [
+    "n-IV-1",
+    "a-IV-1"
+   ],
+   "difficulty": "難",
+   "ask_type": "可能型",
+   "source_ref": "114-N2 藝術紙片拼貼",
+   "contexts": [
+    {
+     "who": "小燦",
+     "shop": "文具店",
+     "item": "藝術紙片",
+     "n1": "A 圖案",
+     "n2": "B 圖案",
+     "wall": "長方形拼貼畫",
+     "pack": "組合包"
+    },
+    {
+     "who": "阿宏",
+     "shop": "建材行",
+     "item": "磁磚",
+     "n1": "甲款",
+     "n2": "乙款",
+     "wall": "長方形牆面",
+     "pack": "箱"
+    },
+    {
+     "who": "小妍",
+     "shop": "手作店",
+     "item": "紙膠帶",
+     "n1": "花色 A",
+     "n2": "花色 B",
+     "wall": "長方形裝飾板",
+     "pack": "組合包"
+    }
+   ],
+   "params": {
+    "a": {
+     "choices": [
+      12,
+      15,
+      16,
+      18,
+      20
+     ]
+    },
+    "b": {
+     "choices": [
+      14,
+      16,
+      18,
+      21,
+      24
+     ]
+    },
+    "m": {
+     "choices": [
+      3,
+      4,
+      5,
+      7
+     ]
+    },
+    "n": {
+     "choices": [
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    "h": {
+     "choices": [
+      5,
+      6,
+      8
+     ]
+    }
+   },
+   "derive": [
+    "L = lcm(a, b)",
+    "p = L // a",
+    "q = L // b",
+    "den = m * q - n * p",
+    "num = n * p",
+    "ok = den > 0 and num % den == 0",
+    "k = num // den if ok else 0",
+    "layers = 2 * k + 1 if ok else 0",
+    "na = p * (k + 1) if ok else 0",
+    "nb = q * k if ok else 0",
+    "packs = na // m if ok else 0",
+    "kfrac = '%s' % Rational(num, den) if den != 0 else '無解'",
+    "concl = '可能' if ok else '不可能'",
+    "ratio_txt = '%d：%d' % (m, n)",
+    "reason = ('k = %d 為正整數，此時共 %d 層，需要 %d 片%s與 %d 片%s，恰好是 %d 個%s，故可能恰好用完。' % (k, layers, na, c_n1, nb, c_n2, packs, c_pack)) if ok else ('k 不是正整數，但層數必須是正整數，因此不存在符合條件的層數，故不可能恰好用完。')"
+   ],
+   "constraints": [
+    "a != b",
+    "L <= 400",
+    "p != q",
+    "den != 0",
+    "gcd(m, n) == 1",
+    "m != n",
+    "p >= 3",
+    "q >= 3",
+    "(not ok) or (k >= 2 and k <= 12)",
+    "(not ok) or (packs * m == na and packs * n == nb)"
+   ],
+   "stem": "{c_shop}販賣一款包含{c_n1}、{c_n2}兩種{c_item}的{c_pack}，兩種{c_item}的形狀分別為 {a} 公分 × {h} 公分、{b} 公分 × {h} 公分的長方形。{c_who}打算在不裁切的情況下，把這兩種{c_item}以緊密相鄰的方式貼成一個{c_wall}：奇數層全部貼{c_n1}、偶數層全部貼{c_n2}，每一層的寬度都相同，且最後一層為{c_n1}。",
+   "subs": [
+    "(1) 以上述方式貼成的{c_wall}，第一層最少要用幾片{c_n1}？",
+    "(2) 已知每個{c_pack}中{c_n1}與{c_n2}的數量比為 {ratio_txt}。若{c_who}想買一些{c_pack}，貼成第一層{c_n1}數量與(1)相同的{c_wall}，判斷他是否可能恰好把買來的{c_item}全部用完？請說明理由。"
+   ],
+   "answer": "(1) {p} 片　(2) {concl}",
+   "solution": "(1) 每一層的寬度都相同：奇數層由寬 {a} 公分的{c_n1}拼成、偶數層由寬 {b} 公分的{c_n2}拼成，所以每層寬度必須同時是 {a} 與 {b} 的倍數，即 {a} 與 {b} 的公倍數。要「最少」就取最小公倍數 lcm({a}, {b}) = {L} 公分，此時第一層需要 {L} ÷ {a} = {p} 片{c_n1}（同時每個偶數層需要 {L} ÷ {b} = {q} 片{c_n2}）。\n(2) 設共有 2k＋1 層（k 為正整數，最後一層為{c_n1}）：{c_n1}佔 k＋1 層共 {p}(k＋1) 片，{c_n2}佔 k 層共 {q}k 片。若買 t 個{c_pack}恰好用完，則 {p}(k＋1) = {m}t 且 {q}k = {n}t。消去 t 得 {n}×{p}(k＋1) = {m}×{q}k，整理得 k（{m}×{q} － {n}×{p}）= {n}×{p}，即 k = {num} ÷ {den} = {kfrac}。{reason}",
+   "steps": [
+    "每層寬度要同時是 {a} 與 {b} 的倍數 → 取最小公倍數 {L} 公分",
+    "第一層片數 = {L} ÷ {a} = {p} 片；每個偶數層 = {L} ÷ {b} = {q} 片",
+    "設 2k＋1 層：{c_n1}共 {p}(k＋1) 片、{c_n2}共 {q}k 片",
+    "恰好用完 → {p}(k＋1)：{q}k = {m}：{n}，解出 k = {kfrac}",
+    "看 k 是不是正整數 → 判斷{concl}"
+   ],
+   "trap": "「每層寬度相同」才是列式的起點；k 必須是正整數（層數不能是分數），這一步才是判斷的關鍵。",
+   "anchors": {
+    "A": "第一層最少 {p} 片{c_n1}（由 lcm({a}, {b}) = {L} 得出）",
+    "B": "設共 2k＋1 層，列出 {c_n1}共 {p}(k＋1) 片、{c_n2}共 {q}k 片，並依比例列出 {p}(k＋1)：{q}k = {ratio_txt}",
+    "C": "由比例式解出 k = {kfrac}，並檢查 k 是否為正整數",
+    "D": "判斷{concl}恰好把買來的{c_item}全部用完"
+   },
+   "l1_element": "正確求出第一層最少 {p} 片，或寫出「{c_n1}共 {p}(k＋1) 片、{c_n2}共 {q}k 片」這類非題目已知的關係式",
+   "figure": null
+  },
+  {
+   "id": "E-B3-N2-08",
+   "role": "N2",
+   "book": "B3",
+   "chapter": "第2章 平方根與畢氏定理",
+   "topic": "畢氏比例與單位換算",
+   "codes": [
+    "S-8-6",
+    "N-7-9"
+   ],
+   "perf": [
+    "s-IV-7",
+    "n-IV-4"
+   ],
+   "difficulty": "中",
+   "ask_type": "能否型",
+   "source_ref": "112-23 矩形對角線、115-24 單位換算",
+   "contexts": [
+    {
+     "who": "小柔",
+     "item": "電視",
+     "place": "電視櫃的凹槽",
+     "who2": "家人"
+    },
+    {
+     "who": "阿哲",
+     "item": "螢幕",
+     "place": "書桌上層的隔板",
+     "who2": "同學"
+    },
+    {
+     "who": "小妍",
+     "item": "平板展示架",
+     "place": "櫃檯的展示區",
+     "who2": "店長"
+    }
+   ],
+   "params": {
+    "d": {
+     "choices": [
+      40,
+      45,
+      50,
+      55,
+      60,
+      65
+     ]
+    },
+    "gapcm": {
+     "choices": [
+      95,
+      100,
+      110,
+      120,
+      130,
+      140
+     ]
+    },
+    "margin": {
+     "choices": [
+      2,
+      3,
+      5
+     ]
+    }
+   },
+   "derive": [
+    "w_in = Rational(4 * d, 5)",
+    "h_in = Rational(3 * d, 5)",
+    "w_cm = Rational(w_in * 254, 100)",
+    "w_txt = '%g' % float(w_cm)",
+    "need = w_cm + margin",
+    "need_txt = '%g' % float(need)",
+    "can = need <= gapcm",
+    "can_txt = '能' if can else '不能'",
+    "cmp_txt = '≦' if can else '>'",
+    "diff_txt = '%g' % abs(float(gapcm - need))"
+   ],
+   "constraints": [
+    "w_in == int(w_in)",
+    "h_in == int(h_in)",
+    "abs(float(gapcm - need)) >= 3",
+    "w_cm < 200",
+    "gapcm > 60"
+   ],
+   "stem": "{c_who}想買一台「{d} 吋」的{c_item}。{c_item}的尺寸是以螢幕的對角線長度來標示，單位為吋；這台{c_item}螢幕的寬與高的比為 4：3。已知 1 吋 = 2.54 公分。{c_who}家中{c_place}的寬度為 {gapcm} 公分，而{c_who2}提醒：{c_item}放進去時，左右兩側合計至少要留 {margin} 公分的散熱空間。",
+   "subs": [
+    "(1) 這台{c_item}螢幕的寬是幾吋？（提示：寬、高、對角線構成直角三角形）",
+    "(2) 承(1)，請判斷這台{c_item}是否能放進{c_place}？請說明理由。"
+   ],
+   "answer": "(1) {w_in} 吋　(2) {can_txt}",
+   "solution": "(1) 設螢幕的寬為 4k 吋、高為 3k 吋，則由畢氏定理，對角線 = √((4k)² ＋ (3k)²) = √(25k²) = 5k 吋。由 5k = {d} 得 k = {d} ÷ 5，故寬 = 4k = {w_in} 吋（高 = 3k = {h_in} 吋）。\n(2) 把寬換算成公分：{w_in} × 2.54 = {w_txt} 公分。連同左右合計 {margin} 公分的散熱空間，共需要 {w_txt} ＋ {margin} = {need_txt} 公分。{c_place}的寬度為 {gapcm} 公分，因為 {need_txt} {cmp_txt} {gapcm}，所以這台{c_item}{can_txt}放進{c_place}（相差 {diff_txt} 公分）。",
+   "steps": [
+    "寬：高：對角線 = 4：3：5（3-4-5 直角三角形），由對角線 {d} 吋得比例單位 k = {d} ÷ 5",
+    "寬 = 4k = {w_in} 吋",
+    "換算成公分：{w_in} × 2.54 = {w_txt} 公分",
+    "加上散熱空間 {margin} 公分共需 {need_txt} 公分，與 {gapcm} 公分比較 → {can_txt}放進去"
+   ],
+   "trap": "「{d} 吋」指的是對角線不是寬；而且比較前要先把吋換成公分，還要把散熱空間算進去。",
+   "anchors": {
+    "A": "螢幕的寬為 {w_in} 吋",
+    "B": "把寬換算成公分（{w_in} × 2.54 = {w_txt} 公分），並加上散熱空間 {margin} 公分",
+    "C": "算出實際需要的寬度 {need_txt} 公分，並與{c_place}的 {gapcm} 公分比較",
+    "D": "判斷這台{c_item}{can_txt}放進{c_place}"
+   },
+   "l1_element": "正確寫出寬：高：對角線 = 4：3：5，或算出寬為 {w_in} 吋",
+   "figure": {
+    "kind": "triangle",
+    "width": 380,
+    "height": 300,
+    "config": {
+     "subtype": "right",
+     "vertex_labels": [
+      "A",
+      "B",
+      "C"
+     ],
+     "right_angle_at": "B",
+     "side_labels": {
+      "AB": "高（3 份）",
+      "BC": "寬（4 份）",
+      "CA": "對角線 {d} 吋"
+     }
+    }
+   }
+  },
+  {
+   "id": "E-B6-N1-09",
+   "role": "N1",
+   "book": "B6",
+   "chapter": "第2章 統計與機率",
+   "topic": "平均數的可能範圍與機率",
+   "codes": [
+    "D-9-3",
+    "D-7-2"
+   ],
+   "perf": [
+    "d-IV-2",
+    "d-IV-1"
+   ],
+   "difficulty": "難",
+   "ask_type": "可能型",
+   "source_ref": "107-N1 平均數與機率",
+   "contexts": [
+    {
+     "who": "阿翰",
+     "act": "投籃練習",
+     "unit": "分",
+     "obj": "每回合的得分",
+     "round": "回合",
+     "rule": "每回合的得分為 1、2、3、4 分中的一種，且每種得分出現的機會相等"
+    },
+    {
+     "who": "小柔",
+     "act": "闖關遊戲",
+     "unit": "點",
+     "obj": "每關獲得的點數",
+     "round": "關",
+     "rule": "每關獲得的點數為 1、2、3、4 點中的一種，且每種點數出現的機會相等"
+    }
+   ],
+   "params": {
+    "li": {
+     "choices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+     ]
+    },
+    "lo10": {
+     "choices": [
+      21,
+      22,
+      23,
+      24,
+      25,
+      26
+     ]
+    },
+    "hi10": {
+     "choices": [
+      24,
+      25,
+      26,
+      27,
+      28
+     ]
+    }
+   },
+   "derive": [
+    "lists = [[4, 3, 3, 2, 2, 1, 3, 4], [1, 3, 1, 4, 2, 4, 4, 2], [2, 2, 1, 1, 2, 1, 4, 1], [3, 2, 2, 4, 1, 3, 2, 4], [3, 3, 1, 2, 1, 4, 1, 4], [4, 2, 1, 2, 4, 1, 1, 1], [2, 2, 3, 1, 1, 2, 1, 1], [4, 2, 4, 1, 4, 2, 1, 2], [2, 1, 1, 3, 2, 3, 1, 1], [4, 2, 2, 1, 3, 1, 3, 1], [3, 4, 2, 4, 2, 1, 4, 3], [1, 4, 1, 2, 2, 4, 3, 3], [1, 3, 3, 1, 1, 1, 4, 4], [4, 3, 2, 1, 4, 2, 1, 4]]",
+    "xs = lists[li]",
+    "S = sum(xs)",
+    "avg8 = Rational(S, 8)",
+    "avg8_txt = '%g' % float(avg8)",
+    "lo_s = lo10 - S",
+    "hi_s = hi10 - S",
+    "pairs = [(u, v) for u in [1,2,3,4] for v in [1,2,3,4]]",
+    "good = [t for t in pairs if lo_s <= t[0] + t[1] <= hi_s]",
+    "cnt = len(good)",
+    "prob = Rational(cnt, 16)",
+    "prob_txt = '%s' % prob",
+    "xs_txt = '、'.join([str(t) for t in xs])",
+    "lo_avg = '%s' % Rational(lo10, 10)",
+    "hi_avg = '%s' % Rational(hi10, 10)",
+    "sums_txt = '、'.join([str(t) for t in sorted(set([t[0]+t[1] for t in good]))])",
+    "poss = cnt > 0",
+    "poss_txt = '可能' if poss else '不可能'",
+    "tail = ('其中和 s 落在 %s 的組合共 %d 種，故這件事可能發生，機率 = %d/16 = %s。' % (sums_txt, cnt, cnt, prob_txt)) if poss else ('但後 2 個回合的和最多只有 4 ＋ 4 = 8，小於所需的 %d，因此不存在符合的結果，這件事不可能發生（機率為 0）。' % lo_s)",
+    "prob_suffix = ('，機率為 %s' % prob_txt) if poss else ''"
+   ],
+   "constraints": [
+    "hi10 > lo10",
+    "hi10 - lo10 <= 3",
+    "(cnt >= 3 and cnt <= 12) or (cnt == 0 and lo_s > 8 and lo_s <= 11)",
+    "hi_s <= 8 or cnt == 0",
+    "avg8 != int(avg8)"
+   ],
+   "stem": "{c_who}參加{c_act}，共進行 10 個{c_round}。{c_rule}。已知{c_who}前 8 個{c_round}的{c_obj}依序為 {xs_txt}（單位：{c_unit}）。",
+   "subs": [
+    "(1) 求{c_who}前 8 個{c_round}的平均{c_obj}為多少{c_unit}？",
+    "(2) 若{c_who}這 10 個{c_round}的平均{c_obj}落在 {lo_avg} {c_unit}到 {hi_avg} {c_unit}之間（含兩端），判斷這件事是否可能發生？若可能，求發生的機率。"
+   ],
+   "answer": "(1) {avg8_txt} {c_unit}　(2) {poss_txt}發生{prob_suffix}",
+   "solution": "(1) 前 8 個{c_round}的總和為 {S} {c_unit}，平均 = {S} ÷ 8 = {avg8_txt} {c_unit}。\n(2) 10 個{c_round}的平均落在 {lo_avg} 到 {hi_avg} 之間，等價於 10 個{c_round}的總和落在 {lo10} 到 {hi10} 之間。前 8 個{c_round}已得 {S} {c_unit}，所以後 2 個{c_round}的和 s 必須滿足 {lo_s} ≦ s ≦ {hi_s}。\n後 2 個{c_round}的{c_obj}各有 1、2、3、4 四種可能且機會相等，共 4×4 = 16 種等可能的結果。{tail}",
+   "steps": [
+    "(1) 前 8 個{c_round}總和 {S}，平均 = {S} ÷ 8 = {avg8_txt}",
+    "(2) 把「平均落在 {lo_avg}～{hi_avg}」換成「總和落在 {lo10}～{hi10}」",
+    "扣掉已得的 {S}，後 2 個{c_round}的和 s 要滿足 {lo_s} ≦ s ≦ {hi_s}",
+    "後 2 個{c_round}共 4×4 = 16 種等可能結果，逐一數出符合的有 {cnt} 種",
+    "數出符合的組合數 {cnt} 種 → 判斷{poss_txt}發生{prob_suffix}"
+   ],
+   "trap": "平均的範圍要先換成「總和」的範圍再扣掉已知的分數；分母是 16 種組合，不是 4 種。",
+   "anchors": {
+    "A": "前 8 個{c_round}的平均為 {avg8_txt} {c_unit}",
+    "B": "把平均的範圍換成總和的範圍（{lo10} ≦ 總和 ≦ {hi10}），再推得後 2 個{c_round}的和需滿足 {lo_s} ≦ s ≦ {hi_s}",
+    "C": "列出後 2 個{c_round}的 16 種等可能結果，數出符合條件的 {cnt} 種",
+    "D": "判斷這件事{poss_txt}發生{prob_suffix}"
+   },
+   "l1_element": "正確算出前 8 個{c_round}的平均 {avg8_txt}，或寫出「後 2 個{c_round}的和需介於 {lo_s} 與 {hi_s} 之間」",
+   "figure": null
   }
  ]
 }
