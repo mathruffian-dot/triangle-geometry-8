@@ -258,7 +258,15 @@ def main():
         who = f'{x.get("班級","")}-{x.get("座號","")}'
         qid = x.get("題目ID", "")
         out = outdir / f"{who}_{qid}.png"
-        if out.exists() and not args.force:
+        # 學生重新上傳會產生新的檔案ID：本機同名舊圖必須重畫，否則會把「舊圖畫的紅筆版」掛到新紀錄上。
+        # 舊資料沒有 .fid 佐證檔，維持原本的補上傳行為（只提醒），避免整批無謂重畫。
+        fid_now = str(x.get("檔案ID", ""))
+        fid_file = outdir / f"{who}_{qid}.fid"
+        fid_prev = fid_file.read_text(encoding="utf-8").strip() if fid_file.exists() else ""
+        stale = bool(fid_prev) and fid_prev != fid_now
+        if stale:
+            print(f"[{i}/{len(recs)}] {who} {qid} 來源已更換（學生重新上傳）→ 重畫")
+        if out.exists() and not args.force and not stale:
             print(f"[{i}/{len(recs)}] {who} {qid} 已存在，略過（仍會補上傳）"); done += 1
             # 兩欄任一為空就補傳：早期版本只寫「紅筆圖ID」，「紅筆圖連結」欄是後來才加的，
             # 只看 ID 會讓那批舊資料永遠補不到連結（老師在試算表就點不開圖）
@@ -286,6 +294,7 @@ def main():
                 pending.append({"fileId": str(x.get("檔案ID", "")),
                                 "img": "data:image/png;base64," + base64.b64encode(out.read_bytes()).decode()})
                 (outdir / f"{who}_{qid}.json").write_text(json.dumps(anns, ensure_ascii=False, indent=1), encoding="utf-8")
+                fid_file.write_text(fid_now, encoding="utf-8")   # 記下這張圖是用哪個來源畫的
             else:
                 print(f"[{i}/{len(recs)}] {who} {qid} 繪製失敗 {err}"); failed.append(f"{who} {qid} 繪製失敗")
         except Exception as e:

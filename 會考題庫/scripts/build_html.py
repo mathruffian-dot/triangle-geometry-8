@@ -23,6 +23,11 @@ concepts = json.loads(_concepts_file.read_text(encoding="utf-8")) if _concepts_f
 # 非選評分規準（老師覆核時對照官方逐級分指引；檔案不存在則為空）
 _rubrics_file = DATA / "essay_rubrics.json"
 essay_rubrics = json.loads(_rubrics_file.read_text(encoding="utf-8")) if _rubrics_file.exists() else {}
+# 會考數學等級門檻（歷年加權分數門檻的平均，來源見 scripts/fetch_grade_cutoffs.py）
+_cut_file = DATA / "grade_cutoffs.json"
+_cut = json.loads(_cut_file.read_text(encoding="utf-8")) if _cut_file.exists() else {}
+cutoffs_json = json.dumps({"cut": _cut.get("平均門檻", {}), "years": _cut.get("採用年份", [])},
+                          ensure_ascii=False)
 
 payload = json.dumps({"questions": questions, "curriculum": curr, "concepts": concepts,
                       "essay_rubrics": essay_rubrics}, ensure_ascii=False)
@@ -1499,7 +1504,8 @@ function setScanToggle(id, show){
   const btn = document.querySelector(`.hwwrap[data-q="${id}"] .scantoggle`);
   if(btn) btn.style.display = show ? '' : 'none';
 }
-// 選了照片：讀圖(套EXIF方向+downscale) → 顯示原圖 → 背景做文件掃描(抓正+增強) → 成功則切成掃描版
+// 選了照片：讀圖(套EXIF方向+downscale) → 用原圖作答 → 背景做文件掃描(抓正+增強)，
+// 掃描版只提供「🔁 看掃描版」讓學生自行選用，預設一律交原圖（掃描框錯會裁掉作答）
 function onPhoto(id, input){
   if(submitted) return;
   const f = input.files && input.files[0]; if(!f) return; input.value='';
@@ -1514,9 +1520,11 @@ function onPhoto(id, input){
     loadCV().then(()=>{
       let r=null; try{ r=scanCanvas(origCnv); }catch(e){ r=null; }
       if(r && r.ok){
-        SCAN[id].scannedUrl=r.url; SCAN[id].view='scan'; imgs[id]=r.url;
-        setPhotoImage(id, r.url); setScanToggle(id,true);
-        const btn=document.querySelector(`.hwwrap[data-q="${id}"] .scantoggle`); if(btn) btn.textContent='🔁 看原圖';
+        // ⚠ 交出去的一律是原圖：掃描偵測「成功」但框錯紙張邊界時（實測發生過兩次），
+        // 會把學生的作答裁掉或拉伸放大。掃描版只當成可選的檢視效果，由學生自己決定要不要用。
+        SCAN[id].scannedUrl=r.url; SCAN[id].view='orig';
+        setScanToggle(id,true);
+        const btn=document.querySelector(`.hwwrap[data-q="${id}"] .scantoggle`); if(btn) btn.textContent='🔁 看掃描版';
       }
       showScanBusy(id,false); save();
     }).catch(()=>{ showScanBusy(id,false); });   // 掃描元件載不到 → 保留原圖（一樣可交卷）
@@ -1570,7 +1578,11 @@ function scanCanvas(srcCnv){
   if(!tl||!tr||!bl||!br) return {ok:false};
   const D=(a,b)=>Math.hypot(a.x-b.x, a.y-b.y);
   const wTop=D(tl,tr), wBot=D(bl,br), hL=D(tl,bl), hR=D(tr,br);
-  if(Math.max(wTop,wBot) < srcCnv.width*0.35 || Math.max(hL,hR) < srcCnv.height*0.35) return {ok:false}; // 框太小＝沒抓到
+  // 框太小＝沒抓到整張紙（門檻從 0.35 提高到 0.55：實測 0.4 左右的框都是框錯，會把作答裁掉）
+  if(Math.max(wTop,wBot) < srcCnv.width*0.55 || Math.max(hL,hR) < srcCnv.height*0.55) return {ok:false};
+  // 框出來的長寬比若與原圖差太多，多半是抓到桌面邊緣或題本的一塊，不是整張作答紙
+  const arSrc=srcCnv.height/srcCnv.width, arBox=((hL+hR)/2)/((wTop+wBot)/2);
+  if(arBox < arSrc*0.6 || arBox > arSrc*1.6) return {ok:false};
   const outW=1240, outH=Math.max(1, Math.round(outW*((hL+hR)/(wTop+wBot))));
   let warped; try{ warped=scanner.extractPaper(srcCnv, outW, outH, corners); }catch(e){ return {ok:false}; }
   let enhanced; try{ enhanced=enhance(warped); }catch(e){ enhanced=warped; }
@@ -1833,12 +1845,33 @@ function renderMyResult(rows, choice){
       if(ex.a) detail += '<div class="rv-sec"><h4>參考答案</h4><div class="rv-sol">'+esc(ex.a)+'</div></div>';
       if(ex.s) detail += '<div class="rv-sec"><h4>詳解</h4><div class="rv-sol">'+esc(ex.s)+'</div></div>';
     }
-    return '<div class="review rv-na" style="margin-top:10px"><div class="rv-head">'+(q.year||'')+'年 非選第'+num+'題　'+lvHtml+'</div>'
+    return '<div class="review rv-na" style="margin-top:10px"><div class="rv-head">'
+      + (SRCLBL[q.year]||((q.year||'')+'年'))+' 非選第'+num+'題　'+lvHtml+'</div>'
       + (r.img?'<div style="margin:4px 0"><a href="'+esc(r.img)+'" target="_blank" rel="noopener" class="hint">🖼 看我當初交的作答</a></div>':'')
       + detail + '</div>';
   }).join('');
   // 會考加權換算：非選(級分和/總級分)×15 ＋ 選擇(答對/題數)×85，滿分 100
   let weighted = '';
+  // 依歷年會考門檻換算等級標示；模考難度與母體都和正式會考不同，只能當參考
+  const GRD = __CUTOFFS__;
+  function gradeOf(sc){
+    const c = GRD && GRD.cut; if(!c || c['A++']==null) return null;
+    const seq = [['A++','精熟'],['A+','精熟'],['A','精熟'],['B++','基礎'],['B+','基礎'],['B','基礎']];
+    for(const [m,t] of seq){ if(sc >= c[m]) return {mark:m, tier:t}; }
+    return {mark:'C', tier:'待加強'};
+  }
+  function gradeBadge(sc){
+    const g = gradeOf(sc); if(!g) return '';
+    const col = g.tier==='精熟' ? ['#065f46','#d1fae5','#6ee7b7']
+              : g.tier==='基礎' ? ['#9a3412','#ffedd5','#fdba74']
+                                : ['#991b1b','#fee2e2','#fca5a5'];
+    return '<div style="display:inline-flex;align-items:baseline;gap:6px;margin-top:6px;padding:4px 12px;'
+      + 'border-radius:99px;background:'+col[1]+';border:1px solid '+col[2]+';color:'+col[0]+'">'
+      + '<b style="font-size:1.3rem;letter-spacing:.5px">'+g.mark+'</b>'
+      + '<span style="font-size:.85rem;font-weight:700">'+g.tier+'</span></div>'
+      + '<div class="hint" style="margin-top:4px">＊依 '+((GRD.years||[]).length)+' 個年度會考門檻平均換算（'
+      + (GRD.years||[]).join('、')+' 年），模考難度與正式會考不同，等級僅供參考</div>';
+  }
   const gradedRows = rows.filter(r=>r.level===0 || (r.level!=null && String(r.level).trim()!==''));
   if(rows.length && gradedRows.length === rows.length){
     const eGot = gradedRows.reduce((a,r)=>a+Number(r.level||0),0), eMax = rows.length*3;
@@ -1849,6 +1882,7 @@ function renderMyResult(rows, choice){
         + '<div style="font-size:.85rem;color:var(--sub);font-weight:700">會考加權總分（滿分 100）</div>'
         + '<div style="font-size:2.1rem;font-weight:800;color:var(--blue);line-height:1.25">'+(ePart+cPart).toFixed(1)
         + '<span style="font-size:1rem;color:var(--sub);font-weight:600"> / 100</span></div>'
+        + gradeBadge(ePart+cPart)
         + '<div class="hint" style="margin-top:4px">選擇題 '+choice.score+'/'+choice.total+' × 85% ＝ '+cPart.toFixed(1)+' 分'
         + '　＋　非選 '+eGot+'/'+eMax+' 級分 × 15% ＝ '+ePart.toFixed(1)+' 分</div>'
         + '<div class="hint" style="margin-top:2px">＊依國中教育會考計分方式換算（選擇佔 85%、非選佔 15%）</div></div>';
@@ -1916,6 +1950,7 @@ def make_quiz(question_ids, title, out_path, submit_url="", print_pdf="", fixed_
             .replace("__SUBMITURL__", submit_url)
             .replace("__PRINTPDF__", pdf_html)
             .replace("__FIXEDCLS__", str(fixed_cls or ""))
+            .replace("__CUTOFFS__", cutoffs_json)
             .replace("__QUIZDATA__", data))
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     Path(out_path).write_text(html, encoding="utf-8")

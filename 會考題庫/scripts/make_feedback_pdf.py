@@ -72,6 +72,38 @@ def img_flow(path, max_w, max_h):
     return Image(path, width=iw * s, height=ih * s)
 
 
+def split_redpen(path):
+    """紅筆圖若帶「續寫解答」區，沿那條橫貫整張的紅色分隔線切成兩段。
+
+    回傳 (作答段路徑, 續寫段路徑)；沒有續寫區則回 (原路徑, None)。
+    分開擺放才能讓兩段各自用滿版寬度——整張一起縮放會把續寫的字壓到看不清。
+    """
+    try:
+        from PIL import Image as PILImage
+        import numpy as np
+        im = PILImage.open(path).convert("RGB")
+        a = np.asarray(im)
+        # 紅筆色約 (224,49,49)：紅通道明顯高於綠藍
+        red = (a[:, :, 0] > 150) & (a[:, :, 1] < 110) & (a[:, :, 2] < 110)
+        rows = red.sum(axis=1)
+        W, H = im.size
+        # 分隔線橫跨約整個寬度，且只會出現在圖的下半部
+        cand = [y for y in range(int(H * 0.35), H) if rows[y] > W * 0.80]
+        if not cand:
+            return path, None
+        cut = min(cand)
+        if cut < H * 0.35 or cut > H * 0.97:
+            return path, None
+        base = str(path)
+        p_top = base.replace(".png", "__top.png")
+        p_bot = base.replace(".png", "__sol.png")
+        im.crop((0, 0, W, cut)).save(p_top)
+        im.crop((0, max(0, cut - int(H * 0.004)), W, H)).save(p_bot)
+        return p_top, p_bot
+    except Exception:
+        return path, None
+
+
 def dl_img(fid, link):
     urls = ([f"https://drive.google.com/uc?export=download&id={fid}"] if fid else []) + ([link] if link else [])
     for u in urls:
@@ -155,9 +187,18 @@ def main():
             # 作答圖：優先用紅筆批改版（原圖＋紅筆標註，原圖像素未更動）；沒有就用原圖
             redpen = ROOT / "redpen_out" / f"{stu}_{q}.png"
             if redpen.exists():
+                top, sol = split_redpen(str(redpen))
+                if top != str(redpen):
+                    tmpfiles.append(top)
                 flow.append(Spacer(1, 3))
                 flow.append(P("老師批改（紅筆為批改標註，底下為你的原始作答）：", 8.5, colors.HexColor("#b91c1c")))
-                flow.append(img_flow(str(redpen), CW, 105 * mm))
+                flow.append(img_flow(top, CW, 105 * mm))
+                if sol:
+                    # 續寫解答另外整段呈現，才有足夠寬度把分數、算式看清楚
+                    tmpfiles.append(sol)
+                    flow.append(Spacer(1, 4))
+                    flow.append(P("✍ 老師續寫的解答（照著訂正一遍）：", 9.5, bold=True))
+                    flow.append(img_flow(sol, CW, 185 * mm))
             else:
                 ai = dl_img(str(r.get("檔案ID", "")), r.get("圖片連結", ""))
                 if ai:
