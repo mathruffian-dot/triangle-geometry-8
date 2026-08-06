@@ -44,3 +44,6 @@ __pycache__/
 
 # 個人化設定（每個人自己的 GAS 網址、Cloudflare 專案名等）
 會考題庫/data/config.json
+
+# 工具自動產生的備份（merge_cards.py／gen_essay.py 每次寫入前備份，屬本機狀態）
+會考題庫/backup/*_備份_*.json
