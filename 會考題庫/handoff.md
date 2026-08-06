@@ -288,3 +288,103 @@ python scripts/make_feedback_pdf.py --quiz "卷名"        # 個人回饋單 PDF
 ### ⏭️ 下一步
 步驟6 題庫「✍ 非選覆核」頁（唯一未做的建置）：載入 ?essays=1 → 顯示手寫圖＋AI初評（級分/理由/信心）＋官方guide對照 → 老師一鍵確認/改分（需 Code.gs 再加 kind:'essay_review' 回寫老師欄＋把 essay_rubrics 併進 bank payload）。目前沒有覆核頁也能用（老師直接看試算表「非選作答」表）。
 步驟7 真實校準：用真班學生手寫樣本跑一輪，看 AI 對齊率與辨識率（手寫比印刷難，需實測調整）。
+
+### ✅ 2026-08-05 非選題「命題模板庫＋自動生成器」（新功能，第一版完成）
+需求：分析近五年會考非選題的命題公式，做成模板，之後可依六冊內容不斷生成新題。
+
+**分析報告**：`命題模板/命題公式分析報告.md`（非選近5年為主／近10年為輔＋選擇題 255 題統計）
+- 非選公式＝**生活情境 ＋ 題目現場定義的新規則 ＋ (1)單步套用 ＋ (2)建模→推理→下判斷**
+- 近10年固定：N1 一定是數／代數／統計（10/10），N2 以幾何為主（7/10）；每題兩小題、3級分
+- 第(2)小題只有六型：足夠／一定（反例）／可能（不存在性）／能否／比較／最值
+- **官方評分規準是套模子的**（103–114 逐級分指引比對）→ 只要標出四個錨點 A/B/C/D，L3/L2/L1/L0 與 checkpoints 可自動生成
+
+**新檔案**
+| 檔案 | 用途 |
+|---|---|
+| `data/templates_essay.json` | 模板卡（目前 6 張：B1~B6 各 1，六種問法各 1） |
+| `scripts/gen_essay.py` | 生成器：抽情境／參數→檢查約束→算答案→產題幹圖＋詳解＋評分規準 |
+| `scripts/validate_templates_essay.py` | 模板品質關卡（每卡試生 N 組，檢查殘留變數／級分／結論多樣性／課綱代碼） |
+| `data/gen_log.json` | 已用過的參數簽章，**確保每次生出不一樣的題** |
+| `01_題目圖片/GEN/` | 題幹渲染 PNG（前端一律用 `<img>`，故生成題也走同一管線） |
+
+**指令**
+```
+python scripts/gen_essay.py --list                 # 看模板卡
+python scripts/gen_essay.py --n 2                  # 生一份卷（N1+N2）
+python scripts/gen_essay.py --books B1,B4 --n 2    # 限定冊別（複習到哪冊就出哪冊）
+python scripts/gen_essay.py --n 2 --dry            # 只看不寫檔
+python scripts/validate_templates_essay.py --n 40  # 改模板卡後必跑
+```
+生成後：`python scripts/build_html.py` → 題庫就看得到（year 欄＝批次代碼如 `G0805`）；
+派卷＝把 `G0805-N1` 之類 id 加進 `data/quizzes.json` 的 qids → `build_quiz_site.py` → deploy。
+
+**已驗證**
+- 6 張卡各試生 40 組全過（0 錯 0 警）；答案結論兩種都會出現（「一定型」正解本來就固定為「不一定」，已標 `conclusion_fixed`）
+- 生成題寫入 `data/questions_G0805.json`（2 題示範）＋ 併入 `data/essay_rubrics.json`（會自動備份原檔到 `backup/`）
+- `make_one_quiz.py` 產 `backup/自編非選卷_G0805_index.html`，瀏覽器實測：兩張題圖 1000×840 正常載入、手寫 canvas 正常
+- `build_html.py` 兩處小修：①自動掃描 `questions_*.json`（HL*／G* 都會載入，不用再改清單）②單檔版缺圖不再整支崩潰
+
+**注意**
+- 生成題的評分規準是「依官方結構套模生成」，**非官方原件**（`confidence: generated`），AI 初評後一樣要老師覆核
+- 目前模板卡只有 6 張（每冊 1 張）。要更耐用建議每冊 3–5 張、覆蓋六種問法 → 可長期輪用不重複
+- 選擇題模板（`templates_choice.json` ＋ 生成器）尚未做，報告裡已有卷面藍圖、18 條必考清單、八大題幹骨架與干擾項法則可直接實作
+
+### ✅ 2026-08-06 選擇題模板庫 ＋ 共用配圖元件庫（第一版完成）
+接續非選模板，把「圖」與「選擇題」一起做完——因為六成題目有圖，元件庫做一次兩邊共用。
+
+**1. 配圖元件庫 `scripts/figures.py`（非選／選擇題共用）**
+一個 spec dict → SVG → PNG，所有標註都由參數帶入（改邊長，圖上的數字跟著改）。
+- **接現成**：jh-math-geometry 技能的 `geometry_renderer.py` 可直接 import
+  → triangle／quad／circle／coord（坐標平面）／solid（立體）／parallel／center（三心）／similar
+  ⚠ 它預設字型是 serif，中文會變方框 → `_fix_font()` 換成正黑體（已處理）
+- **本檔自建**：table（列聯表／資料表）、notice（公告卡／價目表／標語框）、dialog（對話框）、
+  numberline（數線）、chart（長條／折線／直方／盒狀，matplotlib）、pattern（規律圖形序列）、
+  polygon（正 n 邊形＋邊心距／內切圓）、rectpath（長方形雙路線）
+- `render_question_png()`：題號＋題幹＋圖＋選項／小題 → 一張 PNG（**兩個生成器共用**）
+- 自測：`python scripts/figures.py --demo <資料夾>` → 13 個元件全出圖＋總覽圖
+- ⚠ **字型缺字**：微軟正黑體沒有 ⁴~⁹ 上標、∼、≈、⅔ → 會渲染成方框。指數一律寫「10 的 n 次方」，
+  約等於寫「約」。已測 cairosvg 與 PIL 都不會自動 fallback。可用：² ³ ° ∠ △ ≦ √ ×
+
+**2. 選擇題模板庫 `data/templates_choice.json`（12 張）＋ `scripts/gen_choice.py`**
+| 卡 | 冊 | 難 | 骨架 | 主題 |
+|---|---|---|---|---|
+| C-B1-01／03 | B1 | 易／中 | 純計算 | 科學記號比大小（下界型／夾擠型）|
+| C-B1-02 | B1 | 難 | 甲乙判斷 | 最大真因數與質因數分解 |
+| C-B2-01 | B2 | 易 | 圖表判讀 | 列聯表＋排容 |
+| C-B2-02 | B2 | 中 | 生活列式 | 逐年成長選算式（等比 vs 等差）|
+| C-B2-03 | B2 | 難 | 對話框 | 滿額折扣依原價比分攤 |
+| C-B2-04 | B2 | 中 | 圖表判讀 | 長條圖＋成長百分率 |
+| C-B3-01 | B3 | 易 | 純計算 | 最簡根式 |
+| C-B4-01 | B4 | 易 | 圖形求值 | 三角形內角和與外角 |
+| C-B4-02 | B4 | 中 | 圖形求值 | 圖形規律（等差）|
+| C-B5-01 | B5 | 難 | 圖形求值 | 弦心距與畢氏定理 |
+| C-B6-01 | B6 | 易 | 純計算 | 兩袋抽球的和與機率 |
+
+**關鍵設計：干擾項池＋目標字母**
+- 每張卡寫 5～7 個干擾項（每個綁一種可預測錯誤），生成時**挑出能讓正解落在指定位置的三個**
+  → 數學完全不動（干擾項本來就都是合法設計），但全卷 A/B/C/D 可以均衡
+- 沒有這層機制時實測：正解幾乎固定（列聯表永遠 B、最簡根式永遠 A、D 只佔 5%）
+- 現在整卷實測分布約 A3 B4 C2 D3（12 題），接近官方的均勻
+
+**3. 指令**
+```
+python scripts/gen_choice.py --list                    # 看模板卡
+python scripts/gen_choice.py --n 5                     # 生 5 題
+python scripts/gen_choice.py --books B1,B2 --n 6       # 限定冊別（複習到哪冊就出哪冊）
+python scripts/gen_choice.py --paper 12 --tag M0806    # 依卷面藍圖生一份 12 題（易中難自動配比）
+python scripts/validate_templates_choice.py --n 30     # 改模板卡後必跑
+```
+非選同理（gen_essay.py）。生成後 `python scripts/build_html.py` 即進題庫；派卷把 id 加進 `data/quizzes.json`。
+
+**4. 驗證與現況**
+- `validate_templates_choice.py`：12 張卡各試生 30 組 → **0 錯**、1 警告（C-B1-01 的正解本質固定在 A，
+  因為「比其他都小」的選項只能有一個；已用 C-B1-03 夾擠型互補）
+- 已生成範例：`data/questions_M0806.json`（12 題選擇）、`data/questions_G0805.json`（2 題非選）
+- `build_html.py` 已重建，題庫可見這些題（年度欄＝批次代碼 M0806／G0805），index.html JS `node --check` 通過
+- ⚠ **驗證器抓不到「多重正解」**（干擾項其實也符合題意）。實測踩過一次：夾擠型原本有兩個合法答案，
+  已修。**新模板卡上線前務必人工或請另一個 AI 逐題審過**（比照觀念補強的審題流程）
+
+**5. 還沒做**
+- 題組（23–25 題共用選文）尚未模板化；敘述判斷骨架也還沒有卡
+- 選擇題目前 12 張卡、非選 6 張卡；要長期輪用不重複，建議各擴到每冊 3～5 張
+- 圖的第二批元件：等角投影積木、展開圖、盒狀圖情境、選項本身是圖（美術字辨識類建議不做）

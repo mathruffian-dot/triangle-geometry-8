@@ -1,0 +1,1662 @@
+{
+ "meta": {
+  "title": "會考風格選擇題 命題模板庫",
+  "built": "2026-08-06",
+  "basis": "命題模板/命題公式分析報告.md（貳：106–115 共 255 題的卷面藍圖、18 條必考清單、八大題幹骨架、干擾項法則）",
+  "skeletons": [
+   "純計算",
+   "甲乙判斷",
+   "圖形求值",
+   "生活列式",
+   "圖表判讀",
+   "對話框",
+   "敘述判斷",
+   "題組"
+  ],
+  "option_rules": "四選項同型；每個干擾項對應一種可預測錯誤；數值選項照大小排（會考慣例），正解字母自然分布",
+  "figure_note": "figure 走 scripts/figures.py 的元件庫，圖上標註由參數帶入（改參數，圖跟著改）",
+  "safe_chars": "題幹與選項避免使用 ⁴~⁹ 上標、∼、≈（微軟正黑體無此字，渲染會變方框）；指數一律寫成「10 的 n 次方」",
+  "usage": "python scripts/gen_choice.py --list / --n 5 / --paper 20 / --books B1,B2"
+ },
+ "templates": [
+  {
+   "id": "C-B1-01",
+   "skeleton": "純計算",
+   "book": "B1",
+   "chapter": "第2章 分數的運算",
+   "topic": "科學記號比大小（下界）",
+   "codes": [
+    "N-7-8"
+   ],
+   "perf": [
+    "n-IV-3"
+   ],
+   "difficulty": "易",
+   "slot": "1-8",
+   "key_idea": "科學記號比大小：先比 10 的次方，次方相同才比係數；最小的區域數量要比其他都少",
+   "source_ref": "115-08 培養皿細菌",
+   "contexts": [
+    {
+     "who": "生物學家",
+     "place": "培養皿",
+     "obj": "細菌",
+     "unit": "個",
+     "rule": "區域面積越大所含數量越多"
+    },
+    {
+     "who": "研究人員",
+     "place": "池塘水樣",
+     "obj": "藻類",
+     "unit": "個",
+     "rule": "取樣體積越大所含數量越多"
+    },
+    {
+     "who": "天文學家",
+     "place": "星空影像",
+     "obj": "恆星",
+     "unit": "顆",
+     "rule": "觀測範圍越大所含數量越多"
+    }
+   ],
+   "params": {
+    "e": {
+     "range": [
+      4,
+      7
+     ]
+    },
+    "c1": {
+     "choices": [
+      1.2,
+      2.4,
+      3.6,
+      4.4
+     ]
+    },
+    "c2": {
+     "choices": [
+      5.3,
+      6.1,
+      7.3
+     ]
+    },
+    "c3": {
+     "choices": [
+      2.4,
+      5.4,
+      8.2
+     ]
+    },
+    "k": {
+     "choices": [
+      1.7,
+      2.3,
+      3.5
+     ]
+    }
+   },
+   "derive": [
+    "e1 = e",
+    "e2 = e + 1",
+    "e3 = e + 2",
+    "e4 = e + 3",
+    "v2 = c1 * 10 ** e2",
+    "v3 = c2 * 10 ** e3",
+    "v4 = c3 * 10 ** e4",
+    "o1 = k * 10 ** e1",
+    "o2 = k * 10 ** e2",
+    "o3 = k * 10 ** e3",
+    "o4 = k * 10 ** e4"
+   ],
+   "constraints": [
+    "k > c1",
+    "o1 < v2",
+    "o2 > v2"
+   ],
+   "stem": "{c_who}在{c_place}上選定甲、乙、丙、丁四個圓形區域，{c_rule}。已知乙、丙、丁三個區域{c_obj}的數量分別為 {c1}×10 的 {e2} 次方 {c_unit}、{c2}×10 的 {e3} 次方 {c_unit}、{c3}×10 的 {e4} 次方 {c_unit}，且甲區域的面積比乙、丙、丁都小，則下列何者可能是甲區域{c_obj}的數量？",
+   "figure": null,
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{k}×10 的 {e1} 次方 {c_unit}",
+     "correct": true,
+     "value": "o1"
+    },
+    {
+     "text": "{k}×10 的 {e2} 次方 {c_unit}",
+     "error": "與乙同次方但係數 {k} 比 {c1} 大，反而比乙多",
+     "value": "o2"
+    },
+    {
+     "text": "{k}×10 的 {e3} 次方 {c_unit}",
+     "error": "次方與丙相同，比乙多得多",
+     "value": "o3"
+    },
+    {
+     "text": "{k}×10 的 {e4} 次方 {c_unit}",
+     "error": "次方最大，比丁還多",
+     "value": "o4"
+    }
+   ],
+   "solution": "甲的面積最小，數量必須比乙、丙、丁都少。三者中最少的是乙：{c1}×10 的 {e2} 次方。{k}×10 的 {e2} 次方 因 {k} > {c1} 反而比乙多；只有 {k}×10 的 {e1} 次方 比乙少。故選 {k}×10 的 {e1} 次方 {c_unit}。",
+   "steps": [
+    "甲最小 → 數量要比乙、丙、丁都少",
+    "三者中最少的是乙：{c1}×10 的 {e2} 次方",
+    "科學記號比大小：先比 10 的次方，次方相同才比係數",
+    "{k} > {c1}，所以同次方時 {k}×10 的 {e2} 次方 比乙多 → 只能選次方更小的"
+   ],
+   "trap": "同一個次方時才比係數；係數大不代表整個數大，次方才是關鍵。"
+  },
+  {
+   "id": "C-B1-02",
+   "skeleton": "甲乙判斷",
+   "book": "B1",
+   "chapter": "第2章 分數的運算",
+   "topic": "最大真因數與質因數分解",
+   "codes": [
+    "N-7-2"
+   ],
+   "perf": [
+    "n-IV-1"
+   ],
+   "difficulty": "難",
+   "slot": "17-22",
+   "key_idea": "M 除了自己以外最大的因數 = M ÷（M 的最小質因數）；一個反例就能推翻「一定」",
+   "source_ref": "115-20 最大真因數",
+   "contexts": [
+    {
+     "na": "甲",
+     "nb": "乙"
+    }
+   ],
+   "params": {
+    "g1": {
+     "choices": [
+      0,
+      1
+     ]
+    },
+    "g2": {
+     "choices": [
+      0,
+      1
+     ]
+    },
+    "j1": {
+     "choices": [
+      0,
+      1,
+      2,
+      3
+     ]
+    },
+    "j2": {
+     "choices": [
+      0,
+      1,
+      2,
+      3
+     ]
+    }
+   },
+   "derive": [
+    "uniq = [(2,11),(2,7),(2,13),(2,17)]",
+    "multi = [(3,5),(3,13),(5,3),(5,7)]",
+    "pair1 = uniq[j1] if g1 == 0 else multi[j1]",
+    "pair2 = uniq[j2] if g2 == 0 else multi[j2]",
+    "q1 = pair1[0]",
+    "r1 = pair1[1]",
+    "d1 = q1*q1*r1",
+    "k1 = q1**3",
+    "M1s = [d1*p for p in primes_upto(q1)]",
+    "ok1 = all([m % k1 == 0 for m in M1s])",
+    "q2 = pair2[0]",
+    "r2 = pair2[1]",
+    "d2 = q2*q2*r2",
+    "k2 = q2**3",
+    "M2s = [d2*p for p in primes_upto(q2)]",
+    "ok2 = all([m % k2 == 0 for m in M2s])",
+    "d1t = '%d²×%d' % (q1, r1)",
+    "d2t = '%d²×%d' % (q2, r2)",
+    "why1 = ('M 的最小質因數只能是 %d，故 M = %d，%d 一定是 M 的因數' % (q1, M1s[0], k1)) if ok1 else ('M 的最小質因數可能是 %s，M 可能為 %s，其中 %d 就不是 %d 的因數' % ('、'.join([str(p) for p in primes_upto(q1)]), '、'.join([str(m) for m in M1s]), k1, [m for m in M1s if m % k1][0]))",
+    "why2 = ('N 的最小質因數只能是 %d，故 N = %d，%d 一定是 N 的因數' % (q2, M2s[0], k2)) if ok2 else ('N 的最小質因數可能是 %s，N 可能為 %s，其中 %d 就不是 %d 的因數' % ('、'.join([str(p) for p in primes_upto(q2)]), '、'.join([str(m) for m in M2s]), k2, [m for m in M2s if m % k2][0]))",
+    "concl = ('甲、乙皆正確' if (ok1 and ok2) else ('甲正確，乙錯誤' if ok1 else ('甲錯誤，乙正確' if ok2 else '甲、乙皆錯誤')))"
+   ],
+   "constraints": [
+    "(g1 != g2) or (j1 != j2)"
+   ],
+   "stem": "已知正整數 M 的因數中，除了 M 之外最大的因數是 {d1t}；正整數 N 的因數中，除了 N 之外最大的因數是 {d2t}。甲、乙兩人提出以下看法：\n【甲】 {k1} 一定是 M 的因數\n【乙】 {k2} 一定是 N 的因數\n對於甲、乙兩人的看法，下列判斷何者正確？",
+   "figure": null,
+   "option_order": "fixed",
+   "options": [
+    {
+     "text": "甲、乙皆正確",
+     "correct_if": "ok1 and ok2",
+     "error": "把「可能」當成「一定」"
+    },
+    {
+     "text": "甲、乙皆錯誤",
+     "correct_if": "(not ok1) and (not ok2)",
+     "error": "沒發現其中一個其實只有唯一解"
+    },
+    {
+     "text": "甲正確，乙錯誤",
+     "correct_if": "ok1 and not ok2",
+     "error": "只檢查了其中一邊"
+    },
+    {
+     "text": "甲錯誤，乙正確",
+     "correct_if": "(not ok1) and ok2",
+     "error": "只檢查了其中一邊"
+    }
+   ],
+   "solution": "「除了自己以外最大的因數」＝ 該數 ÷ 它的最小質因數。所以 M = {d1t} × p，其中 p 是 M 的最小質因數，故 p 不大於 {q1}。\n甲：{why1}。\n乙：{why2}。\n故答案為「{concl}」。",
+   "steps": [
+    "把「除了自己以外最大的因數」翻譯成：原數 ÷ 最小質因數",
+    "M = {d1t} × p，且 p 必須是質數、不大於 {q1}",
+    "逐一代入可能的 p，檢查 {k1} 是不是每個 M 的因數（甲）",
+    "同樣方式檢查 {k2} 與 N（乙）",
+    "只要找得到一個反例，「一定」就不成立"
+   ],
+   "trap": "最小質因數不只一種可能時，要每一種都檢查；只要有一個反例，「一定」就被推翻。"
+  },
+  {
+   "id": "C-B2-01",
+   "skeleton": "圖表判讀",
+   "book": "B2",
+   "chapter": "第5章 統計",
+   "topic": "列聯表判讀與排容",
+   "codes": [
+    "D-7-1"
+   ],
+   "perf": [
+    "d-IV-1"
+   ],
+   "difficulty": "易",
+   "slot": "1-8",
+   "key_idea": "扣掉一列與一行時，重疊的那一格只能扣一次（排容）",
+   "source_ref": "115-06 文旦分級表",
+   "contexts": [
+    {
+     "who": "小彭",
+     "thing": "文旦",
+     "rowname": "重量",
+     "colname": "品質",
+     "unit": "公斤",
+     "rows": [
+      "小果",
+      "中果",
+      "大果"
+     ],
+     "cols": [
+      "良級",
+      "優級",
+      "特級"
+     ],
+     "drop_row": "大果",
+     "drop_col": "良級",
+     "verb": "包裝成禮盒販售"
+    },
+    {
+     "who": "阿宏",
+     "thing": "馬鈴薯",
+     "rowname": "大小",
+     "colname": "外觀",
+     "unit": "公斤",
+     "rows": [
+      "小型",
+      "中型",
+      "大型"
+     ],
+     "cols": [
+      "普通級",
+      "良級",
+      "精選級"
+     ],
+     "drop_row": "小型",
+     "drop_col": "普通級",
+     "verb": "送進加工廠"
+    }
+   ],
+   "params": {
+    "a11": {
+     "range": [
+      10,
+      90
+     ],
+     "step": 10
+    },
+    "a12": {
+     "range": [
+      20,
+      200
+     ],
+     "step": 20
+    },
+    "a13": {
+     "range": [
+      50,
+      300
+     ],
+     "step": 50
+    },
+    "a21": {
+     "range": [
+      10,
+      90
+     ],
+     "step": 10
+    },
+    "a22": {
+     "range": [
+      20,
+      200
+     ],
+     "step": 20
+    },
+    "a23": {
+     "range": [
+      50,
+      300
+     ],
+     "step": 50
+    },
+    "a31": {
+     "range": [
+      10,
+      90
+     ],
+     "step": 10
+    },
+    "a32": {
+     "range": [
+      20,
+      200
+     ],
+     "step": 20
+    },
+    "a33": {
+     "range": [
+      50,
+      300
+     ],
+     "step": 50
+    }
+   },
+   "derive": [
+    "r1 = a11+a12+a13",
+    "r2 = a21+a22+a23",
+    "r3 = a31+a32+a33",
+    "s1 = a11+a21+a31",
+    "s2 = a12+a22+a32",
+    "s3 = a13+a23+a33",
+    "total = r1+r2+r3",
+    "ans = total - r3 - s1 + a31",
+    "d_forget = total - r3 - s1",
+    "d_row = total - r3",
+    "d_col = total - s1",
+    "d_miss = ans - a22",
+    "d_extra = ans + a31",
+    "d_one_row = r1 - a11"
+   ],
+   "constraints": [
+    "ans > 0",
+    "d_miss > 0",
+    "d_one_row > 0",
+    "len(set([ans, d_forget, d_row, d_col, d_miss, d_extra, d_one_row])) == 7"
+   ],
+   "stem": "{c_who}將收成的{c_thing}根據{c_rowname}分為{c_rows[0]}、{c_rows[1]}、{c_rows[2]}，再根據{c_colname}分為{c_cols[0]}、{c_cols[1]}、{c_cols[2]}，分類後各類別的總重量如表(一)所示。因為被分類為{c_drop_col}或{c_drop_row}的{c_thing}不適合販售，所以{c_who}僅將其餘的{c_thing}都{c_verb}，求{c_verb}的{c_thing}總共有多少{c_unit}？",
+   "figure": {
+    "kind": "table",
+    "title": "表(一)",
+    "corner_diagonal": true,
+    "head_col": true,
+    "headers": [
+     "",
+     "{c_cols[0]}",
+     "{c_cols[1]}",
+     "{c_cols[2]}",
+     "合計"
+    ],
+    "rows": [
+     [
+      "{c_rows[0]}",
+      "{a11}",
+      "{a12}",
+      "{a13}",
+      "{r1}"
+     ],
+     [
+      "{c_rows[1]}",
+      "{a21}",
+      "{a22}",
+      "{a23}",
+      "{r2}"
+     ],
+     [
+      "{c_rows[2]}",
+      "{a31}",
+      "{a32}",
+      "{a33}",
+      "{r3}"
+     ],
+     [
+      "合計",
+      "{s1}",
+      "{s2}",
+      "{s3}",
+      "{total}"
+     ]
+    ],
+    "note": "（單位：{c_unit}）"
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{d_forget}",
+     "error": "扣了一列又扣一行，重疊那格被扣兩次",
+     "value": "d_forget"
+    },
+    {
+     "text": "{d_row}",
+     "error": "只扣掉{c_drop_row}，忘了扣{c_drop_col}",
+     "value": "d_row"
+    },
+    {
+     "text": "{d_col}",
+     "error": "只扣掉{c_drop_col}，忘了扣{c_drop_row}",
+     "value": "d_col"
+    },
+    {
+     "text": "{d_miss}",
+     "error": "把剩下的格子一格一格加起來時漏掉一格",
+     "value": "d_miss"
+    },
+    {
+     "text": "{d_extra}",
+     "error": "重疊的那一格多加了一次",
+     "value": "d_extra"
+    },
+    {
+     "text": "{d_one_row}",
+     "error": "只算了第一列（{c_rows[0]}）扣掉{c_drop_col}的部分",
+     "value": "d_one_row"
+    }
+   ],
+   "solution": "總重量 {total} {c_unit}。扣掉「{c_drop_row}」整列 {r3}、扣掉「{c_drop_col}」整行 {s1}，但「{c_drop_row}且{c_drop_col}」這一格 {a31} 被扣了兩次，要加回來一次。故 {total} － {r3} － {s1} ＋ {a31} = {ans} {c_unit}。",
+   "steps": [
+    "先讀出總計 {total} {c_unit}",
+    "{c_drop_row}整列合計 {r3}、{c_drop_col}整行合計 {s1}",
+    "兩者重疊的格子（{c_drop_row}且{c_drop_col}）是 {a31}，被重複扣掉",
+    "{total} － {r3} － {s1} ＋ {a31} = {ans}"
+   ],
+   "trap": "「A 或 B」要用排容：扣了兩塊之後，重疊的那一格必須加回來一次。"
+  },
+  {
+   "id": "C-B2-02",
+   "skeleton": "生活列式",
+   "book": "B2",
+   "chapter": "第3章 比與比例式",
+   "topic": "百分率的逐年成長（選算式）",
+   "codes": [
+    "N-7-9",
+    "N-8-6"
+   ],
+   "perf": [
+    "n-IV-4"
+   ],
+   "difficulty": "中",
+   "slot": "9-16",
+   "key_idea": "每年成長固定百分率是「連乘」不是「連加」；年數＝結束年－起始年",
+   "source_ref": "115-17 全國用電量",
+   "contexts": [
+    {
+     "who": "某國政府",
+     "item": "全國用電量",
+     "unit": "億度",
+     "verb": "逐年增加"
+    },
+    {
+     "who": "某市政府",
+     "item": "資源回收量",
+     "unit": "公噸",
+     "verb": "逐年增加"
+    },
+    {
+     "who": "某公司",
+     "item": "線上訂單數",
+     "unit": "萬筆",
+     "verb": "逐年增加"
+    }
+   ],
+   "params": {
+    "base": {
+     "choices": [
+      1800,
+      2400,
+      2700,
+      3200
+     ]
+    },
+    "r": {
+     "choices": [
+      2.5,
+      3,
+      4,
+      5
+     ]
+    },
+    "y0": {
+     "choices": [
+      2021,
+      2022,
+      2023
+     ]
+    },
+    "span": {
+     "choices": [
+      5,
+      6,
+      7,
+      8
+     ]
+    }
+   },
+   "derive": [
+    "y1 = y0 + span",
+    "mult = 1 + Rational(int(r*10), 1000)",
+    "mtxt = '%g' % (1 + r/100)",
+    "rt = '%g' % r",
+    "y1s = span + 1",
+    "rd = '%g' % (r/100)"
+   ],
+   "constraints": [
+    "span >= 4"
+   ],
+   "stem": "{c_who}公布 {y0} 年的{c_item}為 {base} {c_unit}，並預估 {y0} 年之後的{c_item}{c_verb}，且每年增加的{c_item}為其前一年的 {rt}%。根據上述預估，該{c_item}在 {y1} 年為多少{c_unit}？",
+   "figure": null,
+   "option_order": "shuffle",
+   "options": [
+    {
+     "text": "{base}×({mtxt}) 的 {span} 次方",
+     "correct": true
+    },
+    {
+     "text": "{base}×({mtxt}) 的 {y1s} 次方",
+     "error": "年數多算一年（把 {y0} 年也算成成長了一次）"
+    },
+    {
+     "text": "{base} ＋ {span}×{base}×{rd}",
+     "error": "把「每年成長固定百分率」誤當成每年固定增加同一個量（等差）"
+    },
+    {
+     "text": "{base} ＋ {y1s}×{base}×{rd}",
+     "error": "既用成等差，年數又多算一年"
+    }
+   ],
+   "solution": "每年變成前一年的（1 ＋ {rt}%）＝ {mtxt} 倍，從 {y0} 年到 {y1} 年共經過 {y1} － {y0} = {span} 年，所以要乘 {span} 次，即 {base}×({mtxt}) 的 {span} 次方 {c_unit}。",
+   "steps": [
+    "「增加前一年的 {rt}%」＝ 變成前一年的 {mtxt} 倍",
+    "年數 = {y1} － {y0} = {span}（不是 {y1s}）",
+    "逐年變 {mtxt} 倍 → 乘 {span} 次 → {base}×({mtxt}) 的 {span} 次方",
+    "若寫成 {base} ＋ {span}×{base}×{rd} 就變成每年固定增加，是等差不是等比"
+   ],
+   "trap": "百分率成長是「相乘」不是「相加」；年數要用相減，不要多算一年。"
+  },
+  {
+   "id": "C-B2-03",
+   "skeleton": "對話框",
+   "book": "B2",
+   "chapter": "第3章 比與比例式",
+   "topic": "滿額折扣依原價比分攤",
+   "codes": [
+    "N-7-9",
+    "A-7-3"
+   ],
+   "perf": [
+    "n-IV-4"
+   ],
+   "difficulty": "難",
+   "slot": "9-16",
+   "key_idea": "折後金額按原價比分攤：某人付的錢 ÷ 總折後金額 = 該人原價 ÷ 總原價",
+   "source_ref": "115-10 兄妹買書分攤",
+   "contexts": [
+    {
+     "pa": "哥哥",
+     "pb": "妹妹",
+     "shop": "書店",
+     "goods": "書"
+    },
+    {
+     "pa": "姊姊",
+     "pb": "弟弟",
+     "shop": "文具店",
+     "goods": "文具"
+    },
+    {
+     "pa": "阿哲",
+     "pb": "小柔",
+     "shop": "運動用品店",
+     "goods": "球具"
+    }
+   ],
+   "params": {
+    "thr": {
+     "choices": [
+      1000,
+      1100,
+      1200
+     ]
+    },
+    "disc": {
+     "choices": [
+      150,
+      200,
+      250
+     ]
+    },
+    "a": {
+     "choices": [
+      600,
+      640,
+      660,
+      720,
+      750,
+      800
+     ]
+    },
+    "ratio": {
+     "choices": [
+      2,
+      3,
+      4,
+      5
+     ]
+    }
+   },
+   "derive": [
+    "b = int(a * Rational(1, ratio - 1))",
+    "tot = a + b",
+    "totp = tot - disc",
+    "pay_a = int(Rational(a, tot) * totp)",
+    "pay_b = totp - pay_a",
+    "d1 = a - disc",
+    "d2 = int(a - Rational(disc, 2))",
+    "d3 = pay_b",
+    "d_full = a",
+    "d_tot = totp"
+   ],
+   "constraints": [
+    "a % (ratio - 1) == 0",
+    "a < thr",
+    "b < thr",
+    "tot >= thr",
+    "b > 0",
+    "Rational(a, tot) * totp == pay_a",
+    "d1 > 0",
+    "len(set([pay_a, d1, d2, d3, d_full, d_tot])) == 6"
+   ],
+   "stem": "某{c_shop}舉辦優惠活動，購買的{c_goods}原價合計滿 {thr} 元可折扣 {disc} 元。圖(一)為{c_pa}、{c_pb}兩人的對話情形。根據圖中的對話計算，{c_pa}實際要分攤多少元？",
+   "figure": {
+    "kind": "dialog",
+    "width": 620,
+    "turns": [
+     {
+      "who": "{c_pa}",
+      "side": "left",
+      "text": "我要買的{c_goods}原價只有 {a} 元，沒辦法折扣。"
+     },
+     {
+      "who": "{c_pb}",
+      "side": "right",
+      "text": "我要買的{c_goods}原價 {b} 元，也不到 {thr} 元。我們一起買的話，就能折扣 {disc} 元。"
+     },
+     {
+      "who": "{c_pa}",
+      "side": "left",
+      "text": "那就一起買吧！依我們要買的{c_goods}原價的比，來分攤折扣後的總金額。"
+     }
+    ]
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{pay_a}",
+     "correct": true,
+     "value": "pay_a"
+    },
+    {
+     "text": "{d1}",
+     "error": "把整筆 {disc} 元折扣都算在自己身上",
+     "value": "d1"
+    },
+    {
+     "text": "{d2}",
+     "error": "把折扣 {disc} 元平均分成兩半，沒有按原價比",
+     "value": "d2"
+    },
+    {
+     "text": "{d3}",
+     "error": "算成對方（{c_pb}）要分攤的金額",
+     "value": "d3"
+    },
+    {
+     "text": "{d_full}",
+     "error": "直接付自己的原價，沒有分攤到折扣",
+     "value": "d_full"
+    },
+    {
+     "text": "{d_tot}",
+     "error": "算成兩人合計要付的金額",
+     "value": "d_tot"
+    }
+   ],
+   "solution": "兩人原價合計 {a} ＋ {b} = {tot} 元（滿 {thr} 元），折扣後應付 {tot} － {disc} = {totp} 元。依原價比 {a}：{b} 分攤，{c_pa} 要付 {totp} × {a}/{tot} = {pay_a} 元。",
+   "steps": [
+    "先確認合計 {tot} 元有滿 {thr} 元，可折 {disc} 元",
+    "折後總金額 = {tot} － {disc} = {totp} 元",
+    "依原價比分攤：{c_pa} 佔 {a}/{tot}",
+    "{totp} × {a}/{tot} = {pay_a} 元"
+   ],
+   "trap": "折扣是「按原價比」分攤，不是各自減一半，也不是全算在誰身上。"
+  },
+  {
+   "id": "C-B3-01",
+   "skeleton": "純計算",
+   "book": "B3",
+   "chapter": "第2章 平方根與畢氏定理",
+   "topic": "最簡根式化簡",
+   "codes": [
+    "N-8-1"
+   ],
+   "perf": [
+    "n-IV-5"
+   ],
+   "difficulty": "易",
+   "slot": "1-8",
+   "key_idea": "最簡根式：根號內不可再含有平方因數",
+   "source_ref": "115-03 最簡根式",
+   "contexts": [
+    {
+     "x": "a",
+     "y": "b"
+    }
+   ],
+   "params": {
+    "a": {
+     "choices": [
+      2,
+      4,
+      6
+     ]
+    },
+    "b": {
+     "choices": [
+      2,
+      3,
+      5,
+      6,
+      7,
+      10,
+      11,
+      13,
+      14,
+      15
+     ]
+    }
+   },
+   "derive": [
+    "N = a*a*b",
+    "ans = a + b",
+    "d_mul = a * b",
+    "d_half = (a // 2) + 4 * b if a % 2 == 0 else a * a + b",
+    "d_sq = a*a + b",
+    "d_alt = a + a*b",
+    "only_b = b",
+    "only_a = a",
+    "d_diff = abs(b - a)"
+   ],
+   "constraints": [
+    "all([e == 1 for e in factorint(b).values()])",
+    "len(set([ans, d_mul, d_half, d_sq, only_b, only_a, d_diff])) == 7",
+    "N < 2000"
+   ],
+   "stem": "若 √{N} 的最簡根式為 {c_x}√{c_y}（其中 {c_x}、{c_y} 為正整數且 {c_y} 為最小），則 {c_x} ＋ {c_y} 之值為何？",
+   "figure": null,
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{d_mul}",
+     "error": "把 a ＋ b 看成 a × b",
+     "value": "d_mul"
+    },
+    {
+     "text": "{d_half}",
+     "error": "沒有化到最簡（根號內仍有平方因數）就相加",
+     "value": "d_half"
+    },
+    {
+     "text": "{d_sq}",
+     "error": "把根號外的係數又平方一次",
+     "value": "d_sq"
+    },
+    {
+     "text": "{only_b}",
+     "error": "只寫出根號內的數 b，沒有加上係數 a",
+     "value": "only_b"
+    },
+    {
+     "text": "{only_a}",
+     "error": "只寫出係數 a，沒有加上根號內的數 b",
+     "value": "only_a"
+    },
+    {
+     "text": "{d_diff}",
+     "error": "把 a ＋ b 看成 a － b",
+     "value": "d_diff"
+    }
+   ],
+   "solution": "{N} = {a}²×{b}，故 √{N} = {a}√{b}，其中 {b} 已不含平方因數，是最簡根式。所以 {c_x} = {a}、{c_y} = {b}，{c_x} ＋ {c_y} = {ans}。",
+   "steps": [
+    "把 {N} 分解成「平方數 × 其餘」：{N} = {a}²×{b}",
+    "開根號時平方數可以移到根號外：√{N} = {a}√{b}",
+    "檢查 {b} 不再含有平方因數 → 已是最簡根式",
+    "{a} ＋ {b} = {ans}"
+   ],
+   "trap": "「最簡」的意思是根號內不能再有平方因數；沒化到底就相加，答案會偏大。"
+  },
+  {
+   "id": "C-B4-01",
+   "skeleton": "圖形求值",
+   "book": "B4",
+   "chapter": "第3章 三角形的基本性質",
+   "topic": "三角形內角和與外角性質",
+   "codes": [
+    "S-8-8",
+    "S-8-2"
+   ],
+   "perf": [
+    "s-IV-2"
+   ],
+   "difficulty": "易",
+   "slot": "1-8",
+   "key_idea": "三角形內角和 180°；外角等於兩個不相鄰內角的和",
+   "source_ref": "114-05 內角和與外角",
+   "contexts": [
+    {
+     "t": "△ABC"
+    }
+   ],
+   "params": {
+    "x": {
+     "range": [
+      35,
+      75
+     ],
+     "step": 1
+    },
+    "y": {
+     "range": [
+      40,
+      80
+     ],
+     "step": 1
+    }
+   },
+   "derive": [
+    "ext = x + y",
+    "inner = 180 - x - y",
+    "d_half = int(Rational(x + y, 2)) if (x + y) % 2 == 0 else 180 - x",
+    "d_sup = 180 - x + y",
+    "d_gap = abs(x - y)",
+    "d_x = x",
+    "d_third = int(Rational(inner, 3)) if inner % 3 == 0 else abs(x - y) // 2"
+   ],
+   "constraints": [
+    "x + y < 150",
+    "x != y",
+    "inner > 20",
+    "d_third > 0",
+    "len(set([ext, inner, d_half, d_sup, d_gap, d_x, d_third])) == 7"
+   ],
+   "stem": "如圖，{c_t} 中，∠A = {x}°，∠B = {y}°，求 ∠ACB 的度數為何？",
+   "figure": {
+    "kind": "triangle",
+    "config": {
+     "subtype": "general",
+     "vertex_labels": [
+      "A",
+      "B",
+      "C"
+     ],
+     "angle_arcs": {
+      "A": 1,
+      "B": 2
+     },
+     "show_dots": true
+    }
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{inner}",
+     "correct": true,
+     "value": "inner"
+    },
+    {
+     "text": "{ext}",
+     "error": "算成外角（兩不相鄰內角和），題目問的是內角",
+     "value": "ext"
+    },
+    {
+     "text": "{d_half}",
+     "error": "把兩已知角相加後又取一半",
+     "value": "d_half"
+    },
+    {
+     "text": "{d_sup}",
+     "error": "180° 減錯角，只減了其中一個",
+     "value": "d_sup"
+    },
+    {
+     "text": "{d_gap}",
+     "error": "把兩個已知角相減",
+     "value": "d_gap"
+    },
+    {
+     "text": "{d_x}",
+     "error": "誤答成已知的 ∠A",
+     "value": "d_x"
+    },
+    {
+     "text": "{d_third}",
+     "error": "把三角形內角和誤當成 60°×3 之類的錯誤拆法",
+     "value": "d_third"
+    }
+   ],
+   "solution": "三角形內角和為 180°，故 ∠ACB = 180° － ∠A － ∠B = 180° － {x}° － {y}° = {inner}°。（若把 BC 延長到 D，則外角 ∠ACD = {x}° ＋ {y}° = {ext}°，與 ∠ACB 互補。）",
+   "steps": [
+    "三角形內角和 = 180°",
+    "∠ACB = 180° － ∠A － ∠B",
+    "= 180° － {x}° － {y}° = {inner}°",
+    "延伸：外角 ∠ACD = ∠A ＋ ∠B = {ext}°，剛好與 {inner}° 互補"
+   ],
+   "trap": "內角 ∠ACB 與外角 ∠ACD 相加才是 180°，別把外角當成答案。"
+  },
+  {
+   "id": "C-B5-01",
+   "skeleton": "圖形求值",
+   "book": "B5",
+   "chapter": "第2章 圓",
+   "topic": "弦心距與畢氏定理",
+   "codes": [
+    "S-9-7",
+    "S-8-6"
+   ],
+   "perf": [
+    "s-IV-14",
+    "s-IV-7"
+   ],
+   "difficulty": "難",
+   "slot": "17-22",
+   "key_idea": "圓心到弦的垂線平分弦 → 半徑、半弦、弦心距構成直角三角形",
+   "source_ref": "111-13、115-18 弦心距",
+   "contexts": [
+    {
+     "o": "O"
+    }
+   ],
+   "params": {
+    "tidx": {
+     "choices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "k": {
+     "choices": [
+      1,
+      2,
+      3,
+      4
+     ]
+    }
+   },
+   "derive": [
+    "trip = [(3,4,5),(5,12,13),(8,15,17),(7,24,25),(20,21,29),(9,40,41),(12,35,37),(28,45,53)][tidx]",
+    "dist = trip[0]*k",
+    "half = trip[1]*k",
+    "r = trip[2]*k",
+    "chord = 2*half",
+    "d_sub = r - half",
+    "d_half = half",
+    "d_double = 2*dist",
+    "d_sum = r + half",
+    "d_r = r"
+   ],
+   "constraints": [
+    "len(set([dist, d_sub, d_half, d_double, d_sum, d_r])) == 6",
+    "r <= 120",
+    "dist > 1"
+   ],
+   "stem": "如圖，圓 {c_o} 的半徑為 {r}，AB 為圓 {c_o} 上的一條弦，且 AB = {chord}。求圓心 {c_o} 到弦 AB 的距離為何？",
+   "figure": {
+    "kind": "circle",
+    "config": {
+     "center_label": "O",
+     "points": {
+      "A": 205,
+      "B": 335
+     },
+     "chords": [
+      [
+       "A",
+       "B"
+      ]
+     ],
+     "radius_lines": [
+      "A",
+      "B"
+     ],
+     "show_center": true
+    }
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{dist}",
+     "correct": true,
+     "value": "dist",
+     "error": ""
+    },
+    {
+     "text": "{d_sub}",
+     "error": "直接用半徑減半弦（{r} － {half}），忽略要用畢氏定理",
+     "value": "d_sub"
+    },
+    {
+     "text": "{d_half}",
+     "error": "答成半弦長，不是圓心到弦的距離",
+     "value": "d_half"
+    },
+    {
+     "text": "{d_double}",
+     "error": "算對距離後又多乘 2",
+     "value": "d_double"
+    },
+    {
+     "text": "{d_sum}",
+     "error": "把半徑與半弦相加",
+     "value": "d_sum"
+    },
+    {
+     "text": "{d_r}",
+     "error": "答成半徑，不是圓心到弦的距離",
+     "value": "d_r"
+    }
+   ],
+   "solution": "圓心到弦的垂線會平分該弦，設垂足為 M，則 AM = {chord} ÷ 2 = {half}。在直角三角形 {c_o}MA 中，{c_o}A = {r}（半徑）為斜邊，故圓心到弦的距離 {c_o}M = √({r}² － {half}²) = {dist}。",
+   "steps": [
+    "從圓心 {c_o} 對弦 AB 作垂線，垂足設為 M → 垂線平分弦",
+    "AM = AB ÷ 2 = {half}",
+    "直角三角形 {c_o}MA：斜邊 {c_o}A = {r}（半徑）",
+    "畢氏定理：{c_o}M = √({r}² － {half}²) = {dist}"
+   ],
+   "trap": "半徑不是直接減半弦——三者是直角三角形的斜邊與兩股，要用畢氏定理。"
+  },
+  {
+   "id": "C-B6-01",
+   "skeleton": "純計算",
+   "book": "B6",
+   "chapter": "第2章 統計與機率",
+   "topic": "兩袋抽球的和與機率",
+   "codes": [
+    "D-9-3",
+    "D-9-2"
+   ],
+   "perf": [
+    "d-IV-2"
+   ],
+   "difficulty": "易",
+   "slot": "1-8",
+   "key_idea": "列出所有等可能結果（3×3＝9 種），數哪個和出現最多次",
+   "source_ref": "115-04 兩袋抽球",
+   "contexts": [
+    {
+     "who": "阿翰",
+     "bag1": "甲袋",
+     "bag2": "乙袋",
+     "obj": "球"
+    },
+    {
+     "who": "小柔",
+     "bag1": "紅盒",
+     "bag2": "藍盒",
+     "obj": "號碼牌"
+    }
+   ],
+   "params": {
+    "a": {
+     "range": [
+      1,
+      6
+     ]
+    },
+    "b": {
+     "range": [
+      2,
+      7
+     ]
+    }
+   },
+   "derive": [
+    "a1 = a + 1",
+    "a2 = a + 2",
+    "b1 = b + 1",
+    "b2 = b + 2",
+    "s1 = [a, a+1, a+2]",
+    "s2 = [b, b+1, b+2]",
+    "ans = a + b + 2",
+    "lo = a + b",
+    "hi = a + b + 4",
+    "near = a + b + 1",
+    "cnt_ans = len([1 for u in s1 for v in s2 if u+v == ans])",
+    "cnt_near = len([1 for u in s1 for v in s2 if u+v == near])",
+    "nxt = a + b + 3",
+    "d_mid = a + b + 2 - 2"
+   ],
+   "constraints": [
+    "cnt_ans == 3",
+    "cnt_near == 2",
+    "len(set([ans, lo, hi, near, nxt])) == 5"
+   ],
+   "stem": "已知{c_bag1}中有三顆{c_obj}，上面分別標記 {a}、{a1}、{a2}；{c_bag2}中有三顆{c_obj}，上面分別標記 {b}、{b1}、{b2}。{c_who}打算從{c_bag1}、{c_bag2}中各抽出一顆{c_obj}，若每袋中每顆{c_obj}被抽出的機會相等，則抽出的兩顆{c_obj}上的數字總和為多少的機率最大？",
+   "figure": null,
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{lo}",
+     "error": "只看最小的組合，沒數各種和出現幾次",
+     "value": "lo"
+    },
+    {
+     "text": "{hi}",
+     "error": "只看最大的組合，沒數各種和出現幾次",
+     "value": "hi"
+    },
+    {
+     "text": "{near}",
+     "error": "少數了一種組合（這個和只有 2 種取法）",
+     "value": "near"
+    },
+    {
+     "text": "{nxt}",
+     "error": "這個和只有 2 種取法，不是最多",
+     "value": "nxt"
+    }
+   ],
+   "solution": "兩袋各抽一顆共有 3×3 = 9 種等可能結果。列出所有和：最小 {lo} 有 1 種，{near} 有 2 種，{ans} 有 3 種，之後又遞減。故總和為 {ans} 的機率最大（{cnt_ans}/9）。",
+   "steps": [
+    "所有結果共 3×3 = 9 種，且每種機會相等",
+    "把 9 種和列成表，數每個和出現幾次",
+    "和 {lo}：1 種；和 {near}：2 種；和 {ans}：3 種",
+    "出現次數最多的和是 {ans}，機率 {cnt_ans}/9 最大"
+   ],
+   "trap": "機率大小看的是「出現次數」，不是數字本身的大小。"
+  },
+  {
+   "id": "C-B4-02",
+   "skeleton": "圖形求值",
+   "book": "B4",
+   "chapter": "第1章 數列與級數",
+   "topic": "圖形規律與等差數列",
+   "codes": [
+    "N-8-3",
+    "A-7-1"
+   ],
+   "perf": [
+    "n-IV-7",
+    "a-IV-1"
+   ],
+   "difficulty": "中",
+   "slot": "9-16",
+   "key_idea": "第 n 個圖形的個數 = 首項 ＋（n－1）× 公差",
+   "source_ref": "113-05、114-09 圖形規律",
+   "contexts": [
+    {
+     "obj": "正方形磁磚",
+     "where": "牆面"
+    },
+    {
+     "obj": "小方塊",
+     "where": "桌上"
+    },
+    {
+     "obj": "積木",
+     "where": "地板"
+    }
+   ],
+   "params": {
+    "a1": {
+     "choices": [
+      3,
+      4,
+      5
+     ]
+    },
+    "d": {
+     "choices": [
+      2,
+      3,
+      4
+     ]
+    },
+    "k": {
+     "choices": [
+      12,
+      15,
+      18,
+      20,
+      25
+     ]
+    }
+   },
+   "derive": [
+    "ans = a1 + (k-1)*d",
+    "d_off = a1 + k*d",
+    "d_mul = a1 * k",
+    "d_nod = a1 + (k-1)*(d+1)",
+    "d_less = a1 + (k-2)*d",
+    "d_first = a1 + d",
+    "d_two_less = a1 + (k-3)*d"
+   ],
+   "constraints": [
+    "len(set([ans, d_off, d_mul, d_nod, d_less, d_first, d_two_less])) == 7",
+    "ans < 200",
+    "d_two_less > 0"
+   ],
+   "stem": "如圖，小柔用{c_obj}在{c_where}排出一列一列的圖形：第 1 個圖形有 {a1} 個{c_obj}，之後每一個圖形都比前一個圖形多 {d} 個{c_obj}。依照此規律，第 {k} 個圖形有幾個{c_obj}？",
+   "figure": {
+    "kind": "pattern",
+    "layout": "row",
+    "a1": "{a1}",
+    "d": "{d}",
+    "count": 3
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans}",
+     "correct": true,
+     "value": "ans"
+    },
+    {
+     "text": "{d_off}",
+     "error": "多加了一次公差（用 a1 ＋ k×d，把第 1 個也算成增加過）",
+     "value": "d_off"
+    },
+    {
+     "text": "{d_mul}",
+     "error": "誤以為第 k 個是第 1 個的 k 倍",
+     "value": "d_mul"
+    },
+    {
+     "text": "{d_nod}",
+     "error": "公差看成 {d}＋1",
+     "value": "d_nod"
+    },
+    {
+     "text": "{d_less}",
+     "error": "少加了一次公差（把第 {k} 個算成第 {k} － 1 個）",
+     "value": "d_less"
+    },
+    {
+     "text": "{d_first}",
+     "error": "只算到第 2 個圖形",
+     "value": "d_first"
+    },
+    {
+     "text": "{d_two_less}",
+     "error": "少加了兩次公差",
+     "value": "d_two_less"
+    }
+   ],
+   "solution": "第 1 個有 {a1} 個，每多一個圖形就多 {d} 個，第 {k} 個圖形比第 1 個多了（{k} － 1）次，故個數 = {a1} ＋（{k} － 1）×{d} = {ans} 個。",
+   "steps": [
+    "把個數排成等差數列：首項 {a1}，公差 {d}",
+    "從第 1 個到第 {k} 個，只增加了（{k} － 1）次，不是 {k} 次",
+    "{a1} ＋（{k} － 1）×{d} = {ans}"
+   ],
+   "trap": "第 k 項要加（k－1）次公差，不是 k 次（植樹問題的間隔數）。"
+  },
+  {
+   "id": "C-B2-04",
+   "skeleton": "圖表判讀",
+   "book": "B2",
+   "chapter": "第3章 比與比例式",
+   "topic": "長條圖判讀與成長百分率",
+   "codes": [
+    "N-7-9",
+    "D-7-1"
+   ],
+   "perf": [
+    "n-IV-4",
+    "d-IV-1"
+   ],
+   "difficulty": "中",
+   "slot": "9-16",
+   "key_idea": "成長百分率 =（增加量 ÷ 原本的量）× 100%，分母是「原本」不是「後來」",
+   "source_ref": "112-24、114-07 統計圖判讀",
+   "contexts": [
+    {
+     "who": "某飲料店",
+     "item": "銷售量",
+     "unit": "杯",
+     "cats": [
+      "第一季",
+      "第二季",
+      "第三季",
+      "第四季"
+     ],
+     "first": "第一季",
+     "last": "第四季"
+    },
+    {
+     "who": "某圖書館",
+     "item": "借閱冊數",
+     "unit": "冊",
+     "cats": [
+      "1 月",
+      "2 月",
+      "3 月",
+      "4 月"
+     ],
+     "first": "1 月",
+     "last": "4 月"
+    }
+   ],
+   "params": {
+    "v1": {
+     "choices": [
+      200,
+      250,
+      300,
+      400,
+      500
+     ]
+    },
+    "g": {
+     "choices": [
+      15,
+      20,
+      25,
+      40,
+      50,
+      60
+     ]
+    },
+    "m2": {
+     "choices": [
+      10,
+      20,
+      30
+     ]
+    },
+    "m3": {
+     "choices": [
+      40,
+      60,
+      80
+     ]
+    }
+   },
+   "derive": [
+    "v4 = int(v1 * (100 + g) / 100)",
+    "v2 = v1 + m2",
+    "v3 = v1 + m3",
+    "diff = v4 - v1",
+    "d_wrong_base = int(round(diff * 100 / v4))",
+    "d_ratio = int(round(v4 * 100 / v1))",
+    "d_diff = diff",
+    "d_inv = int(round(v1 * 100 / v4))"
+   ],
+   "constraints": [
+    "v1 * (100 + g) % 100 == 0",
+    "v4 > v3",
+    "v3 > v2",
+    "v2 > v1",
+    "len(set([g, d_wrong_base, d_ratio, d_diff, d_inv])) == 5"
+   ],
+   "stem": "圖(一)為{c_who}四個時段的{c_item}長條圖。根據圖中資料，{c_last}的{c_item}比{c_first}成長了百分之多少？",
+   "figure": {
+    "kind": "chart",
+    "chart": "bar",
+    "title": "{c_who}{c_item}",
+    "labels": [
+     "{c_cats[0]}",
+     "{c_cats[1]}",
+     "{c_cats[2]}",
+     "{c_cats[3]}"
+    ],
+    "data": [
+     "{v1}",
+     "{v2}",
+     "{v3}",
+     "{v4}"
+    ],
+    "ylabel": "{c_unit}"
+   },
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{g}",
+     "correct": true,
+     "value": "g"
+    },
+    {
+     "text": "{d_wrong_base}",
+     "error": "分母用成後來的量 {v4}，應該用原本的 {v1}",
+     "value": "d_wrong_base"
+    },
+    {
+     "text": "{d_ratio}",
+     "error": "算成「是原本的百分之多少」，不是「成長了百分之多少」",
+     "value": "d_ratio"
+    },
+    {
+     "text": "{d_diff}",
+     "error": "只算出增加量 {diff}，沒換成百分率",
+     "value": "d_diff"
+    },
+    {
+     "text": "{d_inv}",
+     "error": "算成「原本是後來的百分之多少」，方向相反",
+     "value": "d_inv"
+    }
+   ],
+   "solution": "{c_first} 為 {v1} {c_unit}、{c_last} 為 {v4} {c_unit}，增加量 = {v4} － {v1} = {diff} {c_unit}。成長百分率 = {diff} ÷ {v1} × 100% = {g}%。",
+   "steps": [
+    "從圖上讀出 {c_first} = {v1}、{c_last} = {v4}",
+    "增加量 = {v4} － {v1} = {diff}",
+    "成長百分率 = 增加量 ÷ 原本的量 × 100%",
+    "{diff} ÷ {v1} × 100% = {g}%"
+   ],
+   "trap": "「成長百分之多少」的分母是原本的量；用後來的量當分母會算小。"
+  },
+  {
+   "id": "C-B1-03",
+   "skeleton": "純計算",
+   "book": "B1",
+   "chapter": "第2章 分數的運算",
+   "topic": "科學記號比大小（範圍夾擠）",
+   "codes": [
+    "N-7-8"
+   ],
+   "perf": [
+    "n-IV-3"
+   ],
+   "difficulty": "中",
+   "slot": "9-16",
+   "key_idea": "數量介於兩已知量之間 → 選項要夾在中間，先比 10 的次方再比係數",
+   "source_ref": "115-08 培養皿細菌",
+   "contexts": [
+    {
+     "who": "生物學家",
+     "place": "培養皿",
+     "obj": "細菌",
+     "unit": "個",
+     "rule": "區域面積越大所含數量越多"
+    },
+    {
+     "who": "研究人員",
+     "place": "池塘水樣",
+     "obj": "藻類",
+     "unit": "個",
+     "rule": "取樣體積越大所含數量越多"
+    },
+    {
+     "who": "天文學家",
+     "place": "星空影像",
+     "obj": "恆星",
+     "unit": "顆",
+     "rule": "觀測範圍越大所含數量越多"
+    }
+   ],
+   "params": {
+    "e": {
+     "range": [
+      4,
+      7
+     ]
+    },
+    "c1": {
+     "choices": [
+      1.2,
+      2.4,
+      3.6,
+      4.4
+     ]
+    },
+    "c2": {
+     "choices": [
+      5.3,
+      6.1,
+      7.3
+     ]
+    },
+    "c3": {
+     "choices": [
+      2.4,
+      5.4,
+      8.2
+     ]
+    },
+    "k": {
+     "choices": [
+      1.7,
+      2.3,
+      3.5
+     ]
+    },
+    "dpat": {
+     "choices": [
+      0,
+      1,
+      2,
+      3
+     ]
+    }
+   },
+   "derive": [
+    "e1 = e",
+    "e2 = e + 1",
+    "e3 = e + 2",
+    "lo = c1 * 10 ** e1",
+    "hi = c3 * 10 ** e3",
+    "ans_val = k * 10 ** e2",
+    "ans_txt = '%g×10 的 %d 次方 %s' % (k, e2, c_unit)",
+    "s_list = [(k, e1-1), (k+1, e1-1), (k, e1-2)]",
+    "b_list = [(k, e3+1), (k+1, e3+1), (k, e3+2)]",
+    "ns = 3 - dpat",
+    "picked = s_list[:ns] + b_list[:dpat]",
+    "cx1 = picked[0][0]",
+    "ex1 = picked[0][1]",
+    "vx1 = cx1 * 10 ** ex1",
+    "cx2 = picked[1][0]",
+    "ex2 = picked[1][1]",
+    "vx2 = cx2 * 10 ** ex2",
+    "cx3 = picked[2][0]",
+    "ex3 = picked[2][1]",
+    "vx3 = cx3 * 10 ** ex3",
+    "tx1 = '%g×10 的 %d 次方 %s' % (cx1, ex1, c_unit)",
+    "tx2 = '%g×10 的 %d 次方 %s' % (cx2, ex2, c_unit)",
+    "tx3 = '%g×10 的 %d 次方 %s' % (cx3, ex3, c_unit)",
+    "mx1 = '比甲還少，乙不可能比甲少' if vx1 < lo else '比丙還多，乙不可能比丙多'",
+    "mx2 = '比甲還少，乙不可能比甲少' if vx2 < lo else '比丙還多，乙不可能比丙多'",
+    "mx3 = '比甲還少，乙不可能比甲少' if vx3 < lo else '比丙還多，乙不可能比丙多'"
+   ],
+   "constraints": [
+    "c3 > k",
+    "ans_val > lo",
+    "ans_val < hi",
+    "all([(v < lo) or (v > hi) for v in [vx1, vx2, vx3]])",
+    "len(set([ans_val, vx1, vx2, vx3])) == 4",
+    "e >= 5"
+   ],
+   "stem": "{c_who}在{c_place}上選定甲、乙、丙、丁四個圓形區域，{c_rule}。已知四個區域的面積由小到大依序為甲、乙、丙、丁，且甲、丙兩個區域{c_obj}的數量分別為 {c1}×10 的 {e1} 次方 {c_unit}、{c3}×10 的 {e3} 次方 {c_unit}，則下列何者可能是乙區域{c_obj}的數量？",
+   "figure": null,
+   "option_order": "sorted",
+   "options": [
+    {
+     "text": "{ans_txt}",
+     "correct": true,
+     "value": "ans_val"
+    },
+    {
+     "text": "{tx1}",
+     "error": "{mx1}",
+     "value": "vx1"
+    },
+    {
+     "text": "{tx2}",
+     "error": "{mx2}",
+     "value": "vx2"
+    },
+    {
+     "text": "{tx3}",
+     "error": "{mx3}",
+     "value": "vx3"
+    }
+   ],
+   "solution": "乙的面積介於甲與丙之間，數量要比甲（{c1}×10 的 {e1} 次方）多、比丙（{c3}×10 的 {e3} 次方）少。逐一檢查四個選項，只有 {ans_txt} 落在這個範圍內。",
+   "steps": [
+    "先寫出範圍：比甲多、比丙少",
+    "科學記號比大小：先比 10 的次方，次方相同才比係數",
+    "把明顯小於甲、或明顯大於丙的選項先刪掉",
+    "剩下的 {ans_txt} 就是答案"
+   ],
+   "trap": "夾擠題要同時檢查上下兩個界線，只檢查一邊就會多選。"
+  }
+ ]
+}

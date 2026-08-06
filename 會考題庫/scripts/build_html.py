@@ -9,11 +9,13 @@ DATA = BASE / "data"
 questions = []
 for y in range(103, 116):
     questions += json.loads((DATA / f"questions_{y}.json").read_text(encoding="utf-8"))
-# 非歷屆來源（模擬卷等），year 為非數字字串（如 "HL1"）；檔案不存在則略過
-for extra in ["HL1"]:
-    _f = DATA / f"questions_{extra}.json"
-    if _f.exists():
-        questions += json.loads(_f.read_text(encoding="utf-8"))
+# 非歷屆來源：模擬卷（HL*）與自編生成題（G*，gen_essay.py 產出），year 為非數字字串
+# 自動掃描 data/questions_*.json，凡檔名不是 103–115 者一律載入（新增來源不必再改這裡）
+for _f in sorted(DATA.glob("questions_*.json")):
+    _stem = _f.stem.replace("questions_", "")
+    if _stem.isdigit() and 103 <= int(_stem) <= 115:
+        continue                                    # 歷屆已於上面載入
+    questions += json.loads(_f.read_text(encoding="utf-8"))
 curr = json.loads((DATA / "curriculum_108.json").read_text(encoding="utf-8"))
 # 觀念補強單元（學習表現補強題庫，與歷屆試題分開維護；檔案不存在則為空）
 _concepts_file = DATA / "concepts.json"
@@ -1871,6 +1873,9 @@ import base64
 q_embed = json.loads(json.dumps(questions, ensure_ascii=False))
 for q in q_embed:
     img_path = BASE / q["img"]
+    if not img_path.exists():                       # 缺圖不中斷（前端已有缺圖提示）
+        print(f"⚠ 缺題目圖，單檔版將顯示缺圖提示：{q['id']} → {q['img']}")
+        continue
     q["img"] = "data:image/png;base64," + base64.b64encode(img_path.read_bytes()).decode()
 payload2 = json.dumps({"questions": q_embed, "curriculum": curr, "concepts": concepts,
                        "essay_rubrics": essay_rubrics}, ensure_ascii=False)

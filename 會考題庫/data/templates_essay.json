@@ -1,0 +1,818 @@
+{
+ "meta": {
+  "title": "會考風格非選擇題 命題模板庫",
+  "built": "2026-08-05",
+  "basis": "命題模板/命題公式分析報告.md（103–115 官方非選 26 題 ＋ 103–114 官方逐級分評分指引）",
+  "formula": "非選題 =（生活情境）＋（題目現場定義的新規則）＋(1) 單步套用定義 ＋(2) 建模→推理→下判斷",
+  "roles": "N1＝數與量／代數／統計（近10年 10/10 題）；N2＝幾何為主（近10年 7/10 題）",
+  "ask_types": [
+   "足夠型",
+   "一定型",
+   "可能型",
+   "能否型",
+   "比較型",
+   "最值型"
+  ],
+  "anchors_note": "A＝第(1)小題答案；B＝第(2)小題關鍵關係式；C＝第(2)小題關鍵轉化步驟；D＝最終判斷。四者決定自動生成的 L3/L2/L1/L0 與 checkpoints。",
+  "usage": "python scripts/gen_essay.py --list / --n 2 / --books B1,B4"
+ },
+ "templates": [
+  {
+   "id": "E-B1-N1-01",
+   "role": "N1",
+   "book": "B1",
+   "chapter": "第2章 分數的運算",
+   "topic": "指數律與同底大小比較",
+   "codes": [
+    "N-7-6",
+    "N-7-7"
+   ],
+   "perf": [
+    "n-IV-3"
+   ],
+   "difficulty": "難",
+   "ask_type": "足夠型",
+   "source_ref": "111-N1 綠藻細胞分裂",
+   "contexts": [
+    {
+     "who": "健康生技公司",
+     "org": "綠藻",
+     "cell": "綠藻細胞",
+     "product": "綠藻粉"
+    },
+    {
+     "who": "食品研究所",
+     "org": "酵母菌",
+     "cell": "酵母細胞",
+     "product": "酵母粉"
+    },
+    {
+     "who": "生技工廠",
+     "org": "乳酸菌",
+     "cell": "乳酸菌",
+     "product": "益生菌粉"
+    },
+    {
+     "who": "農業試驗所",
+     "org": "微藻",
+     "cell": "微藻細胞",
+     "product": "藻類飼料粉"
+    }
+   ],
+   "params": {
+    "T": {
+     "choices": [
+      12,
+      20,
+      24,
+      30
+     ]
+    },
+    "D": {
+     "choices": [
+      10,
+      12,
+      15,
+      18,
+      20
+     ]
+    },
+    "r": {
+     "choices": [
+      2,
+      4
+     ]
+    },
+    "w": {
+     "choices": [
+      4,
+      8,
+      16
+     ]
+    },
+    "Cidx": {
+     "choices": [
+      0,
+      1,
+      2
+     ]
+    }
+   },
+   "derive": [
+    "Clist = [(6000000000,'60 億',32),(1000000000,'10 億',29),(30000000000,'300 億',34)]",
+    "Cval = Clist[Cidx][0]",
+    "Ctext = Clist[Cidx][1]",
+    "m = Clist[Cidx][2]",
+    "m1 = m + 1",
+    "hours = D * 24",
+    "k = hours // T",
+    "e_total = k if r == 2 else 2 * k",
+    "t = 2 if w == 4 else (3 if w == 8 else 4)",
+    "need = w * Cval",
+    "e_upper = t + m1",
+    "e_lower = t + m",
+    "enough = 2 ** e_total >= need",
+    "enough_text = '足夠' if enough else '不足夠'",
+    "bound_word = '上界' if enough else '下界'",
+    "e_bound = e_upper if enough else e_lower",
+    "arg_text = ('所需個數 < %s×2 的 %d 次方 = 2 的 %d 次方，而培養所得個數 = 2 的 %d 次方，兩者指數 %d ≥ %d，故足夠' % (w, m1, e_upper, e_total, e_total, e_upper)) if enough else ('所需個數 > %s×2 的 %d 次方 = 2 的 %d 次方，而培養所得個數 = 2 的 %d 次方，兩者指數 %d ≤ %d，故不足夠' % (w, m, e_lower, e_total, e_total, e_lower))"
+   ],
+   "constraints": [
+    "hours % T == 0",
+    "k >= 8",
+    "k <= 40",
+    "(e_total >= e_upper) or (e_total <= e_lower)",
+    "(e_total >= e_upper) == enough",
+    "abs(e_total - e_bound) <= 2"
+   ],
+   "stem": "{c_who}培養{c_org}以製作「{c_product}」，再經過後續的加工步驟，製成相關的保健食品。已知該公司製作每 1 公克的「{c_product}」需要 {Ctext}個{c_cell}。",
+   "subs": [
+    "(1) 假設在環境適宜的情況下，1 個{c_cell}每 {T} 小時可分裂成 {r} 個{c_cell}，且分裂後的細胞亦可繼續分裂。今從 1 個{c_cell}開始培養，若培養期間{c_cell}皆未死亡且環境皆適宜，經過 {D} 天後共分裂成 {r} 的 k 次方個{c_cell}，則 k 之值為何？",
+    "(2) 承(1)，已知 {Ctext}介於 2 的 {m} 次方與 2 的 {m1} 次方之間，請判斷 {r} 的 k 次方個{c_cell}是否足夠製作 {w} 公克的「{c_product}」？"
+   ],
+   "answer": "(1) k = {k}　(2) {enough_text}",
+   "solution": "(1) {D} 天 = {D}×24 = {hours} 小時，每 {T} 小時分裂一次 → 共分裂 {hours}÷{T} = {k} 次，每次變 {r} 倍 → {r} 的 {k} 次方個，故 k = {k}。\n(2) 製作 {w} 公克的「{c_product}」需 {w}×{Ctext} 個{c_cell}。化為同底 2 比較：{r} 的 {k} 次方 = 2 的 {e_total} 次方；又 2 的 {m} 次方 < {Ctext} < 2 的 {m1} 次方，且 {w} = 2 的 {t} 次方，故所需個數介於 2 的 {e_lower} 次方與 2 的 {e_upper} 次方之間。{arg_text}。",
+   "steps": [
+    "先換算時間：{D} 天 = {hours} 小時，除以 {T} 小時得分裂 {k} 次",
+    "每次變 {r} 倍 → 共 {r} 的 {k} 次方 個，即 k = {k}",
+    "把培養所得個數化為同底 2：{r} 的 {k} 次方 = 2 的 {e_total} 次方",
+    "把所需個數夾在 2 的 {e_lower} 次方 與 2 的 {e_upper} 次方 之間（{w} = 2 的 {t} 次方）",
+    "同底次方比指數大小 → 判斷{enough_text}"
+   ],
+   "trap": "所需個數沒有精確值，只能用「上界／下界」夾擠比較；{w} 也要先化成 2 的次方才能同底比較。",
+   "anchors": {
+    "A": "k 之值為 {k}",
+    "B": "把「培養所得個數 {r} 的 {k} 次方」與「製作 {w} 公克所需個數」化為同底 2 的次方（所需個數的{bound_word}為 2 的 {e_bound} 次方）",
+    "C": "正確完成同底次方的轉化並比較 2 的 {e_total} 次方 與 2 的 {e_bound} 次方 的大小",
+    "D": "判斷{enough_text}製作 {w} 公克的「{c_product}」"
+   },
+   "l1_element": "正確算出共分裂 {k} 次，或寫出 {r} 的 {k} 次方 = 2 的 {e_total} 次方"
+  },
+  {
+   "id": "E-B2-N1-02",
+   "role": "N1",
+   "book": "B2",
+   "chapter": "第3章 比與比例式",
+   "topic": "比率公式與反例判斷",
+   "codes": [
+    "N-7-9",
+    "D-7-1"
+   ],
+   "perf": [
+    "n-IV-4",
+    "d-IV-1"
+   ],
+   "difficulty": "難",
+   "ask_type": "一定型",
+   "source_ref": "112-N1 疫苗效力",
+   "contexts": [
+    {
+     "co": "甲、乙",
+     "item": "防蟲網",
+     "obj": "番茄植株",
+     "bad": "受害",
+     "eff_name": "防護效力",
+     "unit": "株"
+    },
+    {
+     "co": "甲、乙",
+     "item": "防鏽塗料",
+     "obj": "鋼板",
+     "bad": "生鏽",
+     "eff_name": "防鏽效力",
+     "unit": "片"
+    },
+    {
+     "co": "甲、乙",
+     "item": "濾水設備",
+     "obj": "水樣",
+     "bad": "檢出細菌",
+     "eff_name": "過濾效力",
+     "unit": "件"
+    },
+    {
+     "co": "甲、乙",
+     "item": "新式包材",
+     "obj": "水果",
+     "bad": "碰傷",
+     "eff_name": "保護效力",
+     "unit": "顆"
+    }
+   ],
+   "params": {
+    "N": {
+     "choices": [
+      10000,
+      20000,
+      30000
+     ]
+    },
+    "eff": {
+     "choices": [
+      80,
+      90,
+      95
+     ]
+    },
+    "a": {
+     "choices": [
+      40,
+      50,
+      60
+     ]
+    }
+   },
+   "derive": [
+    "b = a * 100 // (100 - eff)",
+    "ratio = Rational(100 - eff, 100)",
+    "a2 = 2 * a",
+    "b2 = 50 * a2",
+    "eff2 = 98"
+   ],
+   "constraints": [
+    "(a * 100) % (100 - eff) == 0",
+    "b <= N // 2",
+    "b2 <= N // 2",
+    "eff2 > eff",
+    "a2 > a"
+   ],
+   "stem": "{c_co}兩家公司的「{c_item}」皆進行實驗以計算其{c_eff_name}。兩家公司的實驗{c_obj}數量皆為 {N} {c_unit}，各公司實驗的{c_obj}中一半使用「{c_item}」，另一半未使用。經過一段時間後觀察得知，在甲公司的實驗中，使用「{c_item}」後仍{c_bad}的數量為 {a} {c_unit}，未使用而{c_bad}的數量為 {b} {c_unit}。而{c_eff_name}的算式如下：\n　　{c_eff_name} =（1 － 使用組{c_bad}率 ÷ 未使用組{c_bad}率）× 100%",
+   "subs": [
+    "(1) 根據實驗數據算出甲公司的{c_eff_name}為多少？",
+    "(2) 若乙公司的實驗數據算出的{c_eff_name}高於甲公司，請詳細說明乙公司的實驗中使用「{c_item}」後仍{c_bad}的數量，是否一定低於甲公司實驗中使用「{c_item}」後仍{c_bad}的數量？"
+   ],
+   "answer": "(1) {eff}%　(2) 否，不一定",
+   "solution": "(1) 使用組與未使用組各 {N}÷2 {c_unit}。使用組{c_bad}率 = {a}÷({N}÷2)、未使用組{c_bad}率 = {b}÷({N}÷2)，兩者相除即 {a}÷{b}。故{c_eff_name} =（1 － {a}/{b}）×100% = {eff}%。\n(2) 答案為「否（不一定）」。{c_eff_name}取決於兩組{c_bad}數的「比值」而非數量本身：{c_eff_name} > {eff}% 等價於「使用組{c_bad}數 ÷ 未使用組{c_bad}數 < {ratio}」。可舉反例：乙公司使用組{c_bad} {a2} {c_unit}、未使用組{c_bad} {b2} {c_unit}，其{c_eff_name} =（1 － {a2}/{b2}）×100% = {eff2}% > {eff}%，但使用組{c_bad}數 {a2} {c_unit} 反而比甲公司的 {a} {c_unit} 多。故乙公司使用「{c_item}」後仍{c_bad}的數量不一定低於甲公司。",
+   "steps": [
+    "兩組數量相同，率相除時分母相消 → {c_eff_name} =（1 － {a}/{b}）×100%",
+    "算出甲公司{c_eff_name} = {eff}%",
+    "把「效力更高」翻譯成比值條件：使用組÷未使用組 < {ratio}",
+    "找一組比值更小、但使用組數量更大的反例：({a2}, {b2}) → 效力 {eff2}%",
+    "代回公式驗證 {eff2}% > {eff}%，結論為「不一定」"
+   ],
+   "trap": "效力比的是「比值」不是「件數」；只要未使用組的{c_bad}數也一起變大，使用組{c_bad}數變多仍可能效力更高。",
+   "anchors": {
+    "A": "甲公司的{c_eff_name}為 {eff}%",
+    "B": "{c_eff_name}取決於兩組{c_bad}數的比值（效力高於 {eff}% ⟺ 使用組{c_bad}數 ÷ 未使用組{c_bad}數 < {ratio}）",
+    "C": "舉出符合「使用組{c_bad}數 ≥ {a}」的一組數值實例（如 {a2}、{b2}）並代入{c_eff_name}公式驗證其效力高於 {eff}%",
+    "D": "判斷「不一定」（乙公司使用組{c_bad}數不一定低於甲公司的 {a} {c_unit}）"
+   },
+   "l1_element": "正確將數值代入{c_eff_name}算式，或得出比值關係式「使用組÷未使用組 < {ratio}」",
+   "conclusion_fixed": true,
+   "conclusion_note": "「是否一定」型的正解本來就是『不一定』＋舉反例（官方 112-N1 同），結論固定屬正常"
+  },
+  {
+   "id": "E-B3-N2-01",
+   "role": "N2",
+   "book": "B3",
+   "chapter": "第2章 平方根與畢氏定理",
+   "topic": "畢氏定理與路線長度比較",
+   "codes": [
+    "S-8-6",
+    "N-8-1"
+   ],
+   "perf": [
+    "s-IV-7",
+    "n-IV-5"
+   ],
+   "difficulty": "中",
+   "ask_type": "比較型",
+   "source_ref": "113-N2 拼接桌面長度比較（簡化骨架）",
+   "figure": {
+    "kind": "rectpath",
+    "w_label": "長 {p} 公尺",
+    "h_label": "寬 {q} 公尺",
+    "p_a": "A",
+    "p_b": "B",
+    "p_c": "C",
+    "p_d": "D",
+    "legend1": "走法一",
+    "legend2": "走法二"
+   },
+   "contexts": [
+    {
+     "place": "社區公園",
+     "area": "草坪廣場",
+     "walk": "步道",
+     "who": "小柔"
+    },
+    {
+     "place": "學校",
+     "area": "活動廣場",
+     "walk": "走道",
+     "who": "阿哲"
+    },
+    {
+     "place": "文化中心",
+     "area": "前庭廣場",
+     "walk": "步道",
+     "who": "小妍"
+    },
+    {
+     "place": "運動園區",
+     "area": "熱身草坪",
+     "walk": "跑道",
+     "who": "阿宏"
+    }
+   ],
+   "params": {
+    "tidx": {
+     "choices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "k": {
+     "choices": [
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    "fidx": {
+     "choices": [
+      0,
+      1,
+      2
+     ]
+    }
+   },
+   "derive": [
+    "trip = [(4,3,5),(12,5,13),(15,8,17),(24,7,25),(21,20,29),(40,9,41),(55,48,73),(72,65,97)][tidx]",
+    "p = trip[0] * k",
+    "q = trip[1] * k",
+    "c = trip[2] * k",
+    "psum = p + q",
+    "extra = p + q - c",
+    "flist = [(Rational(1,2),'一半'),(Rational(3,4),'四分之三'),(Rational(2,3),'三分之二')]",
+    "f = flist[fidx][0]",
+    "f_text = flist[fidx][1]",
+    "bar = f * q",
+    "bar_txt = '%g' % float(bar)",
+    "over = bool(extra > bar)",
+    "correct_text = '正確' if over else '不正確'",
+    "cmp_text = '>' if over else '<'"
+   ],
+   "constraints": [
+    "extra != bar",
+    "p > q",
+    "p <= 400",
+    "extra >= 6"
+   ],
+   "stem": "{c_place}有一塊長方形的{c_area} ABCD，長為 {p} 公尺、寬為 {q} 公尺，四個角落分別為 A、B、C、D（其中 AB 為長、BC 為寬）。{c_who}從角落 A 走到對角的角落 C，有兩種走法：走法一是沿對角線 AC 直接走過去；走法二是先沿長邊走到 B，再沿寬邊走到 C。",
+   "subs": [
+    "(1) 走法一的距離（即 AC 的長度）為多少公尺？",
+    "(2) {c_who}說：「走法二比走法一多走的距離，超過這塊{c_area}寬度的{f_text}。」請判斷{c_who}的說法是否正確，並說明理由。"
+   ],
+   "answer": "(1) {c} 公尺　(2) {correct_text}（多走 {extra} 公尺，寬度的{f_text}為 {bar_txt} 公尺）",
+   "solution": "(1) △ABC 中 ∠B = 90°，由畢氏定理：AC² = {p}² ＋ {q}² = {c}²，故 AC = {c} 公尺。\n(2) 走法二的距離 = {p} ＋ {q} = {psum} 公尺，走法一的距離 = {c} 公尺，多走 {psum} － {c} = {extra} 公尺。{c_area}寬度的{f_text} = {q} × {f} = {bar_txt} 公尺。因為 {extra} {cmp_text} {bar_txt}，所以{c_who}的說法{correct_text}。",
+   "steps": [
+    "長方形的角是直角 → △ABC 為直角三角形，用畢氏定理",
+    "AC = √({p}² ＋ {q}²) = {c} 公尺",
+    "多走的距離 =（{p} ＋ {q}）－ {c} = {extra} 公尺",
+    "寬度的{f_text} = {q} × {f} = {bar_txt} 公尺",
+    "比較 {extra} 與 {bar_txt} → 說法{correct_text}"
+   ],
+   "trap": "「多走的距離」是折線減對角線，不是兩邊相減；比較對象是「寬度的{f_text}」不是寬度本身。",
+   "anchors": {
+    "A": "AC = {c} 公尺",
+    "B": "多走的距離 =（{p} ＋ {q}）－ {c} = {extra} 公尺，寬度的{f_text} = {bar_txt} 公尺",
+    "C": "以畢氏定理求出 AC = {c} 後，正確算出多走的距離並與寬度的{f_text}比較",
+    "D": "判斷{c_who}的說法{correct_text}"
+   },
+   "l1_element": "正確列出 AC² = {p}² + {q}²，或算出走法二的總距離為 {psum} 公尺"
+  },
+  {
+   "id": "E-B4-N1-03",
+   "role": "N1",
+   "book": "B4",
+   "chapter": "第1章 數列與級數",
+   "topic": "等差數列應用",
+   "codes": [
+    "N-8-3",
+    "N-8-4"
+   ],
+   "perf": [
+    "n-IV-7"
+   ],
+   "difficulty": "中",
+   "ask_type": "最值型",
+   "source_ref": "115-N1 馬拉松訓練",
+   "contexts": [
+    {
+     "who": "阿川",
+     "act": "路跑",
+     "verb": "跑",
+     "unit": "圈",
+     "per": 400,
+     "per_text": "每圈 400 公尺的跑道",
+     "goals": [
+      12000,
+      15000,
+      18000
+     ],
+     "goal_unit": "公尺",
+     "goal_text": "訓練距離",
+     "big_unit": "公里",
+     "big": 1000
+    },
+    {
+     "who": "小柔",
+     "act": "游泳",
+     "verb": "游",
+     "unit": "趟",
+     "per": 50,
+     "per_text": "每趟 50 公尺的泳道",
+     "goals": [
+      1500,
+      2000,
+      2500
+     ],
+     "goal_unit": "公尺",
+     "goal_text": "訓練距離",
+     "big_unit": "公尺",
+     "big": 1
+    },
+    {
+     "who": "阿宏",
+     "act": "健走",
+     "verb": "走",
+     "unit": "圈",
+     "per": 250,
+     "per_text": "每圈 250 公尺的操場",
+     "goals": [
+      5000,
+      6000,
+      8000
+     ],
+     "goal_unit": "公尺",
+     "goal_text": "健走距離",
+     "big_unit": "公尺",
+     "big": 1
+    },
+    {
+     "who": "小妍",
+     "act": "自行車",
+     "verb": "騎",
+     "unit": "圈",
+     "per": 800,
+     "per_text": "每圈 800 公尺的自行車道",
+     "goals": [
+      20000,
+      24000,
+      30000
+     ],
+     "goal_unit": "公尺",
+     "goal_text": "訓練距離",
+     "big_unit": "公里",
+     "big": 1000
+    }
+   ],
+   "params": {
+    "a1": {
+     "range": [
+      4,
+      9
+     ]
+    },
+    "d": {
+     "choices": [
+      2,
+      3,
+      4
+     ]
+    },
+    "gidx": {
+     "choices": [
+      0,
+      1,
+      2
+     ]
+    },
+    "wk2": {
+     "choices": [
+      2,
+      3
+     ]
+    },
+    "day2": {
+     "choices": [
+      0,
+      1
+     ]
+    }
+   },
+   "derive": [
+    "per = c_per",
+    "goal = c_goals[gidx]",
+    "goal_big = Rational(goal, c_big)",
+    "j2 = 2 * wk2 - 1 if day2 == 0 else 2 * wk2",
+    "day2_text = '星期一' if day2 == 0 else '星期四'",
+    "val2 = a1 + (j2 - 1) * d",
+    "jmin = min([j for j in range(1, 300) if (a1 + (j - 1) * d) * per > goal])",
+    "val = a1 + (jmin - 1) * d",
+    "wk = (jmin + 1) // 2 if jmin % 2 == 1 else jmin // 2",
+    "day = '星期一' if jmin % 2 == 1 else '星期四'",
+    "dist = val * per",
+    "prev = val - d",
+    "prev_dist = prev * per",
+    "quot = Rational(goal, per)",
+    "goal_note = '' if c_big == 1 else '（即 %d 公尺）' % goal"
+   ],
+   "constraints": [
+    "jmin >= 8",
+    "jmin <= 40",
+    "j2 < jmin",
+    "val * per > goal",
+    "prev * per <= goal",
+    "prev * per != goal"
+   ],
+   "stem": "{c_who}為了達成{c_act}的目標，開始規律訓練，並利用{c_per_text}訂定了訓練計畫如下：每週星期一、星期四訓練，第一週的星期一{c_verb} {a1} {c_unit}，每週星期四的訓練{c_unit}數比當週星期一多 {d} {c_unit}，之後每週星期一的訓練{c_unit}數與前一週的星期四相同，直到某日的{c_goal_text}超過 {goal_big} {c_big_unit}，就維持該{c_unit}數不再增加。",
+   "subs": [
+    "(1) 依照訓練計畫，{c_who}第 {wk2} 週的{day2_text}訓練{c_unit}數為幾{c_unit}？",
+    "(2) 承(1)，最早從第幾週的星期幾開始，當日的{c_goal_text}會超過 {goal_big} {c_big_unit}？"
+   ],
+   "answer": "(1) {val2} {c_unit}　(2) 第 {wk} 週{day}",
+   "solution": "(1) 訓練{c_unit}數依序為 {a1}、{a1}＋{d}、{a1}＋2×{d}、…，每次增加 {d} {c_unit}（週一→當週四→下週一）。第 {wk2} 週{day2_text}為第 {j2} 次訓練，故{c_unit}數 = {a1} ＋（{j2}－1）×{d} = {val2} {c_unit}。\n(2) 設第 j 次訓練的{c_unit}數為 {a1} ＋（j－1）×{d}。{c_goal_text}超過 {goal_big} {c_big_unit}{goal_note}需 {c_unit}數 × {per} > {goal}，解得{c_unit}數 > {quot}；但{c_unit}數只能是數列 {a1}、{a1}＋{d}、… 中的值，故最小符合者為 {val} {c_unit}（前一項 {prev} {c_unit}只有 {prev_dist} {c_goal_unit}，未超過）。由 {a1} ＋（j－1）×{d} = {val} 得 j = {jmin}，第 {jmin} 次訓練即為第 {wk} 週{day}（{val} {c_unit} = {dist} {c_goal_unit} > {goal} {c_goal_unit}）。",
+   "steps": [
+    "把訓練{c_unit}數排成等差數列：{a1}, {a1}+{d}, {a1}+2×{d}, …（公差 {d}）",
+    "奇數次為星期一、偶數次為星期四；第 n 次的{c_unit}數 = {a1}＋(n－1)×{d}",
+    "(1) 第 {wk2} 週{day2_text} = 第 {j2} 次 → {val2} {c_unit}",
+    "(2) 由 {c_unit}數×{per} > {goal} 解出{c_unit}數 > {quot}，數列中最小符合者為 {val}（{prev} {c_unit}還不夠）",
+    "{val} = {a1}＋(j－1)×{d} → j = {jmin} → 第 {wk} 週{day}"
+   ],
+   "trap": "{c_unit}數只會落在這個等差數列上，不能直接把 {quot} 無條件進位當答案；還要換算回「第幾週星期幾」。",
+   "anchors": {
+    "A": "第 {wk2} 週{day2_text}為 {val2} {c_unit}",
+    "B": "第 n 次訓練的{c_unit}數 = {a1} ＋（n－1）×{d}，且 {c_unit}數 × {per} > {goal}",
+    "C": "由不等式求出數列中最小符合的{c_unit}數 {val}，再換算回第幾次訓練（j = {jmin}）",
+    "D": "判斷最早為第 {wk} 週{day}"
+   },
+   "l1_element": "正確寫出一般式 {a1}＋(n－1)×{d}，或算出所需{c_unit}數至少 {val} {c_unit}"
+  },
+  {
+   "id": "E-B5-N2-02",
+   "role": "N2",
+   "book": "B5",
+   "chapter": "第1章 相似形",
+   "topic": "正六邊形邊心距與圓的內外判斷",
+   "codes": [
+    "S-8-2",
+    "S-9-4",
+    "S-8-6"
+   ],
+   "perf": [
+    "s-IV-2",
+    "s-IV-12"
+   ],
+   "difficulty": "難",
+   "ask_type": "能否型",
+   "source_ref": "112-N2 環套與花瓶、115-N2 正六邊形地毯",
+   "figure": {
+    "kind": "polygon",
+    "n": 6,
+    "side_label": "邊長 {s} 公分",
+    "apothem": true,
+    "apothem_label": "邊心距",
+    "incircle": true,
+    "center_label": "O"
+   },
+   "contexts": [
+    {
+     "who": "小儀",
+     "hex": "正六邊形收納格",
+     "obj": "圓柱形花瓶",
+     "place": "文創商店",
+     "act": "放入"
+    },
+    {
+     "who": "阿宏",
+     "hex": "正六邊形托盤凹槽",
+     "obj": "圓柱形保溫杯",
+     "place": "餐具行",
+     "act": "放入"
+    },
+    {
+     "who": "小柔",
+     "hex": "正六邊形筆筒隔層",
+     "obj": "圓柱形收納罐",
+     "place": "文具店",
+     "act": "放入"
+    },
+    {
+     "who": "阿哲",
+     "hex": "正六邊形蜂巢紙盒",
+     "obj": "圓柱形蠟燭",
+     "place": "手作坊",
+     "act": "放入"
+    }
+   ],
+   "params": {
+    "s": {
+     "choices": [
+      12,
+      14,
+      16,
+      18,
+      20,
+      22,
+      24
+     ]
+    },
+    "r": {
+     "choices": [
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
+     ]
+    }
+   },
+   "derive": [
+    "apo = Rational(s, 2) * sqrt(3)",
+    "apo_num = float(apo)",
+    "apo_apx = round(apo_num, 2)",
+    "can = apo_num > r",
+    "can_text = '能' if can else '不能'",
+    "cmp_text = '>' if can else '<'",
+    "gap = round(abs(apo_num - r), 2)"
+   ],
+   "constraints": [
+    "gap >= 1",
+    "r < s",
+    "apo_num < 2 * r"
+   ],
+   "stem": "{c_place}有一個{c_hex}，其開口為邊長 {s} 公分的正六邊形（厚度忽略不計），如圖所示，O 為正六邊形的中心。{c_who}想把一個底面半徑為 {r} 公分的{c_obj}垂直{c_act}此{c_hex}中。（計算時可取 √3 = 1.732）",
+   "subs": [
+    "(1) 此正六邊形的一個內角度數為多少？",
+    "(2) 請判斷{c_who}的{c_obj}是否能在不傾斜、不變形的前提下，完全{c_act}此{c_hex}中？請詳細說明理由。"
+   ],
+   "answer": "(1) 120°　(2) {can_text}（邊心距 ≈ {apo_apx} 公分，半徑 {r} 公分）",
+   "solution": "(1) 正六邊形的內角和 =（6－2）×180° = 720°，每一個內角 = 720°÷6 = 120°。\n(2) 能否{c_act}取決於「中心到邊的距離（邊心距）」是否大於圓的半徑 {r}。連接中心 O 與各頂點，正六邊形被分成 6 個全等的正三角形，每個正三角形邊長為 {s}；邊心距即正三角形的高 = ({s}÷2)×√3 = {apo} ≈ {apo_apx} 公分。因為 {apo_apx} {cmp_text} {r}，所以{c_obj}{can_text}完全{c_act}此{c_hex}中。",
+   "steps": [
+    "(1) 正 n 邊形內角 =（n－2）×180°÷n，n = 6 → 120°",
+    "(2) 圓能否放入，看的是中心到「邊」的距離（邊心距），不是到頂點的距離",
+    "連中心與各頂點 → 6 個邊長 {s} 的正三角形",
+    "邊心距 = 正三角形的高 = ({s}÷2)×√3 ≈ {apo_apx} 公分",
+    "與半徑 {r} 比較 → {can_text}放入"
+   ],
+   "trap": "要比的是邊心距（中心到邊）不是外接圓半徑（中心到頂點）；正三角形的高是 (邊長÷2)×√3，不是邊長×√3。",
+   "anchors": {
+    "A": "正六邊形的一個內角為 120°",
+    "B": "能否{c_act}取決於正六邊形的邊心距（中心到邊的距離）與半徑 {r} 公分的大小關係",
+    "C": "利用正六邊形可分成 6 個正三角形（或 30°-60°-90° 直角三角形），求得邊心距 = ({s}÷2)×√3 ≈ {apo_apx} 公分",
+    "D": "判斷{c_obj}{can_text}完全{c_act}此{c_hex}中"
+   },
+   "l1_element": "正確求出一個內角 120°，或寫出邊心距 = ({s}÷2)×√3 之類非題目已知的解題要素"
+  },
+  {
+   "id": "E-B6-N2-03",
+   "role": "N2",
+   "book": "B6",
+   "chapter": "第2章 統計與機率",
+   "topic": "計分規則與抽取機率",
+   "codes": [
+    "N-7-3",
+    "D-9-3",
+    "A-7-5"
+   ],
+   "perf": [
+    "n-IV-2",
+    "d-IV-2"
+   ],
+   "difficulty": "中",
+   "ask_type": "可能型",
+   "source_ref": "111-N2 撲克牌牌值",
+   "contexts": [
+    {
+     "who": "小柔",
+     "game": "桌遊",
+     "card": "積分卡",
+     "total": 60,
+     "small": 36,
+     "large": 24,
+     "small_text": "點數 1～6 的卡片共 36 張",
+     "large_text": "點數 7～10 的卡片共 24 張",
+     "small_name": "點數小的卡片",
+     "large_name": "點數大的卡片"
+    },
+    {
+     "who": "阿哲",
+     "game": "數學遊戲",
+     "card": "號碼牌",
+     "total": 50,
+     "small": 30,
+     "large": 20,
+     "small_text": "號碼 1～3 的牌共 30 張",
+     "large_text": "號碼 4～5 的牌共 20 張",
+     "small_name": "號碼小的牌",
+     "large_name": "號碼大的牌"
+    },
+    {
+     "who": "小妍",
+     "game": "闖關活動",
+     "card": "任務卡",
+     "total": 48,
+     "small": 30,
+     "large": 18,
+     "small_text": "初階任務卡共 30 張",
+     "large_text": "進階任務卡共 18 張",
+     "small_name": "初階任務卡",
+     "large_name": "進階任務卡"
+    }
+   ],
+   "params": {
+    "M": {
+     "range": [
+      16,
+      34
+     ],
+     "step": 2
+    },
+    "V": {
+     "range": [
+      4,
+      16
+     ],
+     "step": 2
+    },
+    "x": {
+     "choices": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ]
+    },
+    "y": {
+     "choices": [
+      3,
+      4,
+      5,
+      6
+     ]
+    }
+   },
+   "derive": [
+    "T = c_total",
+    "ns = c_small",
+    "nl = c_large",
+    "v1 = x - y",
+    "s = (M + V) // 2",
+    "l = (M - V) // 2",
+    "left = T - M",
+    "left_l = nl - l",
+    "prob = Rational(left_l, left)",
+    "frac_raw = '%d/%d' % (left_l, left)",
+    "frac_text = frac_raw if str(prob) == frac_raw else (frac_raw + ' = ' + str(prob))"
+   ],
+   "constraints": [
+    "(M + V) % 2 == 0",
+    "M < T - 6",
+    "0 < l",
+    "l < nl",
+    "s <= ns",
+    "x + y <= 20",
+    "left_l > 0",
+    "prob < 1",
+    "prob > 0"
+   ],
+   "stem": "{c_who}在一場{c_game}中使用一副{c_card}，其中{c_small_text}、{c_large_text}，共 {T} 張。遊戲中以「積分值」評估尚未發出的{c_card}：發牌前先設「積分值」為 0；每發出一張{c_small_name}，「積分值」加 1；每發出一張{c_large_name}，「積分值」減 1。",
+   "subs": [
+    "(1) 若已發出 {x} 張{c_small_name}與 {y} 張{c_large_name}，則此時的「積分值」為何？",
+    "(2) 已知這副{c_card}已發出 {M} 張，且此時的「積分值」為 {V}。若剩下的每一張{c_card}被發出的機會皆相等，則下一張發出的是{c_large_name}的機率是多少？"
+   ],
+   "answer": "(1) {v1}　(2) {prob}",
+   "solution": "(1) 積分值 = {x}×(＋1) ＋ {y}×(－1) = {x} － {y} = {v1}。\n(2) 設已發出{c_small_name} s 張、{c_large_name} l 張。由張數 s ＋ l = {M} 與積分值 s － l = {V} 聯立，兩式相加得 2s = {M}＋{V} → s = {s}，代回得 l = {l}（此為唯一符合的組合）。整副牌中{c_large_name}共 {nl} 張 → 剩餘{c_large_name} = {nl} － {l} = {left_l} 張；剩餘的牌共 {T} － {M} = {left} 張。故下一張是{c_large_name}的機率 = {frac_text}。",
+   "steps": [
+    "(1) {c_small_name}每張 +1、{c_large_name}每張 −1 → {x} － {y} = {v1}",
+    "(2) 設{c_small_name} s 張、{c_large_name} l 張，列聯立：s＋l = {M}、s－l = {V}",
+    "解得 s = {s}、l = {l}（唯一解，要說明為何唯一）",
+    "剩餘{c_large_name} = {nl}－{l} = {left_l} 張；剩餘的牌共 {T}－{M} = {left} 張",
+    "機率 = {frac_text}"
+   ],
+   "trap": "分母是「剩下的牌數」{left} 張而不是全部 {T} 張；且要先由聯立確定已發出的{c_large_name}恰為 {l} 張。",
+   "anchors": {
+    "A": "積分值為 {v1}",
+    "B": "設已發出小值牌 s 張、大值牌 l 張，列出 s ＋ l = {M} 與 s － l = {V}",
+    "C": "解得{c_small_name} {s} 張、{c_large_name} {l} 張（並說明其為唯一符合的組合），再求出剩餘{c_large_name} {left_l} 張與剩餘的牌 {left} 張",
+    "D": "求出下一張為{c_large_name}的機率為 {prob}"
+   },
+   "l1_element": "列出聯立方程式，或寫出「已發出 {s} 張{c_small_name}與 {l} 張{c_large_name}」"
+  }
+ ]
+}

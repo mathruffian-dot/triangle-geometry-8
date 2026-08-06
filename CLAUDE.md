@@ -60,6 +60,15 @@ python scripts/build_html.py
 # → 複製 index.html + 01_題目圖片 到 bank_site/ 後
 npx wrangler pages deploy bank_site --project-name math809-bank --branch main --commit-dirty=true
 
+# 自編題（依模板生成，每次都不一樣；模板卡＝data/templates_essay.json／templates_choice.json）
+python scripts/gen_essay.py --books B1,B4 --n 2     # 非選：依冊別生一份卷（N1+N2）
+python scripts/gen_choice.py --paper 12 --tag M0806 # 選擇：依卷面藍圖生 12 題（易中難自動配比）
+python scripts/gen_choice.py --books B1,B2 --n 6    # 選擇：限定冊別
+python scripts/validate_templates_essay.py --n 40   # 改過模板卡就要跑
+python scripts/validate_templates_choice.py --n 30
+python scripts/figures.py --demo <資料夾>            # 配圖元件庫自測（13 個元件出圖）
+# → 生成後 build_html.py 即進題庫；派卷把 M0806-01 之類 id 加進 data/quizzes.json
+
 # 批改（增量，只批沒批過的；學生陸續交就陸續跑）
 python scripts/grade_essays.py --quiz "卷名"
 python scripts/make_redpen.py --quiz "卷名"        # 產紅筆批改圖並自動上傳
@@ -73,6 +82,10 @@ python scripts/make_feedback_pdf.py --quiz "卷名"  # 個人回饋單 PDF
 - **AI 生圖批改不可用**：實測 gpt-image-2 改圖會「重畫」整張圖，4 份樣本 2 份**竄改學生內容**
   （等號被改成 ≠、手寫被抹除）。一律用 `annotate_redpen.py` 程式化疊加（原圖逐位元不動）。
 - **產生 HTML/JS 後要用 `node --check` 驗語法**，不要只靠肉眼。曾因跳脫字元寫錯導致整頁 JS 失效。
+- **題目圖的字型缺字**：微軟正黑體沒有 ⁴~⁹ 上標、∼、≈、⅔（渲染成方框，PIL 與 cairosvg 都不會自動 fallback）。
+  指數寫「10 的 n 次方」、約等於寫「約」。可安全使用：² ³ ° ∠ △ ≦ √ ×
+- **自動生成的選擇題要防「多重正解」**：干擾項可能也符合題意（夾擠型踩過一次）。
+  驗證器抓不到這種錯，新模板卡上線前要人工或請另一個 AI 逐題審。
 - **0 是合法級分**：JS 的 `0 || ''`、Python 的 `0 or ""` 都會把 0 級當成空值，務必顯式判斷。
 - **Google Sheets 會把 "09" 自動轉成數字 9**：班級／座號一律正規化（去前導零）再比對。
 - **Drive 同步延遲**：老師從雲端開檔可能拿到舊版。要老師貼 Code.gs 時，**直接用 SendUserFile 把檔案傳給他**，並請他確認行數與關鍵字數量。
