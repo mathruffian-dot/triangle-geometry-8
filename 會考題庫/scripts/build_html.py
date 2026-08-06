@@ -401,7 +401,8 @@ function toggleMenu(key, ev){
 }
 document.addEventListener('click', ()=>document.querySelectorAll('.mfmenu').forEach(m=>m.classList.remove('open')));
 function mfToggle(key, v, on){
-  if(key==='year') v = +v;
+  // 歷屆年度在資料中是數字，需轉型才比對得到；模擬卷（HL1/HL2…）是字串，轉了會變 NaN 而篩不到
+  if(key==='year' && /^\d+$/.test(v)) v = +v;
   on ? F[key].add(v) : F[key].delete(v);
   drawMF(key, true);
   if(key==='book') drawMF('chap');   // 冊別變動 → 章節清單連動
@@ -420,8 +421,10 @@ function mfPreset(key, v){   // 年度快選：最近N屆
   drawMF('year', true);
   page=1; render();
 }
+// 非歷屆來源（模擬卷）的 year 不是年份數字，選單顯示可讀名稱
+const YRLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111'};
 registerMF('year','mfYear','年度／屆數（可複選）',
-  ()=>years.map(y=>({v:y, t:y+'年'})),
+  ()=>years.map(y=>({v:y, t:YRLBL[y]||(y+'年')})),
   [{v:'R3',t:'最近3屆'},{v:'R5',t:'最近5屆'},{v:'R10',t:'最近10屆'}]);
 registerMF('book','mfBook','冊別（可複選）',
   ()=>Object.keys(CURR['冊別章節']).map(b=>({v:b, t:b})));
@@ -1403,9 +1406,12 @@ if(FIXED_CLS){
 document.getElementById('totalQ').textContent = ITEMS.length;
 document.getElementById('doneT').textContent = ITEMS.length;
 
+// 非歷屆來源（模擬卷）的題目標示：year 不是年份數字，需另給可讀名稱
+const SRCLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111'};
+
 document.getElementById('qwrap').innerHTML = ITEMS.map((q,i)=>`
   <div class="qcard" id="q-${q.id}">
-    <div class="qtitle">第 ${i+1} 題 <span class="qtag">（${q.year}年會考 ${q.type==='choice'?'第'+q.num+'題':'非選擇題'}）</span></div>
+    <div class="qtitle">第 ${i+1} 題 <span class="qtag">（${SRCLBL[q.year]||(q.year+'年會考')} ${q.type==='choice'?'第'+q.num+'題':'非選擇題'}）</span></div>
     <img class="qimg" src="${q.img}" alt="第${i+1}題">
     ${q.type==='choice'
       ? `<div class="opts">${['A','B','C','D'].map(o=>`<div class="opt" data-q="${q.id}" data-o="${o}" onclick="pick('${q.id}','${o}',this)">${o}</div>`).join('')}</div>`

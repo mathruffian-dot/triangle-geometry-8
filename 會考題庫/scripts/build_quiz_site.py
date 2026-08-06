@@ -140,10 +140,13 @@ def main():
             # 保留原始（無指定班級）網址，讓「已經發出去的連結」不會失效
             base = dict(q); base["listed"] = False; base["fixed_cls"] = ""
             expanded.append(base)
+            # class_labels 可為班級代號指定好看的顯示名稱（如 {"kz":"科資"}），
+            # 只影響標題文字；寫入試算表的班級值仍是代號本身
+            labels = q.get("class_labels") or {}
             for c in cs:
                 e = dict(q)
                 e["code"] = f'{q["code"]}-{c}'
-                e["title"] = f'{q["title"]}｜{c}班'
+                e["title"] = f'{q["title"]}｜{labels.get(str(c), str(c))}班'
                 e["fixed_cls"] = str(c)
                 e["listed"] = q.get("listed", True)
                 expanded.append(e)

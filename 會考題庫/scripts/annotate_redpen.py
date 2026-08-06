@@ -25,6 +25,8 @@ annotate_redpen.py — 程式化「紅筆批改」標註器
   note       紅色中文批註（微軟正黑體；白色描邊 + 半透明白底，壓在手寫字上也看得清）
   score      右上角分數印章（例如 2/3，紅圈圈起來，微微傾斜像蓋章）
   arrow      紅色引線箭頭（把批註連到對應位置，非必要但很好用）
+  solution   「續寫解答」區塊：畫在原圖**下方延伸出來的白區**，讓老師接著學生的思路把解答補完
+             （0 級分則直接寫完整解答）。文字會自動換行，延伸高度由內容自動計算。
 
 JSON 格式（list of dict，座標皆為相對值 0~1）
 --------------------------------------------
@@ -96,6 +98,60 @@ def parse_color(c, default=RED):
     return default
 
 
+# 微軟正黑體缺這些常用數學符號的字形，直接畫會變成「□」方框。
+# 一律換成同義且該字型有的字元（實測 msjh.ttc cmap 確認過）。
+GLYPH_FALLBACK = {
+    "−": "-", "⇒": "→", "⟹": "→", "⩽": "≦", "⩾": "≧",
+    "≤": "≦", "≥": "≧", "✓": "√", "✔": "√", "✗": "×", "✘": "×",
+    "∈": "屬於", "⌒": "弧", "㎥": "立方公尺",
+}
+_CMAP_CACHE = {}
+
+
+def font_cmap():
+    """讀出實際會用到的中文字型有哪些字元（缺字偵測用）。取不到就回 None（跳過檢查）。"""
+    path = next((p for p in FONT_REGULAR if os.path.exists(p)), None)
+    if path is None:
+        return None
+    if path in _CMAP_CACHE:
+        return _CMAP_CACHE[path]
+    chars = None
+    try:
+        from fontTools.ttLib import TTCollection, TTFont
+        f = (TTCollection(path).fonts[0] if path.lower().endswith(".ttc") else TTFont(path))
+        chars = set()
+        for t in f["cmap"].tables:
+            chars |= set(t.cmap.keys())
+    except Exception:
+        chars = None
+    _CMAP_CACHE[path] = chars
+    return chars
+
+
+def safe_text(s):
+    """把字型畫不出來的字元換成同義字，避免輸出「□」。"""
+    if not s:
+        return s
+    out = []
+    cmap = font_cmap()
+    for ch in str(s):
+        if ch in "\n\r\t":                     # 控制字元由排版處理，不是缺字
+            out.append(ch)
+            continue
+        if cmap is not None and ord(ch) in cmap:
+            out.append(ch)
+            continue
+        rep = GLYPH_FALLBACK.get(ch)
+        if rep is not None:
+            out.append(rep)
+        elif cmap is None:
+            out.append(ch)                     # 無法檢查就原樣輸出
+        else:
+            out.append(ch)                     # 缺字但無替換：保留並提醒，不靜默吞掉內容
+            print(f"  [警告] 字型缺字 {ch!r} (U+{ord(ch):04X})，可能顯示為方框", file=sys.stderr)
+    return "".join(out)
+
+
 def load_font(size_px, bold=False):
     """載入支援繁體中文的字型（微軟正黑體）。"""
     size_px = max(6, int(size_px))
@@ -164,6 +220,111 @@ def chaikin(pts, iterations=2):
     return pts
 
 
+_MATH_CACHE = {}
+
+
+def math_img(latex, fs_px, color=RED):
+    """把 LaTeX 數學式渲染成透明底的紅色圖片（分數、次方、根號才排得漂亮）。
+
+    用 matplotlib 內建的 mathtext（LaTeX 子集），不需要安裝 LaTeX。
+    渲染失敗就回 None，由呼叫端退回純文字，不讓整張批改圖掛掉。
+    """
+    key = (latex, int(fs_px), tuple(color))
+    if key in _MATH_CACHE:
+        return _MATH_CACHE[key]
+    im = None
+    try:
+        import io
+        import matplotlib
+        matplotlib.use("Agg")
+        from matplotlib import mathtext
+        from matplotlib.font_manager import FontProperties
+        buf = io.BytesIO()
+        mathtext.math_to_image("$" + latex + "$", buf,
+                               prop=FontProperties(size=max(6.0, fs_px)),
+                               dpi=72, format="png", color="#%02X%02X%02X" % tuple(color))
+        buf.seek(0)
+        im = Image.open(buf).convert("RGBA")
+    except Exception as e:
+        print(f"  [警告] 數學式渲染失敗 {latex!r}：{e}", file=sys.stderr)
+        im = None
+    _MATH_CACHE[key] = im
+    return im
+
+
+def split_math(text):
+    """把 "設 $x=\\frac{a}{2}$ 則…" 拆成 [(kind, 內容)]，kind 為 't'(文字) 或 'm'(數學式)。"""
+    parts, segs = [], str(text).split("$")
+    for i, seg in enumerate(segs):
+        if seg == "":
+            continue
+        parts.append(("m" if i % 2 else "t", seg))
+    # $ 數量為奇數 → 有沒關好的，最後一段當純文字處理
+    if len(segs) % 2 == 0 and parts and parts[-1][0] == "m":
+        parts[-1] = ("t", parts[-1][1])
+    return parts
+
+
+def layout_rich(text, font, fs, max_w, draw, color=RED):
+    """中文與數學式混排的斷行計算。
+
+    回傳 [(行高, [item…])]，item = ("t", 字串, 寬, 高) 或 ("m", 圖, 寬, 高)。
+    中文可逐字斷行；數學式視為不可切開的一整塊。
+    """
+    lines = []
+    for para in str(text).split("\n"):
+        if not para.strip():
+            lines.append((fs * 0.6, []))
+            continue
+        cur, cur_w, cur_h = [], 0.0, fs
+        for kind, seg in split_math(para):
+            if kind == "m":
+                im = math_img(seg.strip(), fs, color)
+                if im is None:                       # 渲染失敗 → 當純文字排（至少內容不遺失）
+                    kind, seg = "t", seg
+                else:
+                    if cur_w + im.width > max_w and cur:
+                        lines.append((cur_h, cur)); cur, cur_w, cur_h = [], 0.0, fs
+                    cur.append(("m", im, im.width, im.height))
+                    cur_w += im.width
+                    cur_h = max(cur_h, im.height)
+                    continue
+            buf = ""
+            for ch in seg:
+                w = draw.textlength(buf + ch, font=font)
+                if cur_w + w > max_w and (buf or cur):
+                    if buf:
+                        cur.append(("t", buf, draw.textlength(buf, font=font), fs))
+                    lines.append((cur_h, cur))
+                    cur, cur_w, cur_h, buf = [], 0.0, fs, ch
+                else:
+                    buf += ch
+            if buf:
+                w = draw.textlength(buf, font=font)
+                cur.append(("t", buf, w, fs))
+                cur_w += w
+        if cur:
+            lines.append((cur_h, cur))
+    return lines
+
+
+def solution_metrics(W, a, color=RED):
+    """算出 solution 區塊需要的高度（原圖像素單位），供自動延伸畫布使用。
+
+    回傳 (需要高度, 字級px, 行距px, 排版後的行陣列)。
+    """
+    fs = max(10.0, float(a.get("size", 0.026)) * W)
+    font = load_font(fs, bold=False)
+    d = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+    pad = fs * 1.0
+    max_w = W - pad * 2 - fs * 0.6
+    lines = layout_rich(safe_text(a.get("text", "")), font, fs, max_w, d, color)
+    gap = fs * 0.62                                   # 行距（行高之外的額外留白）
+    head = fs * 2.3                                   # 標題列 + 分隔線
+    total = head + sum(h + gap for h, _ in lines) + pad * 1.8
+    return int(total), fs, gap, lines
+
+
 def quad_bezier(p0, p1, p2, n=48):
     out = []
     for i in range(n + 1):
@@ -181,11 +342,20 @@ def quad_bezier(p0, p1, p2, n=48):
 class RedPenAnnotator:
     """在透明圖層上畫紅筆標記，最後以正確 alpha 合成疊回原圖。"""
 
-    def __init__(self, base_img, supersample=SUPERSAMPLE, pen_scale=1.0):
-        self.base = base_img.convert("RGB")
-        self.W, self.H = self.base.size
+    def __init__(self, base_img, supersample=SUPERSAMPLE, pen_scale=1.0, extend_px=0):
+        src = base_img.convert("RGB")
+        self.W, self.H = src.size          # W/H 一律是「原圖」尺寸：相對座標的基準不因延伸而改變
+        self.ext = max(0, int(extend_px))  # 原圖下方額外延伸的白區高度（供 solution 續寫用）
+        if self.ext:
+            # 原圖貼在上方，下方補白；原圖區域的像素完全沒被改動
+            canvas = Image.new("RGB", (self.W, self.H + self.ext), (255, 255, 255))
+            canvas.paste(src, (0, 0))
+            self.base = canvas
+        else:
+            self.base = src
+        self.CH = self.H + self.ext        # 實際畫布高度
         self.ss = max(1, int(supersample))
-        self.overlay = Image.new("RGBA", (self.W * self.ss, self.H * self.ss), (0, 0, 0, 0))
+        self.overlay = Image.new("RGBA", (self.W * self.ss, self.CH * self.ss), (0, 0, 0, 0))
         self.draw = ImageDraw.Draw(self.overlay)
         # 基準筆畫粗細：以圖寬為準，1x 約為寬度的 1/280（2048px → 約 7.3px）
         self.pen = self.W * self.ss / 280.0 * pen_scale
@@ -321,25 +491,27 @@ class RedPenAnnotator:
 
     def a_note(self, a, rnd):
         """中文批註：白色描邊 + 半透明白底，確保壓在手寫字上也看得清。"""
-        text = str(a.get("text", ""))
+        text = safe_text(str(a.get("text", "")))
         if not text:
             return
         fs = self.U(a.get("size", 0.024))
         font = load_font(fs, bold=bool(a.get("bold", True)))
         col = parse_color(a.get("color"))
         anchor = a.get("anchor", "lt")
-        spacing = fs * 0.34
         halo = max(1, int(fs * 0.10))
 
         d = self.draw
-        bb = d.multiline_textbbox((0, 0), text, font=font, spacing=spacing,
-                                  align="left", stroke_width=halo)
-        tw, th = bb[2] - bb[0], bb[3] - bb[1]
+        # 與 solution 共用混排排版：批註裡的 $...$ 也要排成真正的分數／上標
+        max_w = self.W * self.ss * float(a.get("maxw", 0.62))
+        lines = layout_rich(text, font, fs, max_w, d, col)
+        gap = fs * 0.30
+        tw = max([sum(it[2] for it in items) for _, items in lines] or [0])
+        th = sum(h + gap for h, _ in lines) - gap if lines else 0
         ox, oy = self.P(a.get("at", [0.5, 0.5]))
-        h, v = (anchor + "lt")[0], (anchor + "lt")[1]
-        if h == "c":
+        ah, v = (anchor + "lt")[0], (anchor + "lt")[1]
+        if ah == "c":
             ox -= tw / 2
-        elif h == "r":
+        elif ah == "r":
             ox -= tw
         if v == "m":
             oy -= th / 2
@@ -347,7 +519,7 @@ class RedPenAnnotator:
             oy -= th
 
         # 夾在畫布內：避免批註文字（含面板與左側紅槓）被切出畫面外
-        CW, CH = self.W * self.ss, self.H * self.ss
+        CW, CH = self.W * self.ss, self.CH * self.ss
         pad_ = fs * 0.34
         margin = fs * 0.75            # 左側紅槓 + 面板留白
         ox = min(max(ox, margin), max(margin, CW - tw - pad_ - fs * 0.3))
@@ -359,9 +531,17 @@ class RedPenAnnotator:
             d.rounded_rectangle([ox - pad, oy - pad * 0.75, ox + tw + pad, oy + th + pad * 0.75],
                                 radius=rad, fill=(255, 255, 255, PANEL_ALPHA))
 
-        d.multiline_text((ox - bb[0], oy - bb[1]), text, font=font, fill=col + (250,),
-                         spacing=spacing, align="left",
-                         stroke_width=halo, stroke_fill=(255, 255, 255, HALO_ALPHA))
+        y = oy
+        for line_h, items in lines:
+            x = ox
+            for kind, payload, iw, ih in items:
+                if kind == "t":
+                    d.text((x, y + (line_h - fs) / 2), payload, font=font, fill=col + (250,),
+                           stroke_width=halo, stroke_fill=(255, 255, 255, HALO_ALPHA))
+                else:
+                    self.overlay.alpha_composite(payload, (int(x), int(y + (line_h - ih) / 2)))
+                x += iw
+            y += line_h + gap
 
         # 左側小紅槓，像老師批註的起頭記號
         if a.get("bullet", True):
@@ -386,8 +566,9 @@ class RedPenAnnotator:
         tmp = Image.new("RGBA", (box, box), (0, 0, 0, 0))
         sub = RedPenAnnotator.__new__(RedPenAnnotator)
         sub.overlay, sub.draw, sub.pen, sub.color = tmp, ImageDraw.Draw(tmp), self.pen, col
-        sub.W = sub.H = box
+        sub.W = sub.H = sub.CH = box
         sub.ss = 1
+        sub.ext = 0
 
         cx = cy = box / 2
         # 兩圈手繪橢圓
@@ -410,6 +591,41 @@ class RedPenAnnotator:
                          expand=True, fillcolor=(0, 0, 0, 0))
         px, py = self.P(a.get("at", [0.88, 0.07]))
         self.overlay.alpha_composite(tmp, (int(px - tmp.width / 2), int(py - tmp.height / 2)))
+
+    def a_solution(self, a, rnd):
+        """續寫解答：畫在原圖下方延伸出來的白區，讓學生看得到「接下去該怎麼寫」。
+
+        位置不由 AI 指定——一律從原圖底線下方開始，往下排版，避免壓到學生字跡。
+        """
+        col = parse_color(a.get("color"))
+        # 直接以超取樣尺度重新排版，數學式才會是高解析度（不是放大的模糊圖）
+        _, fs, gap, lines = solution_metrics(self.W * self.ss, a, col)
+        font = load_font(fs, bold=False)
+        font_t = load_font(fs * 1.06, bold=True)
+        d = self.draw
+        pad = fs * 1.0
+        x0 = pad
+        y = self.H * self.ss + pad * 0.9            # 從原圖底部下方開始
+
+        # 頂部分隔線（手繪感），標示這是老師補寫的區域
+        self.hand_stroke([(x0, y), (self.W * self.ss - pad, y)],
+                         self.pen * 0.7, self.pen * 0.7, color=col, wob=0.25, rnd=rnd)
+        y += fs * 0.55
+
+        title = safe_text(str(a.get("title", "訂正參考")))
+        d.text((x0, y), title, font=font_t, fill=col + (250,))
+        y += fs * 1.45
+
+        for line_h, items in lines:
+            x = x0 + fs * 0.15
+            for kind, payload, w, h in items:
+                if kind == "t":
+                    # 文字以行高垂直置中（同一行若有分數，文字不會被頂到上緣）
+                    d.text((x, y + (line_h - fs) / 2), payload, font=font, fill=col + (248,))
+                else:
+                    self.overlay.alpha_composite(payload, (int(x), int(y + (line_h - h) / 2)))
+                x += w
+            y += line_h + gap
 
     def a_arrow(self, a, rnd):
         """引線箭頭：把批註連到對應位置。bow 控制弧度。"""
@@ -445,6 +661,7 @@ class RedPenAnnotator:
         "text": a_note,
         "score": a_score,
         "arrow": a_arrow,
+        "solution": a_solution,
     }
 
     def annotate(self, annotations):
@@ -464,7 +681,7 @@ class RedPenAnnotator:
         """回傳縮回原尺寸的透明紅筆層（預乘 alpha 版本 + alpha 通道）。"""
         r, g, b, alp = self.overlay.split()
         prem = [ImageChops.multiply(c, alp) for c in (r, g, b)]
-        size = (self.W, self.H)
+        size = (self.W, self.CH)
         if self.ss > 1:
             resample = Image.LANCZOS
             prem = [c.resize(size, resample) for c in prem]
@@ -495,7 +712,14 @@ class RedPenAnnotator:
 def verify_untouched(annot: RedPenAnnotator, result: Image.Image):
     _, alp = annot.get_untouched_alpha() if hasattr(annot, "get_untouched_alpha") else annot.get_overlay()
     mask_zero = alp.point(lambda v: 255 if v == 0 else 0)      # 完全沒動到的區域
-    diff = ImageChops.difference(annot.base, result).convert("L")
+    # 只驗「原圖區域」：下方延伸的白區是新增的畫布，本來就不屬於原圖
+    if getattr(annot, "ext", 0):
+        box = (0, 0, annot.W, annot.H)
+        mask_zero = mask_zero.crop(box)
+        result = result.crop(box)
+    diff = ImageChops.difference(annot.base.crop((0, 0, annot.W, annot.H))
+                                 if getattr(annot, "ext", 0) else annot.base,
+                                 result).convert("L")
     diff_in_zero = ImageChops.multiply(diff, mask_zero.point(lambda v: 255 if v else 0))
     bad = diff_in_zero.getbbox()
     total = annot.W * annot.H
@@ -550,6 +774,8 @@ def main(argv=None):
     g.add_argument("--json-str", help="直接給 JSON 字串")
     g.add_argument("--demo", action="store_true", help="使用內建示範標註")
     ap.add_argument("--overlay-out", help="另存透明紅筆層 PNG（證明原圖未被重繪）")
+    ap.add_argument("--extend", type=float, default=0.0,
+                    help="畫布下方延伸高度（原圖高的比例，如 0.4）；留 0 則依 solution 內容自動計算")
     ap.add_argument("--pen-scale", type=float, default=1.0, help="筆畫粗細倍率，預設 1.0")
     ap.add_argument("--supersample", type=int, default=SUPERSAMPLE, help="超取樣倍率，預設 3")
     ap.add_argument("--verify", action="store_true", help="驗證未覆蓋區域與原圖是否逐位元相同")
@@ -568,7 +794,18 @@ def main(argv=None):
     base = Image.open(args.image)
     print(f"原圖：{args.image}  尺寸 {base.size[0]}x{base.size[1]}  模式 {base.mode}")
 
-    ann = RedPenAnnotator(base, supersample=args.supersample, pen_scale=args.pen_scale)
+    # 有 solution 續寫區就自動把畫布往下延伸到剛好容納（--extend 可手動覆寫，單位為原圖高的比例）
+    ext_px = int(args.extend * base.size[1]) if args.extend else 0
+    if not ext_px:
+        need = [solution_metrics(base.size[0], a)[0]
+                for a in annotations if str(a.get("type", "")).lower() == "solution"]
+        if need:
+            # 實際繪製是在超取樣尺度重新排版，斷行可能微幅不同 → 多留 8% 餘裕，避免最後一行被切掉
+            ext_px = int(max(need) * 1.08)
+            print(f"續寫解答區：畫布下方自動延伸 {ext_px}px")
+
+    ann = RedPenAnnotator(base, supersample=args.supersample, pen_scale=args.pen_scale,
+                          extend_px=ext_px)
     ann.annotate(annotations)
     result = ann.compose()
 

@@ -7,8 +7,10 @@ crop_hanlin.py — 切割翰林模擬會考題本，輸出逐題 PNG
 共用題幹（如「請閱讀下列敘述，回答第24~25題」）會一併附在相關各題上。
 
 用法：
-  python scripts/crop_hanlin.py --probe     # 只印定位結果
-  python scripts/crop_hanlin.py             # 實際切圖
+  python scripts/crop_hanlin.py --probe     # 只印定位結果（HL1）
+  python scripts/crop_hanlin.py             # 實際切圖（HL1）
+  # 其他年度／場次：用 --prefix 指定題號前綴、--book 指定題本 PDF
+  python scripts/crop_hanlin.py --prefix HL2 --book ".../111/01-…題本(平浮).pdf" --probe
 """
 import os, sys, json, base64, argparse, time
 from pathlib import Path
@@ -20,7 +22,6 @@ from PIL import Image
 SRC = Path(r"G:/我的雲端硬碟/2026會考歷屆試題/翰林模擬試題")
 BOOK = SRC / "01-紙筆模擬會考／數學【第1次第1~2冊】題本(平浮).pdf"
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "01_題目圖片" / "HL1"
 
 MODEL = os.environ.get("KAOKAO_GRADE_MODEL", "gpt-5.6-luna")
 API = "https://api.openai.com/v1/chat/completions"
@@ -99,10 +100,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--pad", type=float, default=0.008)
+    ap.add_argument("--prefix", default="HL1", help="題號前綴（HL1／HL2…），同時決定輸出資料夾與定位快取檔名")
+    ap.add_argument("--book", default=str(BOOK), help="題本 PDF 路徑")
     args = ap.parse_args()
 
-    doc = fitz.open(BOOK)
-    cache = ROOT / "data" / "hanlin_layout.json"
+    PREFIX = args.prefix
+    OUT = ROOT / "01_題目圖片" / PREFIX
+    doc = fitz.open(args.book)
+    # HL1 的定位快取沿用舊檔名，其餘走 hanlin_layout_<prefix>.json
+    cache = ROOT / "data" / ("hanlin_layout.json" if PREFIX == "HL1"
+                             else f"hanlin_layout_{PREFIX}.json")
     if cache.exists() and not args.probe:
         pages = {int(k): v for k, v in json.load(open(cache, encoding="utf-8")).items()}
         print(f"沿用已存的定位結果 {cache.name}（要重新辨識請加 --probe）")
@@ -120,9 +127,9 @@ def main():
 
     if args.probe:
         json.dump({str(k): v for k, v in pages.items()},
-                  open(ROOT / "data" / "hanlin_layout.json", "w", encoding="utf-8"),
+                  open(cache, "w", encoding="utf-8"),
                   ensure_ascii=False, indent=1)
-        print("\n定位結果已存 data/hanlin_layout.json")
+        print(f"\n定位結果已存 data/{cache.name}")
         return
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -174,7 +181,7 @@ def main():
                     merged.paste(stem_im, (0, 0)); merged.paste(crop, (0, stem_im.size[1]))
                     crop = merged
                     break
-            qid = f"HL1-{int(name):02d}" if name.isdigit() else f"HL1-{name}"
+            qid = f"{PREFIX}-{int(name):02d}" if name.isdigit() else f"{PREFIX}-{name}"
             trim(crop).save(OUT / f"{qid}.png")
             made.append(qid)
     print(f"\n已輸出 {len(made)} 張 → {OUT}")

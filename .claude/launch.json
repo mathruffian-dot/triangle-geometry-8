@@ -98,6 +98,20 @@
       "port": 8899
     },
     {
+      "name": "quizsite",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8901",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "會考題庫/quiz_site"
+      ],
+      "port": 8901
+    },
+    {
       "name": "review6",
       "runtimeExecutable": "python",
       "runtimeArgs": [
