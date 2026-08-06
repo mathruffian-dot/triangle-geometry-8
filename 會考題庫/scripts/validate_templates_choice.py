@@ -26,7 +26,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gen_common import gen_one, render_text            # noqa: E402
-from gen_choice import build_options                   # noqa: E402
+from gen_choice import build_options, prep_figure       # noqa: E402
 from figures import render_svg                         # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
@@ -99,20 +99,13 @@ def main():
             for i, e in enumerate(errors):
                 if i != idx and not e:
                     warns.append(f"{cid} 有干擾項沒有標錯誤類型（第 {LETTERS[i]} 項）")
-            variants.add(checks["stem"] + checks["options"])
+            # 有些卡的變化在圖上（積木配置、展開圖標記），題幹幾乎一樣 → 圖也算進相異度
+            figsig = str(prep_figure(card["figure"], env)) if card.get("figure") else ""
+            variants.add(checks["stem"] + checks["options"] + figsig)
 
             if card.get("figure") and fig_ok is None:
-                fig = render_text(card["figure"], env)
-                for k in ("n", "r", "count", "a1", "d", "width", "h"):
-                    if k in fig:
-                        try:
-                            fig[k] = int(float(fig[k]))
-                        except (TypeError, ValueError):
-                            pass
-                if fig.get("kind") == "chart":
-                    fig["data"] = [float(x) for x in fig.get("data", [])]
                 try:
-                    render_svg(fig)
+                    render_svg(prep_figure(card["figure"], env))   # 與生成器走同一條路徑
                     fig_ok = True
                 except Exception as e:
                     fig_ok = False

@@ -29,7 +29,7 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gen_common import gen_one, render_text, eval_env   # noqa: E402
+from gen_common import gen_one, render_text, eval_env, prep_figure, _num  # noqa: E402,F401
 from figures import render_question_png                # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
@@ -98,18 +98,6 @@ def build_options(card, env, rnd, target_idx=None):
             return result
         fallback = fallback or result
     return fallback
-
-
-def prep_figure(spec, env):
-    """render_text 之後，圖 spec 裡的數值欄位是字串，要還原成數字才畫得出來。"""
-    if not spec:
-        return None
-    fig = render_text(spec, env)
-    fig = {k: (_num(v) if k in ("n", "r", "count", "a1", "d", "width", "h") else v)
-           for k, v in fig.items()}
-    if fig.get("kind") == "chart":
-        fig["data"] = [_num(x) for x in fig.get("data", [])]
-    return fig
 
 
 def make_question(card, env, qid, tag, num, rnd, img_rel, dry=False, target_idx=None,
@@ -228,17 +216,29 @@ def main():
     # 決定每題要用哪張卡
     n = args.paper or args.n
     plan = []
-    if args.paper:                                   # 依藍圖排難度，題號小的先出易題
+    if args.paper:
+        # 依會考卷面：難度由易到難、題組固定放卷尾、同一張卡盡量少重複、冊別盡量分散
+        groups = [c for c in pool if c.get("skeleton") == "題組"]
+        normal = [c for c in pool if c.get("skeleton") != "題組"]
+        use_group = bool(groups) and n >= 12
+        gsize = len(groups[0]["items"]) if use_group else 0
+        body_n = n - gsize
         want = []
         for diff, ratio in BLUEPRINT:
-            want += [diff] * round(n * ratio)
-        want = (want + ["中"] * n)[:n]
+            want += [diff] * round(body_n * ratio)
+        want = (want + ["中"] * body_n)[:body_n]
         want.sort(key=lambda d: {"易": 0, "中": 1, "難": 2}[d])
+        usage, bookcnt = collections.Counter(), collections.Counter()
         for diff in want:
-            cand = [c for c in pool if c["difficulty"] == diff] or pool
-            used_ids = {x["id"] for x in plan}
-            fresh = [c for c in cand if c["id"] not in used_ids] or cand   # 先用沒用過的卡
-            plan.append(rnd.choice(fresh))
+            cand = [c for c in normal if c["difficulty"] == diff] or normal
+            # 先挑用得最少的卡，同分再挑本卷該冊題數最少的，最後才隨機
+            cand = sorted(cand, key=lambda c: (usage[c["id"]], bookcnt[c["book"]], rnd.random()))
+            pick = cand[0]
+            usage[pick["id"]] += 1
+            bookcnt[pick["book"]] += 1
+            plan.append(pick)
+        if use_group:
+            plan.append(rnd.choice(groups))
     else:
         for i in range(n):
             fresh = [c for c in pool if c["id"] not in {x["id"] for x in plan}] or pool

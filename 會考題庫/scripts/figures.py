@@ -399,8 +399,201 @@ def _pattern(sp):
     return svg_doc(W, H, body)
 
 
+def _annulus(sp):
+    """同心圓環：內圓＋外圓，環狀區域填色，可標內外半徑。"""
+    import math
+    R = float(sp.get("outer_px", 130))
+    ratio = float(sp.get("ratio", 0.6))          # 內圓 / 外圓
+    r = R * max(0.2, min(0.9, ratio))
+    pad = 76
+    W = H = int(R * 2 + pad * 2)
+    cx = cy = W / 2
+    body = (f'<circle cx="{cx}" cy="{cy}" r="{R:.1f}" fill="#dbeafe" stroke="{LINE}" stroke-width="2"/>'
+            f'<circle cx="{cx}" cy="{cy}" r="{r:.1f}" fill="#dcfce7" stroke="{LINE}" stroke-width="2"/>'
+            f'<circle cx="{cx}" cy="{cy}" r="3" fill="{INK}"/>'
+            + text(cx + 9, cy + 18, sp.get("center_label", "O"), 17))
+
+    def radius_line(deg, length, label, color):
+        """從圓心畫一條半徑並在末端外側標字（先鋪白底，避免壓線）。"""
+        a = math.radians(deg)
+        ex, ey = cx + length * math.cos(a), cy - length * math.sin(a)
+        out = f'<line x1="{cx}" y1="{cy}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="{color}" stroke-width="1.8"/>'
+        lx, ly = cx + (length + 34) * math.cos(a), cy - (length + 34) * math.sin(a)
+        w = tw(label, 16)
+        out += (f'<rect x="{lx - w/2 - 4:.1f}" y="{ly - 15:.1f}" width="{w + 8:.1f}" height="24" fill="white"/>'
+                + text(lx, ly + 3, label, 16, "middle", color))
+        return out
+
+    # 兩條半徑線刻意不共線，否則看起來像一條通過圓心的直線
+    if sp.get("inner_label"):
+        body += radius_line(228, r, sp["inner_label"], "#166534")
+    if sp.get("outer_label"):
+        body += radius_line(52, R, sp["outer_label"], "#1d4ed8")
+    if sp.get("ring_label"):
+        body += text(cx, cy - R - 22, sp["ring_label"], 16, "middle", "#1d4ed8")
+    if sp.get("core_label"):
+        body += text(cx, cy - 14, sp["core_label"], 16, "middle", "#166534")
+    return svg_doc(W, H, body)
+
+
+def _kite(sp):
+    """鳶形（AB=AD、CB=CD）：左右對稱，可畫對角線與等邊刻度。全等證明題用。"""
+    import math
+    # 給了 ∠BAC 與 ∠BCA 就照真實比例畫（正弦定理定出 B 的位置），沒給則用預設外形
+    a_deg = float(sp.get("angle_a", 34))
+    c_deg = float(sp.get("angle_c", 26))
+    h = 300.0
+    t = h * math.sin(math.radians(c_deg)) / max(math.sin(math.radians(a_deg + c_deg)), 1e-6)
+    bx_off = t * math.sin(math.radians(a_deg))
+    by_off = t * math.cos(math.radians(a_deg))
+    pad = 56
+    W = 2 * bx_off + pad * 2
+    H = h + pad * 2
+    cx = W / 2
+    ay, cy2 = pad, pad + h
+    A, B, C, D = (cx, ay), (cx + bx_off, ay + by_off), (cx, cy2), (cx - bx_off, ay + by_off)
+    body = (f'<polygon points="{A[0]},{A[1]} {B[0]},{B[1]} {C[0]},{C[1]} {D[0]},{D[1]}" '
+            f'fill="#f8fafc" stroke="{LINE}" stroke-width="2"/>')
+    if sp.get("diagonal", True):        # 對角線 AC（兩個三角形的公共邊）
+        body += (f'<line x1="{A[0]}" y1="{A[1]}" x2="{C[0]}" y2="{C[1]}" stroke="{LINE}" '
+                 f'stroke-width="2" stroke-dasharray="{sp.get("dash","")}"/>')
+
+    def tick(p, q, n, off=0):
+        """在線段中點畫 n 條等長刻度。"""
+        import math
+        mx, my = (p[0] + q[0]) / 2, (p[1] + q[1]) / 2
+        dx, dy = q[0] - p[0], q[1] - p[1]
+        L = math.hypot(dx, dy) or 1
+        ux, uy = dx / L, dy / L
+        nx, ny = -uy, ux
+        out = ""
+        for i in range(n):
+            s0 = (i - (n - 1) / 2) * 7
+            out += (f'<line x1="{mx + ux*s0 - nx*7:.1f}" y1="{my + uy*s0 - ny*7:.1f}" '
+                    f'x2="{mx + ux*s0 + nx*7:.1f}" y2="{my + uy*s0 + ny*7:.1f}" '
+                    f'stroke="{LINE}" stroke-width="2"/>')
+        return out
+
+    body += tick(A, B, 1) + tick(A, D, 1) + tick(B, C, 2) + tick(D, C, 2)
+    for (pt, lab, dx, dy) in [(A, sp.get("la", "A"), 0, -12), (B, sp.get("lb", "B"), 16, 6),
+                              (C, sp.get("lc", "C"), 0, 26), (D, sp.get("ld", "D"), -16, 6)]:
+        body += f'<circle cx="{pt[0]}" cy="{pt[1]}" r="3.5" fill="{INK}"/>'
+        body += text(pt[0] + dx, pt[1] + dy, lab, 19, "middle", INK, "bold")
+    labs = dict(sp.get("angle_labels") or {})
+    for key, pos in (("label_a", "BAC"), ("label_c", "BCA"),
+                     ("label_a2", "DAC"), ("label_c2", "DCA")):
+        if sp.get(key):
+            labs[sp[key]] = pos
+    if labs:
+        for lab, pos in labs.items():
+            # 標在該角的角平分線方向上，角度大小不同也不會壓到邊
+            ra, rc = math.radians(a_deg / 2), math.radians(c_deg / 2)
+            r = 54
+            px, py = {"BAC": (cx + r * math.sin(ra), ay + r * math.cos(ra)),
+                      "DAC": (cx - r * math.sin(ra), ay + r * math.cos(ra)),
+                      "BCA": (cx + r * math.sin(rc), cy2 - r * math.cos(rc)),
+                      "DCA": (cx - r * math.sin(rc), cy2 - r * math.cos(rc))}.get(pos, (cx, (ay + cy2) / 2))
+            body += text(px, py, lab, 16, "middle", RED)
+    return svg_doc(W, H, body)
+
+
+def _iso(sp):
+    """等角投影的正方體堆疊（會考「積木＋前視圖」那類題目）。
+
+    cubes: [[x, y, z], ...]  x 向右後、y 向左後、z 向上（單位格）
+    marks: {"甲": [x,y,z], ...} 在該積木的頂面標字
+    front_arrow: 是否畫「前面」箭頭
+    """
+    import math
+    cubes = [tuple(c) for c in sp.get("cubes", [[0, 0, 0]])]
+    s = float(sp.get("size", 42))
+    cos30, sin30 = math.cos(math.radians(30)), 0.5
+
+    def proj(x, y, z):
+        return ((x - y) * s * cos30, (x + y) * s * sin30 - z * s)
+
+    pts = [proj(x + dx, y + dy, z + dz) for (x, y, z) in cubes
+           for dx in (0, 1) for dy in (0, 1) for dz in (0, 1)]
+    minx = min(p[0] for p in pts); maxx = max(p[0] for p in pts)
+    miny = min(p[1] for p in pts); maxy = max(p[1] for p in pts)
+    pad = 46
+    W = maxx - minx + pad * 2 + (90 if sp.get("front_arrow", True) else 0)
+    H = maxy - miny + pad * 2
+    ox, oy = pad - minx, pad - miny
+
+    def P(x, y, z):
+        px, py = proj(x, y, z)
+        return f"{px + ox:.1f},{py + oy:.1f}"
+
+    body = ""
+    for (x, y, z) in sorted(cubes, key=lambda c: (c[0] + c[1] + c[2])):   # 遠的先畫
+        top = f"{P(x,y,z+1)} {P(x+1,y,z+1)} {P(x+1,y+1,z+1)} {P(x,y+1,z+1)}"
+        right = f"{P(x+1,y,z)} {P(x+1,y+1,z)} {P(x+1,y+1,z+1)} {P(x+1,y,z+1)}"
+        left = f"{P(x,y+1,z)} {P(x+1,y+1,z)} {P(x+1,y+1,z+1)} {P(x,y+1,z+1)}"
+        for poly, fill in ((top, "#f8fafc"), (left, "#e2e8f0"), (right, "#cbd5e1")):
+            body += f'<polygon points="{poly}" fill="{fill}" stroke="{LINE}" stroke-width="1.6"/>'
+    for label, c in (sp.get("marks") or {}).items():
+        x, y, z = c
+        cx = (proj(x, y, z + 1)[0] + proj(x + 1, y + 1, z + 1)[0]) / 2 + ox
+        cy = (proj(x, y, z + 1)[1] + proj(x + 1, y + 1, z + 1)[1]) / 2 + oy
+        body += text(cx, cy + 6, label, 19, "middle", INK, "bold")
+    if sp.get("front_arrow", True):
+        ay = H - pad + 6
+        ax = pad + 10
+        body += (f'<line x1="{ax}" y1="{ay}" x2="{ax + 66}" y2="{ay - 26}" stroke="{INK}" stroke-width="3"/>'
+                 f'<path d="M {ax + 66} {ay - 26} l -14 1 l 5 12 z" fill="{INK}"/>')
+        body += text(ax - 6, ay + 8, sp.get("front_label", "前面"), 17, "end")
+    return svg_doc(W, H, body)
+
+
+def _net(sp):
+    """展開圖：長方體（十字型）或直三角柱，可在指定面上標字。"""
+    kind = sp.get("solid", "cuboid")
+    u = float(sp.get("size", 74))
+    labels = sp.get("labels", {})           # {"甲": "top", ...} 面名 → 標字
+    body = ""
+
+    def face(x, y, w, h, name):
+        nonlocal body
+        body += (f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" '
+                 f'fill="#f8fafc" stroke="{LINE}" stroke-width="1.8"/>')
+        lab = next((k for k, v in labels.items() if v == name), None)
+        if lab:
+            body += text(x + w / 2, y + h / 2 + 7, lab, 20, "middle", INK, "bold")
+
+    if kind == "cuboid":
+        a, b, c = u * 1.35, u, u * 0.85          # 長、寬、高
+        W, H = a * 2 + b * 2 + 60, b * 2 + c + 60
+        x0, y0 = 30, 30
+        face(x0 + b, y0, a, b, "top")
+        face(x0, y0 + b, b, c, "left")
+        face(x0 + b, y0 + b, a, c, "front")
+        face(x0 + b + a, y0 + b, b, c, "right")
+        face(x0 + b + a + b, y0 + b, a, c, "back")
+        face(x0 + b, y0 + b + c, a, b, "bottom")
+    else:                                        # 直三角柱：三個長方形＋兩個三角形
+        import math
+        w, h = u, u * 1.6
+        W, H = w * 3 + u * 1.9, h + u * 2.6
+        x0, y0 = 40, 40 + u * 0.85
+        for i, nm in enumerate(["side1", "side2", "side3"]):
+            face(x0 + i * w, y0, w, h, nm)
+        tri_h = w * math.sqrt(3) / 2
+        t_up = f"{x0+w},{y0} {x0+2*w},{y0} {x0+1.5*w},{y0-tri_h}"
+        t_dn = f"{x0+w},{y0+h} {x0+2*w},{y0+h} {x0+1.5*w},{y0+h+tri_h}"
+        for poly, nm in ((t_up, "topface"), (t_dn, "bottomface")):
+            body += f'<polygon points="{poly}" fill="#eef2f7" stroke="{LINE}" stroke-width="1.8"/>'
+            lab = next((k for k, v in labels.items() if v == nm), None)
+            if lab:
+                cy = (y0 - tri_h * 0.45) if nm == "topface" else (y0 + h + tri_h * 0.45)
+                body += text(x0 + 1.5 * w, cy + 7, lab, 20, "middle", INK, "bold")
+    return svg_doc(W, H, body)
+
+
 BUILTIN = {"polygon": _polygon, "rectpath": _rectpath, "table": _table, "notice": _notice,
-           "dialog": _dialog, "numberline": _numberline, "chart": _chart, "pattern": _pattern}
+           "dialog": _dialog, "numberline": _numberline, "chart": _chart, "pattern": _pattern,
+           "iso": _iso, "net": _net, "kite": _kite,
+           "annulus": _annulus}
 
 
 # ───────────────────────────────────────────── 對外 API
@@ -605,6 +798,13 @@ DEMOS = [
                "vertex_labels": ["A", "B", "C", "D", "E", "F", "G", "H"]}}),
     ("coord", {"kind": "coord", "config": {"x_range": [-3, 5], "y_range": [-4, 8],
                "lines": [{"slope": 2, "intercept": -1, "label": "y=2x-1"}]}}),
+    ("kite", {"kind": "kite", "angle_labels": {"{x}°": "BAC", "{y}°": "BCA"}}),
+    ("iso", {"kind": "iso", "cubes": [[0,0,0],[1,0,0],[1,1,0],[0,0,1],[1,1,1],[1,0,1]],
+             "marks": {"甲": [0,0,1], "乙": [1,1,1], "丙": [1,0,1]}}),
+    ("net_cuboid", {"kind": "net", "solid": "cuboid",
+                    "labels": {"甲": "top", "乙": "front", "丙": "right"}}),
+    ("net_prism", {"kind": "net", "solid": "tri_prism",
+                   "labels": {"甲": "topface", "乙": "side2", "丙": "side3"}}),
 ]
 
 

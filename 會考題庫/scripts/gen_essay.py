@@ -44,7 +44,7 @@ BACKUP = BASE / "backup"
 # 參數抽樣／受限 eval／數值格式化／文字模板填值 一律走 gen_common（與選擇題生成器共用）
 
 from gen_common import (eval_env, run_derive, check_constraints, fmt,  # noqa: F401,E402
-                        render_text, pick_params, gen_one)
+                        render_text, pick_params, gen_one, prep_figure)
 
 
 
@@ -242,9 +242,7 @@ def main():
         qid = f"{tag}-N{i + 1}"
         stem = render_text(card["stem"], env)
         subs = render_text(card["subs"], env)
-        fig = card.get("figure")
-        if fig:                                   # 圖上的標註文字也要套入參數
-            fig = {k: (render_text(v, env) if isinstance(v, str) else v) for k, v in fig.items()}
+        fig = prep_figure(card.get("figure"), env)   # 圖上的標註與數值都套入參數
         img_rel = f"01_題目圖片/GEN/{qid}.png"
         if not args.dry:
             render_question_png(BASE / img_rel, i + 1, stem, subs,

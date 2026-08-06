@@ -164,3 +164,37 @@ def gen_one(card, rnd, used_sigs, tries=400):
         used_sigs.add(sig)
         return env, sig
     return None, None
+
+
+# ───────────────────────────────── 圖 spec 前處理
+
+
+def _num(v):
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return v
+
+
+def prep_figure(spec, env):
+    """把模板卡的圖 spec 變成 figures.py 吃得下的形式。
+
+    ・"$變數名"：直接取 env 裡的原始物件（cubes、marks、labels 這種巢狀結構，
+      走 render_text 會被轉成字串而失去型別）
+    ・其餘字串走 render_text 代入參數；數值欄位再轉回數字
+    """
+    if not spec:
+        return None
+    fig = {k: (env.get(v[1:]) if isinstance(v, str) and v.startswith("$") else render_text(v, env))
+           for k, v in spec.items()}
+    fig = {k: (_num(v) if k in ("n", "r", "count", "a1", "d", "width", "h", "size",
+                                "angle_a", "angle_c", "outer_px") else v)
+           for k, v in fig.items()}
+    if "ratio" in fig:                      # 比例要用浮點數，不能取整
+        try:
+            fig["ratio"] = float(fig["ratio"])
+        except (TypeError, ValueError):
+            pass
+    if fig.get("kind") == "chart":
+        fig["data"] = [_num(x) for x in fig.get("data", [])]
+    return fig
