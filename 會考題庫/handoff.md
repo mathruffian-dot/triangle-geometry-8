@@ -748,3 +748,61 @@ C-B3-04 補了 `d_onlyb`；C-B1-04 補了 `d_leftmid`）。設計新卡時要主
 翰林卷版權、config.json）、對方拿到後要清空 quizzes.json 的提醒、字型症狀對照表。
 
 `selftest_all.py` 全過。
+
+### ✅ 2026-08-13 派新卷：自編非選 2 題（第1~2冊）給 909 班
+**這份卷是什麼**：用非選模板庫生成的自編卷，2 題非選、範圍 B1＋B2。老師先看過題目才定案。
+- `G0813-N1`（E-B1-N1-01 足夠型／B1 指數律）：綠藻培養，每 24 小時分裂成 4 個、15 天 → 4 的 15 次方；
+  已知 10 億介於 2 的 29～30 次方，判斷是否足夠做 8 公克。**答：k = 15／不足夠**（要用**下界** 2 的 32 次方 才判得出來）。
+- `G0813-N2`（E-B2-N1-02 一定型／B2 比與比例式）：保護效力公式，甲公司 40／200 → 80%；
+  問乙公司效力更高時，使用組碰傷數是否一定較少。**答：80%／不一定**（反例 80、4000 → 98%）。
+- 兩題結論都反直覺（不足夠／不一定），亂猜過不了，呼應「會算但寫不出過程」的教學觀察。
+
+**生成方式（可完全重現）**
+```
+python scripts/gen_essay.py --template E-B1-N1-01,E-B2-N1-02 --n 2 --seed 20260825
+```
+⚠ 定案前一律先加 `--dry` 給老師看；同一個 `--seed` 才會生出同一題。
+
+**上線內容**
+- `data/questions_G0813.json`（2 題）＋題幹圖 `01_題目圖片/GEN/G0813-N*.png`；規準併入 `data/essay_rubrics.json`（現 36 題）
+- 手動微調一處：詳解「兩者指數 30 ≤ 32」→「30 < 32」（模板通式用 ≤ 沒錯，但本題實際是嚴格小於，讀起來才順）。
+  questions 檔與 essay_rubrics 的 answer_points 兩處都改了
+- `data/quizzes.json` 加 `b1b2-essay-0813`（`classes: ["909"]`、`print: true`），
+  卷名「**數學非選練習卷 第1~2冊（0813）**」——⚠ 試算表 key 是 `數學非選練習卷 第1~2冊（0813）｜909班`，**不要改**
+- **學生網址**：https://math809-quiz.pages.dev/q/b1b2-essay-0813-909/ （含紙本 PDF 3 頁，封面 QR 指向同一網址）
+- 兩站都已 deploy（quiz／bank）。⚠ 順手補上：`bank_site/01_題目圖片/GEN/` 原本**不存在**，
+  所以題庫站上 G0805／M0806／SIM115 這些生成題一直是缺圖狀態；這次把 46 張 GEN 圖一起複製並部署，已修好。
+
+**驗證**：題幹圖目視（無缺字方框）／`node --check` 兩個 script 區塊全過／線上作答頁、print.pdf、入口頁皆 200／
+瀏覽器實測 909 班鎖定唯讀、兩張題圖載入（1000×778、1000×870）、2 個手寫畫布與拍照鈕都在；測完清 localStorage，**未送出任何測試交卷**。
+
+**⏭️ 學生交卷後**
+```
+python scripts/grade_essays.py     --quiz "數學非選練習卷 第1~2冊（0813）｜909班"
+python scripts/make_redpen.py      --quiz "數學非選練習卷 第1~2冊（0813）｜909班"
+python scripts/make_feedback_pdf.py --quiz "數學非選練習卷 第1~2冊（0813）｜909班"
+```
+→ 再到 math809-bank「✍ 非選覆核」定分。⚠ 這兩題的規準是**生成的**（`confidence: generated`），非官方原件，務必逐份看過。
+
+**新工具 `scripts/make_essay_solution.py`（詳解卷 PDF）**
+每題＝題目圖＋參考答案＋詳解＋解題步驟＋陷阱＋0～3 級分給分標準，A4 platypus 排版。
+```
+python scripts/make_essay_solution.py --ids G0813-N1 G0813-N2 --title "卷名" --out "輸出.pdf"
+```
+- 本卷成品放在 `數學非選練習卷 第1~2冊（0813）/`（詳解＋紙本各一份）。⚠ `.gitignore` 排除 `*.pdf`，**這資料夾不會進版控**，換電腦要重跑指令。
+- ⚠ **詳解卷含答案，不可放進學生站**。
+- 踩到的兩個坑：reportlab `ParagraphStyle` 的 `leading` 不能同時出現在 `**base` 與具名參數；規準文字含 `<` `>` 必須跳脫，但自己寫的 `<b>` 要用 `raw=True` 放行（第一版印出字面的 `<b>三級分</b>`）。
+- 字型：實測 msjh 缺 `≤` `≥` `⟺` → `safe()` 自動換成 `≦` `≧`「等價於」。
+
+### 🐛 2026-08-13 修復：批改鏈路 5 支腳本全部無法啟動（漏 import）
+**症狀**：`grade_essays` / `make_redpen` / `make_feedback_pdf` / `make_review_sheet` / `reset_review`
+一執行就 `NameError: _CFG_SUBMIT_URL is not defined`（`make_feedback_pdf` 是 `_cfg`）——**連 `--help` 都跑不起來**。
+**根因**：8/6「集中設定 config.py」重構時，這 5 支改用了 `_CFG_SUBMIT_URL()`／`_cfg()`，
+但**只有 `build_html.py`／`build_quiz_site.py` 補了 import**。派卷鏈路正常，所以一直沒被發現；
+真正會炸的時間點是「學生交完卷、老師要批改」的那一刻。
+**修法**：每支在 `HERE` 之後補
+`sys.path.insert(0, str(HERE))` ＋ `from config import SUBMIT_URL as _CFG_SUBMIT_URL, get as _cfg`
+（`reset_review` 原本連 `pathlib.Path` 都沒 import，一併補上）。
+**驗證**：5 支 `--help` 全 OK；解析出的收卷網址都等於正式網址（含 `?token=math809`）；
+`make_review_sheet` 實跑一次唯讀查詢，後端正常回「查無資料」（該卷還沒人交卷）。
+**教訓**：這類「模組層級才會執行」的錯誤，`selftest_all.py` 沒涵蓋到 → 值得加一條「每支 CLI 腳本跑 `--help`」的煙霧測試。

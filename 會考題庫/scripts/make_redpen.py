@@ -23,6 +23,8 @@ sys.stdout.reconfigure(encoding="utf-8")
 import requests
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from config import SUBMIT_URL as _CFG_SUBMIT_URL, get as _cfg  # noqa: E402  集中設定
 ROOT = HERE.parent
 RUBRICS = ROOT / "data" / "essay_rubrics.json"
 ANNOTATOR = HERE / "annotate_redpen.py"
@@ -235,6 +237,7 @@ def main():
     ap.add_argument("--one", default="", help="只處理這個檔案ID")
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--outdir", default=str(ROOT / "redpen_out"))
+    ap.add_argument("--jobs", type=int, default=1, help="同時處理幾份（平行只在 OpenAI 呼叫；繪圖會排隊）")
     ap.add_argument("--force", action="store_true", help="已存在也重做")
     ap.add_argument("--no-upload", action="store_true", help="只存本機，不上傳到 Drive")
     args = ap.parse_args()
@@ -251,7 +254,12 @@ def main():
     print(f"取得 {len(recs)} 份已批改作答　模型={args.model}")
 
     done, failed, pending = 0, [], []
-    for i, x in enumerate(recs, 1):
+    import threading
+    _render_lock = threading.Lock()   # matplotlib mathtext 不保證執行緒安全 → 只讓繪圖排隊
+    _out_lock = threading.Lock()      # 保護 done/failed/pending 三個共用清單
+
+    def one(i, x):
+        nonlocal done
         who = f'{x.get("班級","")}-{x.get("座號","")}'
         qid = x.get("題目ID", "")
         out = outdir / f"{who}_{qid}.png"
@@ -264,14 +272,15 @@ def main():
         if stale:
             print(f"[{i}/{len(recs)}] {who} {qid} 來源已更換（學生重新上傳）→ 重畫")
         if out.exists() and not args.force and not stale:
-            print(f"[{i}/{len(recs)}] {who} {qid} 已存在，略過（仍會補上傳）"); done += 1
-            # 兩欄任一為空就補傳：早期版本只寫「紅筆圖ID」，「紅筆圖連結」欄是後來才加的，
-            # 只看 ID 會讓那批舊資料永遠補不到連結（老師在試算表就點不開圖）
-            if (not str(x.get("紅筆圖ID", "")).strip()
-                    or not str(x.get("紅筆圖連結", "")).strip()):
-                pending.append({"fileId": str(x.get("檔案ID", "")),
-                                "img": "data:image/png;base64," + base64.b64encode(out.read_bytes()).decode()})
-            continue
+            with _out_lock:
+                print(f"[{i}/{len(recs)}] {who} {qid} 已存在，略過（仍會補上傳）"); done += 1
+                # 兩欄任一為空就補傳：早期版本只寫「紅筆圖ID」，「紅筆圖連結」欄是後來才加的，
+                # 只看 ID 會讓那批舊資料永遠補不到連結（老師在試算表就點不開圖）
+                if (not str(x.get("紅筆圖ID", "")).strip()
+                        or not str(x.get("紅筆圖連結", "")).strip()):
+                    pending.append({"fileId": str(x.get("檔案ID", "")),
+                                    "img": "data:image/png;base64," + base64.b64encode(out.read_bytes()).decode()})
+            return
         # 注意：0 級分是合法值，不可用 `or` 串接（0 在 Python 為 falsy 會被跳過）
         _t, _a = x.get("老師覆核級分"), x.get("AI級分")
         lv = str(_t) if str(_t or "").strip() != "" or _t == 0 else (str(_a) if str(_a or "").strip() != "" or _a == 0 else "")
@@ -279,24 +288,39 @@ def main():
         reason = reason.split("]", 1)[-1].strip() if reason.startswith("[") else reason
         img, mime = download_img(str(x.get("檔案ID", "")), x.get("圖片連結", ""))
         if not img:
-            print(f"[{i}/{len(recs)}] {who} {qid} 取圖失敗"); failed.append(f"{who} {qid} 取圖失敗"); continue
+            with _out_lock:
+                print(f"[{i}/{len(recs)}] {who} {qid} 取圖失敗"); failed.append(f"{who} {qid} 取圖失敗")
+            return
         try:
             anns = ask_annotations(key, base64.b64encode(img).decode(), mime,
                                    rubrics.get(qid), lv, reason, str(x.get("AI辨識內容", "")), args.model)
             anns = sanitize(anns, lv)
-            ok, verified, err = render(img, anns, out)
+            with _render_lock:
+                ok, verified, err = render(img, anns, out)
             if ok:
-                print(f"[{i}/{len(recs)}] {who} {qid} ✓ {lv}級　標註{len(anns)}個　原圖{'未被更動✓' if verified else '⚠未驗證'}")
-                done += 1
-                pending.append({"fileId": str(x.get("檔案ID", "")),
-                                "img": "data:image/png;base64," + base64.b64encode(out.read_bytes()).decode()})
+                with _out_lock:
+                    print(f"[{i}/{len(recs)}] {who} {qid} ✓ {lv}級　標註{len(anns)}個　原圖{'未被更動✓' if verified else '⚠未驗證'}")
+                    done += 1
+                    pending.append({"fileId": str(x.get("檔案ID", "")),
+                                    "img": "data:image/png;base64," + base64.b64encode(out.read_bytes()).decode()})
                 (outdir / f"{who}_{qid}.json").write_text(json.dumps(anns, ensure_ascii=False, indent=1), encoding="utf-8")
                 fid_file.write_text(fid_now, encoding="utf-8")   # 記下這張圖是用哪個來源畫的
             else:
-                print(f"[{i}/{len(recs)}] {who} {qid} 繪製失敗 {err}"); failed.append(f"{who} {qid} 繪製失敗")
+                with _out_lock:
+                    print(f"[{i}/{len(recs)}] {who} {qid} 繪製失敗 {err}"); failed.append(f"{who} {qid} 繪製失敗")
         except Exception as e:
-            print(f"[{i}/{len(recs)}] {who} {qid} 失敗：{e}"); failed.append(f"{who} {qid} {e}")
-        time.sleep(0.3)
+            with _out_lock:
+                print(f"[{i}/{len(recs)}] {who} {qid} 失敗：{e}"); failed.append(f"{who} {qid} {e}")
+
+    if args.jobs > 1 and len(recs) > 1:
+        print(f"平行產圖：{args.jobs} 條線（繪圖排隊、上傳仍是最後分批一次）")
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=args.jobs) as ex:
+            list(ex.map(lambda t: one(*t), list(enumerate(recs, 1))))
+    else:
+        for i, x in enumerate(recs, 1):
+            one(i, x)
+            time.sleep(0.3)
 
     if pending and not args.no_upload:
         print(f"上傳紅筆圖到 Drive（{len(pending)} 份，分批）…")

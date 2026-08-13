@@ -21,6 +21,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from config import SUBMIT_URL as _CFG_SUBMIT_URL, get as _cfg  # noqa: E402  集中設定
 ROOT = HERE.parent
 FONT = "JhengHei"
 for fp in _cfg("font_files"):

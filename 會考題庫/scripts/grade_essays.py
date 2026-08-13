@@ -28,6 +28,8 @@ sys.stdout.reconfigure(encoding="utf-8")
 import requests
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from config import SUBMIT_URL as _CFG_SUBMIT_URL, get as _cfg  # noqa: E402  集中設定
 ROOT = HERE.parent
 RUBRICS = ROOT / "data" / "essay_rubrics.json"
 
@@ -234,6 +236,11 @@ def main():
     ap.add_argument("--quiz", default="")
     ap.add_argument("--cls", default="")
     ap.add_argument("--votes", type=int, default=3)
+    ap.add_argument("--jobs", type=int, default=1,
+                    help="同時批改幾筆（平行只發生在 OpenAI 呼叫，回寫仍是最後一次批次 POST）")
+    ap.add_argument("--limit", type=int, default=0, help="本次最多批幾筆（0＝不限，測試用）")
+    ap.add_argument("--chunk", type=int, default=8,
+                    help="每批改幾筆就回寫一次（老師可邊考邊覆核）；設很大＝跑完才一次回寫")
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--regrade", action="store_true", help="連已評過的也重評")
     ap.add_argument("--dry", action="store_true", help="只批改不回寫試算表")
@@ -288,33 +295,88 @@ def main():
     todo = [x for x in recs if args.regrade or str(x.get("AI級分", "")).strip() == ""]
     print(f"待批改 {len(todo)} 筆（--regrade 可重評已評過的）")
 
-    updates, review = [], []
-    for i, x in enumerate(todo, 1):
+    if args.limit:
+        todo = todo[:args.limit]
+        print(f"（--limit {args.limit}：本次只批前 {len(todo)} 筆）")
+
+    def work(item):
+        """單筆批改。回傳 (序號, 誰, 題號, 檔案ID, 結果或 None, 錯誤訊息)。
+        只做網路 I/O 與計算，不碰共用狀態，可安全平行。"""
+        i, x = item
         qid, fid, link = x.get("題目ID", ""), str(x.get("檔案ID", "")), x.get("圖片連結", "")
         who = f'{x.get("班級","")}-{x.get("座號","")}'
-        print(f"[{i}/{len(todo)}] {who} {qid} …", end=" ")
         img, mime = download_img(fid, link)
         if not img:
-            print("取圖失敗，跳過"); continue
-        agg = grade_record(key, rubrics, qid, img, mime, x.get("最後答案", ""), args.votes, args.model)
+            return (i, who, qid, fid, None, "取圖失敗")
+        try:
+            agg = grade_record(key, rubrics, qid, img, mime, x.get("最後答案", ""),
+                               args.votes, args.model)
+        except Exception as e:
+            return (i, who, qid, fid, None, f"批改例外：{e}")
+        return (i, who, qid, fid, agg, None)
+
+    items = list(enumerate(todo, 1))
+    updates, review, failed = [], [], []
+    buf = []          # 尚未回寫的批次
+
+    def flush(force=False):
+        """批改完 --chunk 筆就回寫一次，老師不必等整輪跑完才看得到。
+        仍然是「一次 POST 帶多筆」，不是一筆一次，對試算表的壓力有限。"""
+        if not buf or args.dry:
+            return
+        if not force and len(buf) < args.chunk:
+            return
+        batch, buf[:] = list(buf), []
+        try:
+            res = post_grades(args.url, batch)
+            print(f"回寫試算表（{len(batch)} 筆）：{res}")
+        except Exception as e:
+            print(f"！回寫失敗（{len(batch)} 筆，下一輪會重批）：{e}")
+            for u in batch:
+                updates.remove(u)
+
+    def collect(r):
+        i, who, qid, fid, agg, err = r
+        if err or not agg:
+            print(f"[{i}/{len(todo)}] {who} {qid} … {err or '無結果'}")
+            failed.append(f"{who} {qid}（{err}）"); return
         flag = "⚠需覆核" if agg["need_review"] else "✓"
-        print(f"{agg['level']}級 信心{agg['confidence']} {flag}")
-        updates.append({"fileId": fid, "level": agg["level"], "reason": agg["reason"],
-                        "confidence": agg["confidence"], "transcript": agg.get("transcript", "")})
+        print(f"[{i}/{len(todo)}] {who} {qid} … {agg['level']}級 信心{agg['confidence']} {flag}")
+        if agg["level"] == "":
+            # 三次投票全失敗才會走到這裡。不回寫空值，讓下一輪自然重批
+            failed.append(f"{who} {qid}（AI 無法判定）"); return
+        u = {"fileId": fid, "level": agg["level"], "reason": agg["reason"],
+             "confidence": agg["confidence"], "transcript": agg.get("transcript", "")}
+        updates.append(u); buf.append(u)
         if agg["need_review"]:
             review.append(f"{who} {qid} → {agg['level']}級（信心{agg['confidence']}）")
-        time.sleep(0.3)
+        flush()
 
-    if updates and not args.dry:
-        res = post_grades(args.url, updates)
-        print(f"回寫試算表：{res}")
-    elif args.dry:
+    if args.jobs > 1 and len(items) > 1:
+        # OpenAI 呼叫是 I/O bound，用執行緒平行即可；平行的只有 OpenAI，Google 那邊不受影響。
+        print(f"平行批改：{args.jobs} 條線（每 {args.chunk} 筆回寫一次）")
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=args.jobs) as ex:
+            futs = [ex.submit(work, it) for it in items]
+            for f in as_completed(futs):     # 誰先批完就先收、先回寫
+                collect(f.result())
+    else:
+        for it in items:
+            collect(work(it))
+            time.sleep(0.3)
+
+    flush(force=True)
+    if args.dry:
         print("（--dry：未回寫）")
 
     print("-" * 60)
     print(f"完成 {len(updates)} 筆；其中需老師覆核 {len(review)} 筆：")
     for r in review:
         print("  ⚠", r)
+    if failed:
+        print(f"未完成 {len(failed)} 筆（下一輪會自動重批）：")
+        for r in failed:
+            print("  ✗", r)
 
 
 if __name__ == "__main__":

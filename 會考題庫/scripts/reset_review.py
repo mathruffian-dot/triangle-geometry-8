@@ -17,8 +17,13 @@ import json
 import sys
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from config import SUBMIT_URL as _CFG_SUBMIT_URL  # noqa: E402  集中設定
 
 DEFAULT_URL = _CFG_SUBMIT_URL()
 

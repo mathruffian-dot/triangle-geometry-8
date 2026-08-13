@@ -21,7 +21,10 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-ROOT = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from config import SUBMIT_URL as _CFG_SUBMIT_URL, get as _cfg  # noqa: E402  集中設定
+ROOT = HERE.parent
 RUBRICS = ROOT / "data" / "essay_rubrics.json"
 DEFAULT_URL = _CFG_SUBMIT_URL()
 BANK_URL = _cfg("bank_site_url")
