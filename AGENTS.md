@@ -37,7 +37,8 @@
 | 命題系統技術細節 | Obsidian `2026數學809/02 自動命題系統.md` |
 | 批改與評分規準 | Obsidian `2026數學809/03 非選AI批改與評分規準.md` |
 
-Obsidian vault 在 `C:\Users\user\Documents\Obsidian Vault\`（路徑若不同，搜尋檔名 `01 系統重建指南.md`）。
+Obsidian vault 在 `C:\Users\user\Documents\secondbrain\`，五份文件都在 `2026數學809/` 底下。
+沒裝 Obsidian 也沒關係——那些就是純 Markdown 檔，直接開就能看。
 
 **文件分工**：`CLAUDE.md` 放規劃藍圖／`handoff.md` 放進度交接／Obsidian 放系統文件。別放錯地方。
 

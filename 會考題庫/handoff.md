@@ -21,7 +21,7 @@
 | 配圖元件 | 17 種 |
 | 非選評分規準 | 34 題（官方 26＋自編生成 8）|
 | 觀念補強 | 56 單元 336 題 |
-| Python 腳本 | 36 支 |
+| Python 腳本 | 38 支 |
 
 ### 線上網址（現行主力，都在 Cloudflare Pages）
 | 網址 | 用途 | 給誰 |
@@ -915,3 +915,38 @@ python scripts/make_essay_solution.py --ids G0813-N1 G0813-N2 --title "卷名" -
 - **用這批真實作答校準規準**：比對 AI 初評與老師改分的差異，回頭修模板卡錨點與 `common_errors`（等很久的校準資料到手了）
 - `selftest_all.py` 建議加「每支 CLI 腳本跑 `--help`」的煙霧測試
 - `會考題庫單檔版.html` 是 28MB 建置產物卻在版控裡，每次 commit 都塞進歷史 → 考慮 `git rm --cached`
+
+
+---
+
+### ✅ 2026-08-31 交接檔體系：新增 AGENTS.md，handoff 加現況總覽
+
+**背景**：之後會有 Codex 或其他 agent 接手，需要一份「讀完就能動手」的入口文件。
+原本只有 `CLAUDE.md`（規劃藍圖）＋本檔（逐次紀錄）＋ Obsidian 五份（系統文件），
+但新 agent 不知道該先讀哪份，而且本檔開頭停在 2026-07-13 的 Netlify 時期，**會直接誤導**。
+
+**做了什麼**
+
+1. **新增 `../AGENTS.md`（根目錄，270 行）**——Codex 的慣例入口檔名，Claude Code 也讀得到。九節：
+   0 六十秒摘要（四個子系統一表看完、沒有後端伺服器）／1 開工先讀哪份（依情境分流到 handoff／
+   命題報告／Obsidian 四份）／2 環境（Python 3.14、requirements、`config.py`、字型缺字清單、
+   vendor 幾何渲染器）／3 專案地圖＋主要資料檔一覽／4 常用指令（題庫／派卷／命題／批改／部署）／
+   5 硬性規則 12 條／6 多 agent 協作／7 目前狀態與待辦／8 驗收（`selftest_all.py`）／9 禁止事項。
+2. **新增 `AGENTS.md`（本目錄，29 行）**——agent 若直接在 `會考題庫/` 起手也接得住，指回上層。
+3. **本檔開頭加「⚡ 現況總覽」**，並在最上面明講「底下最前面幾段是 7/13 的舊狀態，不代表現況」。
+4. `../CLAUDE.md` 加一行指向 AGENTS.md；順手修掉「配圖元件 13 個」（實際 17 種）。
+
+**踩到的坑**
+
+- **heredoc 不能包 heredoc**：原本想用 `cat > AGENTS.md <<EOF` 寫檔，但內容第 6 節有
+  `python - <<PY` 的示範，bash 解析外層時炸掉（`unexpected EOF while looking for matching`）。
+  → 改用 Write 工具直接寫檔。**要寫「內容含 shell 語法」的文件，別用 heredoc。**
+- **python heredoc 裡的 Windows 路徑要用 raw string**：`C:\Users\...` 的 `\U` 被當成
+  unicode escape，噴 `SyntaxError: truncated \U escape`。→ 字串前面加 `r`。這個坑踩了兩次。
+- **寫進文件的數字要現查**：憑印象寫的「data 43 個 JSON／scripts 36 支」實際是 45／38；
+  Obsidian vault 路徑也寫錯（不是 `Documents\Obsidian Vault`，是 `Documents\secondbrain`）。
+  → 都用指令核對過才留下。交接檔寫錯數字比不寫更糟，會讓接手的人以為自己漏了東西。
+
+**⏭️ 下一步**（延續上一段，未變）
+- 用 909 班那批真實作答校準評分規準
+- `data/questions_SIM115.json` 派出去試作
