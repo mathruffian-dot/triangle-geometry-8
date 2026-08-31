@@ -183,6 +183,93 @@ npx wrangler pages deploy bank_site --project-name math809-bank --branch main --
 ```
 ❌ 不要用 Netlify（免費改 credit 制，每月 300、每次部署扣 15）。`deploy_bank.py` 已停用。
 
+### 新增一份模擬卷：從 PDF 到上線（做過兩次，照這個順序走）
+
+老師會丟三份 PDF（題本／解答篇／非選樣卷說明）。整套走完約 40 分鐘，其中大半是逐題寫詳解。
+
+**① 先確認這份是什麼、有沒有做過**
+```bash
+python -c "import fitz; d=fitz.open(r'題本.pdf'); d[0].get_pixmap(dpi=110).save('p1.png')"
+```
+看封面：**年度**（如「113 國中教育會考模擬測驗」）、**左下角出版社**、**條碼末碼**
+（翰林：110→-30、111→-31、113→-33）。
+⚠ 翰林各年度的**檔名完全一樣**，只能靠封面辨識；資料夾名不可信（曾出現寫「113平孚」其實是翰林，
+「平浮」是印刷版本標記不是出版社）。再比對 `data/questions_HL*.json` 確認沒建過。
+
+**② 題號前綴用年度：`HL<年度>`**
+現有 `HL1`＝110 年、`HL2`＝111 年是早期命名，**新的一律 `HL113` 這種形式**
+（若用流水號，跳過的年度會讓序號和年度對不上）。
+
+**③ 切圖**（AI 逐頁定位題號 y 座標，再依座標裁切；共用題幹會自動併到相關各題）
+```bash
+python scripts/crop_hanlin.py --prefix HL113 --book "…/題本.pdf" --probe   # 先定位，存 data/hanlin_layout_HL113.json
+python scripts/crop_hanlin.py --prefix HL113 --book "…/題本.pdf"           # 再切圖 → 01_題目圖片/HL113/
+```
+定位結果會印出來（`p2: header@0.079 1@0.135 …`），**確認 1~25＋N1＋N2 都在**再切。
+切完**每張都要目視**（順便取得題目內容寫詳解）。
+
+**④ 讀解答篇**：渲染成圖後**目視**讀標準答案表與逐題解析
+（⚠ PDF 文字層解析曾在 113 年錯位 5 題，一律以圖為準）。非選的官方逐級分評分指引在解答篇末與樣卷說明裡。
+
+**⑤ 寫 `data/questions_HL113.json`**：欄位照既有檔案
+（`id/year/num/type/img/answer/codes/perf/book/chapter/topic/difficulty/solution/steps/trap/source`）。
+- `codes`／`perf` 要對得上 `data/curriculum_108.json`，`chapter` 必須是該冊的標準章名（validate 會擋）
+- **答案要逐題和標準答案表核對，解法自己重算一遍**（別只抄解析）
+
+**⑥ 非選評分規準**：把官方逐級分指引原文寫進 `data/essay_rubrics.json`
+（`guide.l3/l2/l1/l0` ＋ 自行拆解的 `checkpoints`），AI 批改與覆核頁才吃得到。
+
+**⑦ 註冊到系統**（三處，漏了會出事）
+- `scripts/build_html.py` 的 `SRCLBL` 與 `YRLBL` 各加一筆 `HL113:'翰林模擬 113'`
+  （否則學生卷與題庫選單會顯示「HL113年」）
+- `scripts/validate.py` 的 `for extra in [...]` 加入 `"HL113"`
+- 題目檔本身不必註冊，`build_html.py` 會自動 glob 掃描 `data/questions_*.json`
+
+**⑧ 派卷**：`data/quizzes.json` 加一筆
+```json
+{"code":"hanlin-113","title":"翰林模擬會考 113年第1次（第1~2冊）",
+ "qids":["HL113-01",...,"HL113-N2"],"print":true,"listed":true,
+ "classes":["kz"],"class_labels":{"kz":"科資"}}
+```
+`classes` 會展開成一班一網址（班級內建鎖定，學生只填座號）；
+`class_labels` 只美化標題顯示，**寫進試算表的班級值仍是代號**。
+⚠ 卷名是試算表的 key，**上線後不要改**，否則對不上既有紀錄。
+
+**⑨ 驗證 → 建置 → 部署**
+```bash
+python scripts/validate.py && python scripts/validate_essay_rubrics.py
+python scripts/build_quiz_site.py
+# 部署前用 node --check 驗 JS（題庫站要排除 base64／json 那兩個 script 區塊，它們不是 JS）
+npx wrangler pages deploy quiz_site --project-name math809-quiz --branch main --commit-dirty=true
+```
+部署後 CDN 要幾十秒才切換，**用檔案大小確認**（回傳大小和首頁一樣＝還沒切到新版）：
+```bash
+until [ "$(curl -s -o /dev/null -w '%{size_download}' https://math809-quiz.pages.dev/q/<代碼>/)" -gt 100000 ]; do sleep 10; done
+```
+
+**⑩ 來源 PDF** 複製一份到 `00_原始試題PDF/<出版社><年度>/`。
+該資料夾被 `.gitignore` 的 `*.pdf` 排除（版權：試題屬出版社，僅供班級教學）。
+
+### 考試中即時批改（學生陸續交卷時）
+
+批改腳本是**增量**的（只批 `AI級分` 為空的），所以可以放心重複跑。要邊考邊批就輪詢：
+每 2 分鐘查一次未批份數，有就批改＋產紅筆圖，跑完立刻再查一次（接住批改期間新交的卷）。
+
+**平行度用 `--jobs`，不要開 subagent。** 瓶頸是 OpenAI 的視覺推理呼叫（I/O bound），
+兩支腳本都內建 `ThreadPoolExecutor`；開多個 subagent 只會各自跑同一支腳本、
+**重複批到同一批資料**還互相搶著寫試算表。
+
+| 待批份數 | `grade_essays --jobs` | `make_redpen --jobs` |
+|---|---|---|
+| ≥24 | 8 | 5 |
+| ≥12 | 6 | 4 |
+| ≥5 | 4 | 3 |
+| <5 | 2 | 2 |
+
+上限壓在 8 是因為**沒有 429 重試機制**。但有天然保險：單次呼叫失敗只是那一票作廢，
+三票全掛才算失敗，而**失敗的份數不會回寫**，下一輪輪詢會自動重批 → 不會漏，只會慢一輪。
+30 人（60 份、180 次呼叫）用 8 條線約 10~15 分鐘，序列跑要 1.5 小時。
+
 ---
 
 ## 5. 硬性規則（違反會出事）
@@ -225,11 +312,12 @@ npx wrangler pages deploy bank_site --project-name math809-bank --branch main --
 
 ---
 
-## 7. 目前狀態（2026-08-07）
+## 7. 目前狀態（2026-08-31）
 
 ### 規模
-題庫 456 題（官方 358＋翰林 54＋自編 44）｜選擇模板 29 張｜非選模板 12 張｜配圖元件 17 種｜
-評分規準 34 題（官方 26＋自編 8）｜觀念補強 56 單元 336 題｜Python 腳本 38 支
+題庫 485 題（官方 358＋翰林 81＋自編 46）｜選擇模板 29 張｜非選模板 12 張｜配圖元件 17 種｜
+評分規準 38 題（官方 26＋翰林 6＋自編 6）｜觀念補強 56 單元 336 題｜Python 腳本 41 支
+翰林卷：HL1（110年）、HL2（111年）、HL113（113年）各 27 題
 
 ### 線上網址
 | 網址 | 用途 |
@@ -242,7 +330,8 @@ npx wrangler pages deploy bank_site --project-name math809-bank --branch main --
 ### 待辦
 - [ ] 把 `data/questions_SIM115.json`（25 選擇＋2 非選的完整模擬卷）派給學生試作，
       **開始累積評分規準的校準資料**——這是目前唯一能補上「官方樣卷那一層」的路徑
-- [ ] 題庫站與學生站尚未重新部署（自編生成題目前只在本機 `index.html`）
+- [ ] 回饋單 PDF 尚未顯示會考等級（只讀「非選作答」表，缺選擇題分數算不出加權 100 分，
+      要另外併「作答紀錄」表）
 - [ ] 觀察 AI 初評與老師覆核的差異，反過來修模板卡的錨點與 `common_errors`
 
 ---
