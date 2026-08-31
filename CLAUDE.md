@@ -14,6 +14,9 @@
 
 ## 🚦 每次對話開始請先做
 
+> 📌 **本專案的入口文件是根目錄的 `AGENTS.md`**（給 Codex／Claude Code／其他 agent 共用）。
+> 那份有完整的環境、地圖、指令、硬性規則與多 agent 協作規則；本檔只放規劃藍圖與地雷提醒。
+
 1. **讀 `會考題庫/handoff.md`** ← 最重要，裡面有「現況總覽」段（線上網址、常用指令、待辦）
 2. 若使用者說「開工」→ 依全域 SOP 讀交接、看 git 狀態、報告下一步
 3. 若要動會考題庫相關的東西，**務必先看 handoff.md 的待辦清單**（有幾項需要老師手動操作）
@@ -68,7 +71,8 @@ python scripts/gen_choice.py --paper 12 --tag M0806 # 選擇：依卷面藍圖�
 python scripts/gen_choice.py --books B1,B2 --n 6    # 選擇：限定冊別
 python scripts/validate_templates_essay.py --n 40   # 改過模板卡就要跑
 python scripts/validate_templates_choice.py --n 30
-python scripts/figures.py --demo <資料夾>            # 配圖元件庫自測（13 個元件出圖）
+python scripts/figures.py --demo <資料夾>            # 配圖元件庫自測（17 種元件出圖）
+python scripts/selftest_all.py                      # 端到端自測（改完任何東西都跑這個）
 # → 生成後 build_html.py 即進題庫；派卷把 M0806-01 之類 id 加進 data/quizzes.json
 
 # 批改（增量，只批沒批過的；學生陸續交就陸續跑）
@@ -109,6 +113,7 @@ python scripts/make_feedback_pdf.py --quiz "卷名"  # 個人回饋單 PDF
 ### 文件分工（別放錯地方）
 | 放哪 | 內容 | 何時看 |
 |---|---|---|
+| `AGENTS.md`（根目錄）| **入口文件**：環境、地圖、指令、硬性規則、多 agent 協作規則 | 接手專案時第一份 |
 | 本檔 `CLAUDE.md` | 規劃藍圖、語言風格、地雷提醒 | 每次對話開始 |
 | `會考題庫/handoff.md` | **進度交接**：現況、常用指令、待辦、逐次工作紀錄 | 每次對話開始（最重要）|
 | Obsidian `2026數學809/` | **系統文件**：`專案工作流程`／`01 系統重建指南`／`02 自動命題系統`／`03 非選AI批改與評分規準`／`04 踩坑總表` | 換電腦、交接、對外分享 |
