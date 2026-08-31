@@ -1,5 +1,78 @@
 # 會考題庫建置 — 進度交接
 
+> ⚡ **新接手的 agent（Codex／Claude Code／其他）先讀專案根目錄的 `AGENTS.md`**，那是入口文件。
+> 本檔是**逐次工作紀錄，時間序由上而下、最新在最下面**。
+> ⚠ 底下最前面幾段是 2026-07-13 的舊狀態（**當時還在用 Netlify、也還沒有自動命題系統**），
+> 保留是為了追溯歷史，**不代表現況**。要看現況請讀下面這一段。
+
+---
+
+## ⚡ 現況總覽（2026-08-07）
+
+### 這個專案是什麼
+809／909 班數學會考準備的數位工具總成，四塊：**題庫**、**線上作答站**、**AI 批改閉環**、**自動命題系統**。
+沒有後端伺服器——靠 Google Apps Script ＋ Google 試算表 ＋ Drive，前端是靜態 HTML 部署在 Cloudflare Pages。
+
+### 規模
+| 項目 | 數量 |
+|---|---|
+| 題庫題目 | 456（官方歷屆 358＋翰林模擬 54＋自編生成 44）|
+| 命題模板卡 | 選擇 29 張（易 9／中 10／難 10）、非選 12 張（每冊各 2、八種問法）|
+| 配圖元件 | 17 種 |
+| 非選評分規準 | 34 題（官方 26＋自編生成 8）|
+| 觀念補強 | 56 單元 336 題 |
+| Python 腳本 | 36 支 |
+
+### 線上網址（現行主力，都在 Cloudflare Pages）
+| 網址 | 用途 | 給誰 |
+|---|---|---|
+| https://math809-quiz.pages.dev | 學生作答站（`/q/<卷代碼>/`）| 學生 |
+| https://math809-bank.pages.dev | 題庫＋出卷＋非選覆核（**含詳解，勿發學生**）| 老師 |
+| https://math809-review1〜6.pages.dev | 一～六冊複習簡報（第四冊為 `math809-review`）| 學生 |
+| [收卷試算表](https://docs.google.com/spreadsheets/d/1vZg5vVUTym__8Fhht5vWeDq1Y6v5QOavIr-E-06DvDY/edit) | 作答紀錄／逐題明細／非選作答／出題紀錄 | 老師 |
+
+> 舊的 Netlify 站保留不動、勿更新（免費改 credit 制，每月 300、每次正式部署扣 15）。
+
+### 最常用的指令
+```bash
+cd "G:/我的雲端硬碟/2026數學809/會考題庫"
+
+python scripts/config.py                              # 先確認設定（GAS 網址、專案名、字型）
+python scripts/selftest_all.py                        # 端到端自測，改完任何東西都跑這個
+
+python scripts/gen_choice.py --paper 25 --tag M0901   # 生一份 25 題模擬卷
+python scripts/gen_essay.py --books B4,B5 --n 2       # 生兩題非選
+python scripts/build_html.py                          # 重建題庫網站
+python scripts/build_quiz_site.py                     # 建學生作答站
+
+python scripts/grade_essays.py --quiz "卷名"           # AI 批改非選（增量）
+python scripts/make_redpen.py --quiz "卷名"            # 紅筆批改圖＋續寫解答
+```
+
+### 目前待辦
+- [ ] 把 `data/questions_SIM115.json`（25 選擇＋2 非選的完整模擬卷）派給學生試作，
+      **開始累積評分規準的校準資料**——這是目前唯一能補上「官方樣卷那一層」的路徑
+- [ ] 題庫站與學生站尚未重新部署（自編生成題目前只在本機 `index.html`）
+- [ ] 觀察 AI 初評與老師覆核的差異，反過來修模板卡的錨點與 `common_errors`
+
+### 需要老師手動操作的事（agent 做不到）
+- 改了 `apps_script/Code.gs` → 老師要在 Apps Script 網頁按「部署→管理部署作業→編輯→新版本→部署」
+- 部署到線上（`npx wrangler pages deploy`）建議先問過老師
+- OpenAI API key 在 `~/.openai.env`，換電腦要自己建
+
+### 其他文件
+| 放哪 | 內容 |
+|---|---|
+| `../AGENTS.md` | **入口文件**：環境、地圖、指令、硬性規則、多 agent 協作規則 |
+| `../CLAUDE.md` | 規劃藍圖、語言風格、地雷提醒 |
+| 本檔（下方） | 逐次工作紀錄，最新在最下面 |
+| Obsidian `2026數學809/` | 系統文件五份：專案工作流程／01 系統重建指南／02 自動命題系統／03 非選AI批改與評分規準／04 踩坑總表 |
+
+---
+
+## 📜 以下是逐次工作紀錄（時間序，最舊在上）
+
+
 ## 狀態：✅ 全部完成（2026-07-13，Claude）
 
 103–115 年會考數學 358 題（選擇 332＋非選 26）題庫已建置完成：
@@ -806,3 +879,39 @@ python scripts/make_essay_solution.py --ids G0813-N1 G0813-N2 --title "卷名" -
 **驗證**：5 支 `--help` 全 OK；解析出的收卷網址都等於正式網址（含 `?token=math809`）；
 `make_review_sheet` 實跑一次唯讀查詢，後端正常回「查無資料」（該卷還沒人交卷）。
 **教訓**：這類「模組層級才會執行」的錯誤，`selftest_all.py` 沒涵蓋到 → 值得加一條「每支 CLI 腳本跑 `--help`」的煙霧測試。
+
+### ✅ 2026-08-13 現場實戰：909 班 23 人交卷 → 批改 → 覆核 → 紅筆，全程 25 分鐘
+**時程**：學生 10:45–11:05 交卷；`watch_grade.py` 輪詢 6 輪（10:45–11:09）全部批完；紅筆 46 份 11:05–11:15。
+
+**結果**：23 人 46 筆，AI 批改 46／覆核 46／紅筆圖 46（原圖全部驗證逐位元未更動）。
+**非選平均 2.83/6**　N1：0級5／1級3／2級14／3級1　N2：0級1／1級13／2級9
+- 教學觀察一：N1 有 **14 人卡在 2 級**——算得出 4¹⁵ = 2³⁰，但忘了把「8 公克」乘進所需個數就下結論。同一個錯誤集體出現，適合全班講一次。
+- 教學觀察二：N2 有 **13 人停在 1 級**——算得出 80%，但舉不出反例、或舉了反例沒代回公式驗證。「舉反例要驗證」全班都需要練。
+- 只有 1 個 3 級（座號 26 的 N1）。⚠ 待抽查：座號 6 的 N1（0 級但信心 0.32）、座號 13（兩題皆 0）、座號 26 的 N1（唯一 3 級但信心 0.62）。
+
+**新增／改動的工具**
+| 檔案 | 內容 |
+|---|---|
+| `scripts/watch_grade.py`（新）| 交卷期間定時輪詢增量批改。`--start/--end/--interval/--jobs/--votes`，結束後再補跑 2 輪收尾 |
+| `scripts/apply_ai_review.py`（新）| 命令列版「一鍵套用全部 AI 級分」。預設只處理老師還沒覆核的，**不會蓋掉已改過的分數**（`--force` 才會）|
+| `grade_essays.py` | 加 `--jobs`（平行）、`--chunk`（每 N 筆回寫一次，預設 8）、`--limit`；三次投票全失敗改列「未完成」不回寫空值 |
+| `make_redpen.py` | 加 `--jobs`，matplotlib 繪圖上鎖。**46 份從 30–45 分鐘縮到 8 分鐘** |
+
+**避免 Google 寫入阻擋的設計（實測全程沒逾時、沒衝突）**
+- 平行只發生在 **OpenAI 呼叫**，Google 那邊維持「一輪 1 次 GET ＋ 少量批次 POST」
+- 學生交卷是 `appendRow`、我們回寫是 `setValue` 既有列，兩者不衝突（Code.gs 沒有 LockService）
+- 紅筆圖上傳固定 6 份一批
+- ❌ **不要用 sub-agent 平行批改**：瓶頸是 OpenAI 的網路等待，執行緒就解決了；多行程反而變成多個來源同時對 Google 寫入，正是要避免的
+
+**收工時踩到的兩個坑（已寫進 Obsidian 踩坑總表）**
+1. `git push` 無參數會推到 **`visual-deck/main`**（另一個專案的 repo，領先 51 個 commit）。
+   已 `git branch --set-upstream-to=origin/main main` 修好；**以後一律寫明 `git push origin main`**。
+   當時該推送已被中止，`git ls-remote visual-deck main` 確認遠端沒被改到。
+2. `.git/index.lock` 幽靈鎖檔時，`Get-Process git` 看到的可能是 **`git fsmonitor--daemon`（常駐檔案監控服務）**，
+   那不是卡住的操作，看到它不代表不能刪鎖檔。要確認的是有沒有 `git commit`／`push` 之類的程序。
+
+**⏭️ 下一步**
+- `make_feedback_pdf.py` 個人回饋單尚未產（不必再花 AI 費用）
+- **用這批真實作答校準規準**：比對 AI 初評與老師改分的差異，回頭修模板卡錨點與 `common_errors`（等很久的校準資料到手了）
+- `selftest_all.py` 建議加「每支 CLI 腳本跑 `--help`」的煙霧測試
+- `會考題庫單檔版.html` 是 28MB 建置產物卻在版控裡，每次 commit 都塞進歷史 → 考慮 `git rm --cached`
