@@ -52,7 +52,7 @@ for y in range(103, 116):
 
 # 模擬卷（翰林等非歷屆來源）：官方答案表只涵蓋歷屆，故不比對 official_answers，
 # 改為檢查 answer 欄不得為空；其餘（圖片、課綱代碼、冊章、必要欄位）比照歷屆。
-for extra in ["HL1", "HL2"]:
+for extra in ["HL1", "HL2", "HL113"]:
     f = DATA / f"questions_{extra}.json"
     if not f.exists():
         continue
