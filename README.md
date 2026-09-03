@@ -37,7 +37,7 @@
 | 用途 | 網址 |
 |------|------|
 | 題庫系統（含全部詳解、出卷、統計、個人分析） | https://math809-bank.netlify.app |
-| 收卷試算表（學生作答紀錄） | https://docs.google.com/spreadsheets/d/1vZg5vVUTym__8Fhht5vWeDq1Y6v5QOavIr-E-06DvDY/edit |
+| 收卷試算表（學生作答紀錄） | <收卷試算表連結，見 Obsidian 系統文件> |
 | 收卷紀錄短網址（人工瀏覽用） | https://tinyurl.com/23739jgz |
 
 ### ⚙️ 系統串接（非人工點閱）

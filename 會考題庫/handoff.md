@@ -29,7 +29,7 @@
 | https://math809-quiz.pages.dev | 學生作答站（`/q/<卷代碼>/`）| 學生 |
 | https://math809-bank.pages.dev | 題庫＋出卷＋非選覆核（**含詳解，勿發學生**）| 老師 |
 | https://math809-review1〜6.pages.dev | 一～六冊複習簡報（第四冊為 `math809-review`）| 學生 |
-| [收卷試算表](https://docs.google.com/spreadsheets/d/1vZg5vVUTym__8Fhht5vWeDq1Y6v5QOavIr-E-06DvDY/edit) | 作答紀錄／逐題明細／非選作答／出題紀錄 | 老師 |
+| 收卷試算表（連結見 Obsidian 系統文件） | 作答紀錄／逐題明細／非選作答／出題紀錄 | 老師 |
 
 > 舊的 Netlify 站保留不動、勿更新（免費改 credit 制，每月 300、每次正式部署扣 15）。
 
@@ -112,7 +112,7 @@ python scripts/make_redpen.py --quiz "卷名"            # 紅筆批改圖＋續
 - 短網址（僅供人工用瀏覽器開來看紀錄）：https://tinyurl.com/23739jgz
   ⚠️ 短網址經 301 轉址會把 POST 變 GET，**不可**填入題庫設定或 submitUrl，否則學生交卷上傳會失敗
 - 收卷試算表「會考題庫作答紀錄」（作答紀錄＋逐題明細兩張表，setup 已初始化完成）：
-  https://docs.google.com/spreadsheets/d/1vZg5vVUTym__8Fhht5vWeDq1Y6v5QOavIr-E-06DvDY/edit
+  <收卷試算表連結，見 Obsidian 系統文件>
 - 常用查詢：`…exec?token=math809&list=1`（全部紀錄 JSON）、`&quiz=卷名`、`&cls=班級` 可過濾
 - 改 Code.gs 後要「部署 → 管理部署作業 → 編輯 → 新版本 → 部署」網址內容才會更新
 - ⚠️ Apps Script 專案裡有**兩個**部署作業：「會考題庫收卷 v1」（上面的正式網址）和「未命名」
@@ -280,7 +280,7 @@ python scripts/make_redpen.py --quiz "卷名"            # 紅筆批改圖＋續
 | └ `/q/hanlin-1/`、`/q/hanlin-2/` | 翰林卷原始網址（保留，已發出去的不失效） |
 | └ `/q/0723/`、`/q/b1b2-0722/`、`/q/sim-115/`、`/q/sim-114/`、`/q/essay-all/` | 其餘卷 |
 | https://math809-bank.pages.dev | 🔒 老師題庫＋「✍ 非選覆核」（含詳解，勿發學生） |
-| [收卷試算表](https://docs.google.com/spreadsheets/d/1vZg5vVUTym__8Fhht5vWeDq1Y6v5QOavIr-E-06DvDY/edit) | 作答紀錄／逐題明細／非選作答／出題紀錄 |
+| 收卷試算表（連結見 Obsidian 系統文件） | 作答紀錄／逐題明細／非選作答／出題紀錄 |
 - Netlify 舊站（math809-essay/quiz/bank、review1~5）保留不動；math809-review4 為 404 待修。
 
 **常用指令**（派新卷：編 data/quizzes.json 加一筆，可加 "classes":["902",…] 自動展開各班）
