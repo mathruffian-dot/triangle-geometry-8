@@ -48,7 +48,7 @@
 > ⚠️ **題庫系統 `math809-bank` 含所有詳解，是公開連結——請只留給老師，勿轉發學生。**
 
 ### Cloudflare Pages（主要，部署用）
-Cloudflare 帳號 `mathruffian@gmail.com`（Account ID `b87e54acd78dd4acfbdc96e3bfa8d230`），
+Cloudflare 帳號與 Account ID 見 Obsidian 系統文件，
 用 wrangler OAuth 登入，專案名即網址前綴。**改版後重新部署**（在專案根目錄）：
 
 ```bash

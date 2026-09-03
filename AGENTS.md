@@ -237,7 +237,7 @@ npx wrangler pages deploy bank_site --project-name math809-bank --branch main --
 | https://math809-quiz.pages.dev | 學生作答站（`/q/<卷代碼>/`）|
 | https://math809-bank.pages.dev | 題庫＋出卷＋非選覆核（**含詳解，勿發學生**）|
 | https://math809-review1〜6.pages.dev | 一～六冊複習簡報（第四冊為 `math809-review`）|
-| [收卷試算表](https://docs.google.com/spreadsheets/d/1vZg5vVUTym__8Fhht5vWeDq1Y6v5QOavIr-E-06DvDY/edit) | 作答紀錄／逐題明細／非選作答／出題紀錄 |
+| 收卷試算表（連結見 Obsidian `2026數學809/` 系統文件，不進公開 repo） | 作答紀錄／逐題明細／非選作答／出題紀錄 |
 
 ### 待辦
 - [ ] 把 `data/questions_SIM115.json`（25 選擇＋2 非選的完整模擬卷）派給學生試作，

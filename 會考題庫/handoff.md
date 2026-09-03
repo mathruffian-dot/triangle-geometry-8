@@ -106,7 +106,7 @@ python scripts/make_redpen.py --quiz "卷名"            # 紅筆批改圖＋續
 - 作答紀錄 schema 見 README「預留後端接口」段
 
 ## 2026-07-15 試算表收卷已正式部署 ✅
-- Apps Script 專案：「會考題庫收卷」（帳號 mathruffian@gmail.com，執行身分：我、存取：所有人）
+- Apps Script 專案：「會考題庫收卷」（帳號見 Obsidian，執行身分：我、存取：所有人）
 - **收卷網址（系統用，題庫設定與 CONFIG.submitUrl 一律貼這個完整網址）**：
   `https://script.google.com/macros/s/AKfycbw-ePEfCoTB3SpwOh4g0IcfwsQWanQm8bvXgOGDdIECkK2845qIoKhH9xtRNuxu29wN/exec?token=math809`
 - 短網址（僅供人工用瀏覽器開來看紀錄）：https://tinyurl.com/23739jgz
@@ -307,7 +307,7 @@ python scripts/make_feedback_pdf.py --quiz "卷名"        # 個人回饋單 PDF
 4. 908-13 的 HL1-N1 曾上傳成 0 bytes，已重交補批（現有空圖防護擋下此情形）。
 
 ### ✅ 2026-08-05 已搬家到 Cloudflare Pages（正式啟用）
-- wrangler 已登入 mathruffian@gmail.com。建立兩個 Pages 專案並部署成功：
+- wrangler 已登入（帳號見 Obsidian）。建立兩個 Pages 專案並部署成功：
   - **https://math809-quiz.pages.dev** ← 學生站（單站多卷）：`/`入口頁、`/q/0723/`、`/q/essay-all/`、各卷 `print.pdf`、`/practice.html`。全部實測 200。
   - **https://math809-bank.pages.dev** ← 老師題庫（含覆核頁/一鍵套用AI/抽題/新UI快捷鍵），359 檔含題目圖片。
 - 部署指令（之後派新卷就這兩行）：
@@ -318,7 +318,7 @@ python scripts/make_feedback_pdf.py --quiz "卷名"        # 個人回饋單 PDF
 - Netlify 舊站保留不動（math809-essay 已發出去的網址繼續有效；math809-quiz 舊複習卷）。⚠ math809-review4 為 404（第四冊簡報掛了，待修）。
 
 **⚠ 待辦（需老師操作）**
-- Netlify CLI 目前登入 `gameruffian@gmail.com`，但 math809-* 站台在 `mathruffian@gmail.com` → 要部署得先 `netlify logout` 再 `netlify login` 切回。
+- Netlify CLI 目前登入 `另一個 Google 帳號`，但 math809-* 站台在 `主要 Google 帳號` → 要部署得先 `netlify logout` 再 `netlify login` 切回。
 - GAS 需再部署一次（去重 _dedupeLatest ＋ AI辨識內容欄 ＋ myresult 回 transcript）。目前覆核頁顯示40份（含重複），部署後會去重成36。
 - Cloudflare 要 `npx wrangler login`（瀏覽器授權）才能部署。
 - ⚠ 選擇題答案是 base64 藏在 qdata 的 k 欄位，學生可解碼；非選題不受影響（無答案鍵）。

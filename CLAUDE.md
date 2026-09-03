@@ -32,7 +32,7 @@
 | https://math809-quiz.pages.dev | 學生作答站入口 | 👨‍🎓 學生 |
 | └ `/q/<卷代碼>/` | 各份卷（如 `/q/hanlin-1-902/` 為 902 班專屬） | 👨‍🎓 學生 |
 | https://math809-bank.pages.dev | 題庫＋出卷＋**✍ 非選覆核** | 🔒 **老師專用，含詳解，勿發學生** |
-| [收卷試算表](https://docs.google.com/spreadsheets/d/1vZg5vVUTym__8Fhht5vWeDq1Y6v5QOavIr-E-06DvDY/edit) | 作答紀錄／逐題明細／非選作答／出題紀錄 | 🔒 老師 |
+| 收卷試算表（連結見 Obsidian `2026數學809/` 系統文件，不進公開 repo） | 作答紀錄／逐題明細／非選作答／出題紀錄 | 🔒 老師 |
 | https://math809-review1〜6.pages.dev | 一～六冊複習簡報（第四冊為 `math809-review`） | 👨‍🎓 學生 |
 
 > 舊的 Netlify 站（math809-quiz/bank/essay、review1~5）保留不動、勿更新；
@@ -107,7 +107,7 @@ python scripts/make_feedback_pdf.py --quiz "卷名"  # 個人回饋單 PDF
 |---|---|---|
 | Google Drive | `G:\我的雲端硬碟\2026數學809\` | 主要工作目錄 |
 | Obsidian | `2026數學809/` | **系統文件**（重建指南、技術架構、踩坑總表）|
-| GitHub | `mathruffian-dot/triangle-geometry-8`（私有） | 版本控制備份。⚠ repo 名稱與專案不符，是早期沿用 |
+| GitHub | `mathruffian-dot/triangle-geometry-8`（**公開**，勿放試算表 ID、帳號與學生資料） | 版本控制備份。⚠ repo 名稱與專案不符，是早期沿用 |
 | Cloudflare Pages | math809-quiz／math809-bank／math809-review* | 線上部署 |
 
 ### 文件分工（別放錯地方）
