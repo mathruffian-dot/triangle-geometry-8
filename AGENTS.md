@@ -5,6 +5,22 @@
 
 ---
 
+## 接手第一天：先做這五件事
+
+1. `python scripts/config.py`（在 `會考題庫/`）——印出所有設定值與來源，**確認收卷網址不是空的**
+2. `python scripts/selftest_all.py --quick`——確認環境跑得起來（缺套件會在這裡爆）
+3. 讀 `會考題庫/handoff.md` **最後三段**（逐次紀錄，最新在檔尾），知道上一個 agent 做到哪
+4. 掃一遍下面第 5 章「硬性規則」與 Obsidian `04 踩坑總表`
+5. 確認你**動得了哪些東西**（見第 10 章「外部服務與權限」）——
+   有些事只有老師本人能做（GAS 重新部署、Cloudflare 登入），你只能請他做
+
+**最容易誤判的三件事**（新 agent 幾乎都會踩）：
+- 一班一網址時**卷名帶班級後綴**（`…｜科資班`），批改指令的 `--quiz` 少了後綴會一筆都撈不到
+- `0` 是合法級分，`0 or ""` 會把它吃掉
+- 改 `Code.gs` 只存檔不會生效，**一定要重新部署新版本**（而且只有老師能做）
+
+---
+
 ## 0. 六十秒摘要
 
 **專案**：國中九年級（809／909 班）數學會考準備的數位工具總成。
@@ -19,6 +35,10 @@
 | 線上作答站 | 學生用 iPad 作答，選擇題自動批改，非選可站內手寫或拍照上傳 | `scripts/build_quiz_site.py` |
 | AI 批改閉環 | 交卷→圖存 Drive→AI 依評分規準初評→老師覆核→學生看紅筆批改 | `scripts/grade_essays.py` |
 | 自動命題 | 模板卡＋生成器，無限產出風格與官方一致的新題（含配圖、詳解、評分規準） | `scripts/gen_choice.py`／`gen_essay.py` |
+| 複習簡報 | 一～六冊全冊複習互動網頁，364 頁、169 頁可拖滑桿演示，六個獨立站台 | `複習網站*/index.html` |
+| 教學影片 | PPTX 講義 → HTML5+GSAP 動畫 → 渲染成 mp4（含克隆語音配音） | `scripts/generator.py` |
+
+前四個都在 `會考題庫/`，後兩個在專案根目錄，彼此獨立、不共用程式碼。
 
 **沒有後端伺服器**：動態功能靠 Google Apps Script（免費）＋ Google 試算表（資料庫）＋ Google Drive（圖檔），
 前端是純靜態 HTML 部署在 Cloudflare Pages。
@@ -112,8 +132,12 @@ python scripts/config.py
 │   ├── quiz_site/ bank_site/    部署用資料夾（build 產物）
 │   ├── redpen_out/              紅筆批改圖（**含學生個資**，gitignore）
 │   └── backup/                  工具自動備份（gitignore）
-├── 複習網站一〜六/                各冊複習簡報（共用引擎，改引擎要六份一起改）
-└── 出題/                        題庫匯出的 PDF
+├── 複習網站一〜六/                各冊複習簡報（第四冊資料夾名是「複習網站」沒有數字）
+│   └── engine.js svg.js style.css index.html chN.js
+├── 複習卷/                       老師丟進來的模擬卷 PDF（來源檔，未整理）
+├── scripts/ working/ output/     教學影片製作（與會考題庫的 scripts/ 無關）
+├── 出題/                        題庫匯出的 PDF
+└── 01〜06_114國中數學2下*PDF/     課本／習作等原始 PDF（gitignore）
 ```
 
 ### 主要資料檔
@@ -272,6 +296,67 @@ until [ "$(curl -s -o /dev/null -w '%{size_download}' https://math809-quiz.pages
 
 ---
 
+## 4.5 另外兩個子系統（不在 `會考題庫/` 底下）
+
+前面講的都是會考題庫。專案根目錄還有兩塊獨立的東西，**接手時容易漏掉**。
+
+### 複習簡報（一～六冊，六個站台）
+
+| 冊別 | 資料夾 | 章節檔 | 網址 |
+|---|---|---|---|
+| 一（七上） | `複習網站一/` | 3 | https://math809-review1.pages.dev |
+| 二（七下） | `複習網站二/` | 6 | https://math809-review2.pages.dev |
+| 三（八上） | `複習網站三/` | 5 | https://math809-review3.pages.dev |
+| 四（八下） | `複習網站/` ⚠**沒有數字** | 4 | https://math809-review.pages.dev |
+| 五（九上） | `複習網站五/` | 3 | https://math809-review5.pages.dev |
+| 六（九下） | `複習網站六/` | 3 | https://math809-review6.pages.dev |
+
+合計 364 頁、約 169 頁有滑桿互動。**可以直接發給學生**（沒有答案外洩問題）。
+
+**架構**：純前端靜態網頁，零建置、零金鑰。唯一外部相依是 MathJax（數學排版，需連網）。
+```
+index.html   外殼＋目錄＋載入 chN.js
+engine.js    簡報引擎 508 行（翻頁、縮放、雷射筆、畫筆、放大）
+svg.js       173 行，共用繪圖工具
+style.css    544 行
+chN.js       各章內容（一頁一物件，改內容只動這裡）
+```
+
+⚠ **六冊共用同一套引擎**：改 `engine.js`／`svg.js`／`style.css` 要**六個資料夾一起複製**，再各自部署。
+⚠ **改完 `chN.js` 一定要 bump `index.html` 的 `?v=` 版本號**（目前六冊都是 `?v=20260723`，
+每冊約 49 處），否則學生的瀏覽器會拿到快取的舊章節，看起來像沒改到。
+
+**部署**（Cloudflare 為主，一冊一個專案）：
+```bash
+npx wrangler pages deploy "複習網站六" --project-name math809-review6 --branch main --commit-dirty=true
+```
+⚠ 各冊 README 裡寫的 Netlify 兩段式部署（`restoreSiteDeploy`）是**舊做法**，Netlify 站僅作備援、不再更新。
+⚠ 首次部署後 20～60 秒可能回 522（邊緣節點傳播中），稍候重整即可。
+
+**要新增或大改一冊**：有現成的 `math-review-deck` 技能（全域 skill），
+說「做一份第 N 冊的複習簡報」就會走完整流程，不必從零刻。
+
+### 教學影片製作（PPTX → 動畫影片）
+
+| 檔案 | 作用 |
+|---|---|
+| `教學影片製作規格書.md`（根目錄，85 行） | 視覺／語音／動畫的完整規格 |
+| `scripts/SPECIFICATION.md`（86 行） | 技術規格 |
+| `scripts/generator.py`（408 行） | 產生器 |
+| `scripts/video_configs.json` | 影片設定（目前 2 個：`q1`、`q2`）|
+| `working/` `output/` | 中間產物與成品（`output/` 下有 10 個 render_* 資料夾）|
+
+**流程**：HTML5＋GSAP 動畫 → `npx hyperframes render` 渲染 →
+FFmpeg 無損混音（`-c:v copy -c:a aac`）→ 1920×1080 mp4。配音用「三師爸」克隆聲音，
+但**口白人設是「數學老師」**（規格書明訂，不可自稱三師爸）。**不上字幕**（避免擋住幾何圖）。
+
+⚠ **規格書裡的路徑是另一台電腦的**：`C:\Users\mathr\voxcpm\Scripts\python.exe` 與
+`G:\我的雲端硬碟\2026Agents\voxcpm2-voice-cloner\clone.py`。
+這台電腦的使用者是 `user` 不是 `mathr`，**照著跑會找不到檔案**——要先確認 voxcpm 環境在哪，
+或改用全域的 `voice-clone` 技能。（全域規則：跨電腦的路徑不要寫死使用者名稱，用 `~` 或 `%USERPROFILE%`。）
+
+---
+
 ## 5. 硬性規則（違反會出事）
 
 1. **AI 生圖不可用於批改**。實測 gpt-image-2 會「重畫」整張圖，4 份樣本 2 份**竄改學生內容**
@@ -289,7 +374,10 @@ until [ "$(curl -s -o /dev/null -w '%{size_download}' https://math809-quiz.pages
    （民調加權卡踩過，400 次抽樣只生出 2 題；改成反推後拉到 40%）。
 9. **判斷型題目要讓兩種結論都可能出現**，否則學生用猜的就對。
    驗證器的「結論恆為 X」警告就是在抓這個。
-10. **GDrive 幽靈鎖檔**：commit 失敗時刪 `.git/index.lock` 再試。
+10. **GDrive 幽靈檔**：commit 失敗時刪 `.git/index.lock` 再試。
+    同理 `.git/objects/` 會累積 `tmp_obj_*` 殘留（Google Drive 同步打斷 git 寫入所致，
+    `git count-objects -v` 會報 garbage found）。**無害**，要清就在同步完成時跑
+    `git gc --prune=now`；⚠ 不要在 Drive 正在同步時做，中途被打斷可能弄壞 repo。
 11. **學生個資**：`redpen_out/`、回饋單 PDF 含姓名座號與手寫作答，**不可上傳公開處**。
 12. **版權**：官方試題屬心測中心、翰林模擬卷屬翰林，僅供班級教學使用，勿散布樣卷影像。
 
@@ -312,12 +400,17 @@ until [ "$(curl -s -o /dev/null -w '%{size_download}' https://math809-quiz.pages
 
 ---
 
-## 7. 目前狀態（2026-08-31）
+## 7. 目前狀態（2026-09-04）
 
 ### 規模
 題庫 485 題（官方 358＋翰林 81＋自編 46）｜選擇模板 29 張｜非選模板 12 張｜配圖元件 17 種｜
 評分規準 38 題（官方 26＋翰林 6＋自編 6）｜觀念補強 56 單元 336 題｜Python 腳本 41 支
 翰林卷：HL1（110年）、HL2（111年）、HL113（113年）各 27 題
+
+### 最近一次實戰（2026-08-31，翰林 113 科資班）
+9 人 18 份非選，邊考邊批（每 2 分鐘輪詢一次，交卷後約 2 分鐘出批改與紅筆圖）。
+AI 初評平均 5.22/6，五人滿分。全程 0 份漏批、0 份缺紅筆圖。
+這是目前驗證過的完整閉環：**交卷 → AI 批改 → 紅筆圖含續寫解答 → 老師覆核 → 學生查成績看等級**。
 
 ### 線上網址
 | 網址 | 用途 |
@@ -333,6 +426,9 @@ until [ "$(curl -s -o /dev/null -w '%{size_download}' https://math809-quiz.pages
 - [ ] 回饋單 PDF 尚未顯示會考等級（只讀「非選作答」表，缺選擇題分數算不出加權 100 分，
       要另外併「作答紀錄」表）
 - [ ] 觀察 AI 初評與老師覆核的差異，反過來修模板卡的錨點與 `common_errors`
+- [ ] 座號格式不一致：翰林 113 那場 9 人裡，5 人填 1~2 位數、4 人填 5 位數（原班級＋座號）。
+      **影響學生查成績要填一模一樣的座號**才查得到，尚未統一（老師說先不動）
+- [ ] 翰林 113 卷的老師覆核尚未進行（AI 初評已完成，6 份低信心待確認，最低 0.46）
 
 ---
 
@@ -350,7 +446,40 @@ python scripts/selftest_all.py        # 加 --quick 可跳過重建題庫那步
 
 ---
 
-## 9. 禁止事項
+---
+
+## 9. 外部服務與權限（交接必看）
+
+這套系統**沒有自己的伺服器**，所有動態功能都掛在老師的個人帳號下。
+接手的 agent **不會自動擁有這些權限**，動手前先確認哪些做得到。
+
+| 服務 | 用途 | 帳號／位置 | agent 能不能自己來 |
+|---|---|---|---|
+| **GitHub** | 版控備份 `mathruffian-dot/triangle-geometry-8`（私有）| `mathruffian-dot` | ✅ 可（gh CLI 已登入）|
+| **Cloudflare Pages** | 八個站台：quiz／bank／review1~6 | mathruffian@gmail.com | ✅ 可（wrangler 已登入）|
+| **Google Apps Script** | 後端「會考題庫收卷 v1」，`apps_script/Code.gs` 的線上版 | mathruffian@gmail.com | ❌ **只有老師能重新部署** |
+| **Google 試算表** | 資料庫：作答紀錄／逐題明細／非選作答／出題紀錄 | 同上 | ⚠ 可透過 GAS 讀寫，但**沒有刪除接口** |
+| **Google Drive** | 學生手寫圖與紅筆批改圖（「會考題庫非選作答」資料夾）| 同上 | ⚠ 只能透過 GAS 寫入，agent 無直接刪除權 |
+| **OpenAI API** | AI 批改與紅筆標註定位 | `~/.openai.env`（未進版控）| ✅ 可（有 key 就能用，**會花錢**）|
+| Netlify（舊） | 早期站台，**保留不動、不再更新** | 另一個帳號 gameruffian@gmail.com | ❌ 不要碰 |
+
+### 換一台電腦要手動補的
+`~/.openai.env`（AI 批改）、`~/.groq_api_key`、`~/.kie.env`。
+其餘設定走 chezmoi 同步；專案檔案走 Google Drive 自動同步。
+⚠ 兩台電腦的使用者名稱不同（`user`／`mathr`），**路徑不要寫死 `C:\Users\<名稱>`**。
+
+### 要「整套搬給別人用」
+讀 Obsidian `01 系統重建指南.md`。重點：複製 `data/config.example.json` 成 `config.json`
+填自己的 GAS 網址與 Cloudflare 專案名即可，程式不必改
+（這件事已經整理過——收卷網址原本寫死在 8 支腳本裡，現在集中在 `scripts/config.py`）。
+
+### 花錢的地方
+只有 OpenAI：批改一份約 NT$0.3（3 次投票），紅筆標註每份再一次。
+一場 30 人的考試（60 份非選）約 NT$40~60。其餘全部免費（GAS、試算表、Drive、Cloudflare Pages 都在免費額度內）。
+
+---
+
+## 10. 禁止事項
 
 - ❌ 把 GAS 網址、Cloudflare 專案名、字型路徑寫死在腳本裡（一律走 `config.py`）
 - ❌ 改 `~/.claude-skills/` 底下的檔案（chezmoi 管理，更新會被蓋掉）
