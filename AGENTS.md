@@ -27,11 +27,11 @@
 **位置**：`G:\我的雲端硬碟\2026數學809\`，主要工作都在子資料夾 `會考題庫\`。
 **版控**：`mathruffian-dot/triangle-geometry-8`（私有；repo 名與專案不符，是早期沿用）。
 
-四個子系統：
+六個子系統：
 
 | 子系統 | 一句話 | 進入點 |
 |---|---|---|
-| 題庫 | 103–115 官方試題 358 題（逐題切圖＋課綱標記＋詳解），連同模擬卷與自編題共 456 題 | `data/questions_*.json` |
+| 題庫 | 103–115 官方試題 358 題（逐題切圖＋課綱標記＋詳解），連同模擬卷與自編題共 485 題 | `data/questions_*.json` |
 | 線上作答站 | 學生用 iPad 作答，選擇題自動批改，非選可站內手寫或拍照上傳 | `scripts/build_quiz_site.py` |
 | AI 批改閉環 | 交卷→圖存 Drive→AI 依評分規準初評→老師覆核→學生看紅筆批改 | `scripts/grade_essays.py` |
 | 自動命題 | 模板卡＋生成器，無限產出風格與官方一致的新題（含配圖、詳解、評分規準） | `scripts/gen_choice.py`／`gen_essay.py` |
@@ -123,7 +123,7 @@ python scripts/config.py
 │   ├── requirements.txt
 │   ├── index.html               題庫網站（build 產物，不要手改）
 │   ├── data/                    45 個 JSON
-│   ├── scripts/                 38 支 Python
+│   ├── scripts/                 39 支 Python（頂層）
 │   ├── 01_題目圖片/              逐題切圖（103~115／HL*／GEN）
 │   ├── 00_原始試題PDF/           官方試題
 │   ├── 00_非選評分規準PDF/        官方評分指引
@@ -243,10 +243,10 @@ python scripts/crop_hanlin.py --prefix HL113 --book "…/題本.pdf"           #
 **⑥ 非選評分規準**：把官方逐級分指引原文寫進 `data/essay_rubrics.json`
 （`guide.l3/l2/l1/l0` ＋ 自行拆解的 `checkpoints`），AI 批改與覆核頁才吃得到。
 
-**⑦ 註冊到系統**（三處，漏了會出事）
+**⑦ 註冊到系統**（來源標籤與自動掃描）
 - `scripts/build_html.py` 的 `SRCLBL` 與 `YRLBL` 各加一筆 `HL113:'翰林模擬 113'`
   （否則學生卷與題庫選單會顯示「HL113年」）
-- `scripts/validate.py` 的 `for extra in [...]` 加入 `"HL113"`
+- `scripts/validate.py` 自動掃描所有 `questions_*.json`，新增來源不需另列清單
 - 題目檔本身不必註冊，`build_html.py` 會自動 glob 掃描 `data/questions_*.json`
 
 **⑧ 派卷**：`data/quizzes.json` 加一筆
@@ -350,10 +350,10 @@ npx wrangler pages deploy "複習網站六" --project-name math809-review6 --bra
 FFmpeg 無損混音（`-c:v copy -c:a aac`）→ 1920×1080 mp4。配音用「三師爸」克隆聲音，
 但**口白人設是「數學老師」**（規格書明訂，不可自稱三師爸）。**不上字幕**（避免擋住幾何圖）。
 
-⚠ **規格書裡的路徑是另一台電腦的**：`C:\Users\mathr\voxcpm\Scripts\python.exe` 與
-`G:\我的雲端硬碟\2026Agents\voxcpm2-voice-cloner\clone.py`。
-這台電腦的使用者是 `user` 不是 `mathr`，**照著跑會找不到檔案**——要先確認 voxcpm 環境在哪，
-或改用全域的 `voice-clone` 技能。（全域規則：跨電腦的路徑不要寫死使用者名稱，用 `~` 或 `%USERPROFILE%`。）
+影片的機器路徑集中在根目錄 `scripts/config.py`，與會考題庫的設定互相獨立。
+覆寫順序：`MATH809_VIDEO_*` 環境變數 → `scripts/video_runtime.local.json` → 目前使用者／專案相對位置預設。
+範本為 `scripts/video_runtime.example.json`；原始 PPTX 必須指定 `pptx_path`，有快取底圖時可免匯出。
+製作前跑 `python scripts/generator.py q1 --check`；通過只代表路徑與快取可用，尚不代表語音模型或渲染已驗證。
 
 ---
 
@@ -404,7 +404,7 @@ FFmpeg 無損混音（`-c:v copy -c:a aac`）→ 1920×1080 mp4。配音用「�
 
 ### 規模
 題庫 485 題（官方 358＋翰林 81＋自編 46）｜選擇模板 29 張｜非選模板 12 張｜配圖元件 17 種｜
-評分規準 38 題（官方 26＋翰林 6＋自編 6）｜觀念補強 56 單元 336 題｜Python 腳本 41 支
+評分規準 38 題（官方 26＋翰林 6＋自編 6）｜觀念補強 56 單元 336 題｜Python 腳本頂層 39 支（另有 vendor）
 翰林卷：HL1（110年）、HL2（111年）、HL113（113年）各 27 題
 
 ### 最近一次實戰（2026-08-31，翰林 113 科資班）
@@ -423,8 +423,7 @@ AI 初評平均 5.22/6，五人滿分。全程 0 份漏批、0 份缺紅筆圖�
 ### 待辦
 - [ ] 把 `data/questions_SIM115.json`（25 選擇＋2 非選的完整模擬卷）派給學生試作，
       **開始累積評分規準的校準資料**——這是目前唯一能補上「官方樣卷那一層」的路徑
-- [ ] 回饋單 PDF 尚未顯示會考等級（只讀「非選作答」表，缺選擇題分數算不出加權 100 分，
-      要另外併「作答紀錄」表）
+- [ ] 回饋單已可合併選擇題並顯示參考等級；待老師使用實際完整覆核卷驗收（離線回歸已涵蓋零分／缺漏／跨卷配對）
 - [ ] 觀察 AI 初評與老師覆核的差異，反過來修模板卡的錨點與 `common_errors`
 - [ ] 座號格式不一致：翰林 113 那場 9 人裡，5 人填 1~2 位數、4 人填 5 位數（原班級＋座號）。
       **影響學生查成績要填一模一樣的座號**才查得到，尚未統一（老師說先不動）
@@ -440,8 +439,9 @@ AI 初評平均 5.22/6，五人滿分。全程 0 份漏批、0 份缺紅筆圖�
 python scripts/selftest_all.py        # 加 --quick 可跳過重建題庫那步
 ```
 
-依序檢查：17 種圖元件都渲染得出來 → 非選模板驗證 → 選擇題模板驗證 →
-生成 25 題選擇卷與 2 題非選卷（dry run）→ 建題庫 → `node --check` 驗 JS。
+依序檢查：所有題庫 JSON → 非選評分規準 → 離線回歸 → 七支批改 CLI 啟動 → 17 種圖元件 → 模板驗證 →
+生成 25 題選擇卷與 2 題非選卷（dry run）→ 建題庫 → 題庫、根目錄與六冊網頁的 `node --check`。
+`--quick` 只跳過重建，其他檢查照跑；模板警告需另外審查。
 **看到「✓ 全部通過」才算完成。**
 
 ---

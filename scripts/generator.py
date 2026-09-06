@@ -1,4 +1,8 @@
 import os
+import argparse
+import importlib.util
+from pathlib import Path
+from config import get as runtime_config
 import sys
 import json
 import time
@@ -10,10 +14,49 @@ import subprocess
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "video_configs.json")
-CLONER_DIR = r"G:\我的雲端硬碟\2026Agents\voxcpm2-voice-cloner"
-CLONER_PYTHON = r"C:\Users\mathr\voxcpm\Scripts\python.exe"
-CLONER_SCRIPT = os.path.join(CLONER_DIR, "clone.py")
-PPTX_PATH = r"C:\Users\mathr\Downloads\00_114國中數學2下PPT(全)\02_114國中數學2下習作PPT\13_114國中數學2下習作_4-2_平行四邊形.pptx"
+CLONER_PYTHON = runtime_config("cloner_python")
+CLONER_SCRIPT = runtime_config("cloner_script")
+PPTX_PATH = runtime_config("pptx_path")
+
+
+def check_environment(q_id, force_voice=False):
+    """只檢查本機檔案、快取及執行檔；不配音、不開 PowerPoint、不渲染。"""
+    configs = json.loads(Path(CONFIG_PATH).read_text(encoding="utf-8"))
+    if q_id not in configs:
+        return [f"找不到題目設定：{q_id}"]
+    cfg = configs[q_id]
+    folder = Path(PROJECT_ROOT) / "working" / cfg["output_dir"]
+    errors = []
+    if not (folder / cfg["background_image"]).is_file():
+        if not PPTX_PATH or not Path(PPTX_PATH).is_file():
+            errors.append("缺少原始簡報，請設定 MATH809_VIDEO_PPTX_PATH 或 video_runtime.local.json")
+        if os.name != "nt" or importlib.util.find_spec("win32com") is None:
+            errors.append("匯出新投影片需要 Windows、PowerPoint 與 pywin32")
+    else:
+        print("底圖：使用現有快取")
+    need_voice = force_voice
+    for index, step in enumerate(cfg["steps"]):
+        wav = folder / f"step_{index}_{step['id']}.wav"
+        if force_voice or not wav.is_file():
+            need_voice = True
+        else:
+            try:
+                if get_wav_duration(str(wav)) <= 0:
+                    errors.append(f"語音快取為空：{wav.name}")
+            except (OSError, wave.Error, EOFError) as exc:
+                errors.append(f"語音快取損壞：{wav.name}：{exc}")
+    if need_voice:
+        for label, value in (("配音 Python", CLONER_PYTHON), ("配音腳本", CLONER_SCRIPT)):
+            if not value or not Path(value).is_file():
+                errors.append(f"找不到{label}：{value}")
+    else:
+        print("配音：使用現有快取")
+    for key in ("npx", "ffmpeg"):
+        if not shutil.which(runtime_config(key)):
+            errors.append(f"找不到執行檔：{key}")
+    print("路徑檢查不代表 HyperFrames、PowerPoint 或語音模型已完成實際渲染驗證。")
+    return errors
+
 
 def get_wav_duration(path):
     """Get WAV file duration using python built-in wave module."""
@@ -118,6 +161,9 @@ def generate_step_voice(text, out_wav_path):
 
 def generate_video(q_id, force_voice=False):
     """Generate the full video package for a specific question."""
+    problems = check_environment(q_id, force_voice)
+    if problems:
+        raise RuntimeError("\n".join(problems))
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         configs = json.load(f)
         
@@ -362,10 +408,10 @@ def generate_video(q_id, force_voice=False):
     
     print(f"Rendering composition to MP4 using HyperFrames...")
     # Run render command in the working directory
-    render_cmd = ["npx", "hyperframes", "render", "--output", output_video_path]
+    render_cmd = [runtime_config("npx"), "--no-install", "hyperframes", "render", "--output", output_video_path]
     t_render = time.time()
     # Standard render locally
-    render_result = subprocess.run(render_cmd, cwd=working_dir, capture_output=True, text=True, shell=True)
+    render_result = subprocess.run(render_cmd, cwd=working_dir, capture_output=True, text=True)
     
     if render_result.returncode != 0:
         print(f"  Error rendering video: {render_result.stderr}")
@@ -378,7 +424,7 @@ def generate_video(q_id, force_voice=False):
     temp_mixed_video = os.path.join(working_dir, "mixed_output.mp4")
     print(f"Mixing narration.wav into the final video using FFmpeg...")
     ffmpeg_cmd = [
-        "ffmpeg", "-y",
+        runtime_config("ffmpeg"), "-y",
         "-i", output_video_path,
         "-i", narration_wav_path,
         "-c:v", "copy",
@@ -398,11 +444,16 @@ def generate_video(q_id, force_voice=False):
     print(f"Successfully mixed audio! Final video ready: {output_video_path}")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python generator.py <question_id> [--force-voice]")
-        print("Example: python generator.py q1")
-        sys.exit(1)
-        
-    question_id = sys.argv[1]
-    force = "--force-voice" in sys.argv
-    generate_video(question_id, force_voice=force)
+    sys.stdout.reconfigure(encoding="utf-8")
+    ap = argparse.ArgumentParser(description="數學教學影片產生器")
+    ap.add_argument("question_id", help="video_configs.json 中的題目代號，如 q1")
+    ap.add_argument("--force-voice", action="store_true", help="重新產生各段配音")
+    ap.add_argument("--check", action="store_true", help="只檢查本機前置條件，不製作影片")
+    args = ap.parse_args()
+    if args.check:
+        problems = check_environment(args.question_id, args.force_voice)
+        for problem in problems:
+            print("缺少：" + problem)
+        print("本機前置檢查未通過" if problems else "本機路徑與快取檢查通過")
+        sys.exit(1 if problems else 0)
+    generate_video(args.question_id, force_voice=args.force_voice)

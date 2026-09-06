@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""每人一張「非選作答回饋單」PDF：
+"""每位學生的「非選作答回饋單」PDF（每題另起一頁）：
    題目圖 ＋ 學生作答圖 ＋ AI 讀到的內容（對照OCR）＋ 得分 ＋ 視覺化失分說明。
 用法：
    python scripts/make_feedback_pdf.py --quiz "會考數學複習卷_非選0723" [--cls 902] [--out x.pdf]
 資料來源：GAS 後端 ?essays=1（已自動去重）；圖片由 Drive 下載。
 """
-import os, sys, re, argparse, tempfile
+import os, sys, re, argparse, tempfile, json
 from pathlib import Path
 import requests
 
@@ -23,6 +23,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from config import SUBMIT_URL as _CFG_SUBMIT_URL, get as _cfg  # noqa: E402  集中設定
+from feedback_summary import normalize, question_key, latest_choice, grade_summary
 ROOT = HERE.parent
 FONT = "JhengHei"
 for fp in _cfg("font_files"):
@@ -46,7 +47,7 @@ def esc(s):
 
 def P(text, size=10, color=colors.black, bold=False, lead=None):
     st = ParagraphStyle("x", fontName=FONT, fontSize=size, leading=lead or size * 1.5,
-                        textColor=color, wordWrap="CJK")
+                        textColor=color, wordWrap="CJK", keepWithNext=bold)
     if bold:
         text = "<b>" + text + "</b>"
     return Paragraph(text, st)
@@ -136,7 +137,12 @@ def fetch(url, quiz, cls):
     if cls: p["cls"] = cls
     sep = "&" if "?" in url else "?"
     full = url + sep + "&".join(f"{k}={requests.utils.quote(str(v))}" for k, v in p.items())
-    return requests.get(full, timeout=60).json()
+    response = requests.get(full, timeout=60)
+    response.raise_for_status()
+    rows = response.json()
+    if not isinstance(rows, list) or any(not isinstance(r, dict) for r in rows):
+        raise ValueError("後端沒有回傳作答陣列")
+    return rows
 
 
 def main():
@@ -150,13 +156,39 @@ def main():
     recs = fetch(args.url, args.quiz, args.cls)
     if not recs:
         sys.exit("查無作答資料（確認卷名／班級，且學生已交卷）")
+    # 只讀既有收卷紀錄；查詢失敗仍可製作非選回饋，但不推算等級。
+    try:
+        response = requests.get(args.url, params={"quiz": args.quiz}, timeout=60)
+        response.raise_for_status()
+        choices = response.json()
+        if not isinstance(choices, list) or any(not isinstance(r, dict) for r in choices):
+            raise ValueError("選擇題成績格式不正確")
+    except (requests.RequestException, ValueError):
+        choices = []
+        print("未能取得選擇題成績，本次回饋單不換算等級。")
+    bank = {q["id"]: q for path in (ROOT / "data").glob("questions_*.json")
+            for q in json.loads(path.read_text(encoding="utf-8"))}
+    expected = []
+    expected_choice_total = None
+    for quiz in json.loads((ROOT / "data/quizzes.json").read_text(encoding="utf-8")):
+        labels = quiz.get("class_labels") or {}
+        titles = [quiz["title"]] + [f"{quiz['title']}｜{labels.get(str(c), str(c))}班"
+                                     for c in quiz.get("classes", [])]
+        if args.quiz in titles:
+            expected_choice_total = sum(bank.get(qid, {}).get("type") == "choice" for qid in quiz["qids"])
+            expected = [qid for qid in quiz["qids"] if bank.get(qid, {}).get("type") == "essay"]
+            break
+    cutoff_data = json.loads((ROOT / "data/grade_cutoffs.json").read_text(encoding="utf-8"))
     bystu = {}
     for x in recs:
-        bystu.setdefault(f"{x['班級']}-{x['座號']}", {}).setdefault("name", x.get("姓名", ""))
-        bystu[f"{x['班級']}-{x['座號']}"][x["題目ID"]] = x
-    order = sorted({x["題目ID"] for x in recs}, key=lambda q: (int(str(q).split("-")[0]), q))
+        # 僅用於本機配對，不回寫或改動試算表座號。
+        key = f"{normalize(x['班級'])}-{normalize(x['座號'])}"
+        bystu.setdefault(key, {}).setdefault("name", x.get("姓名", ""))
+        bystu[key][x["題目ID"]] = x
+    order = sorted({x["題目ID"] for x in recs} | set(expected), key=question_key)
 
     out = args.out or str(ROOT / "backup" / f"回饋單_{args.quiz}.pdf")
+    Path(out).parent.mkdir(parents=True, exist_ok=True)
     doc = SimpleDocTemplate(out, pagesize=A4, topMargin=16 * mm, bottomMargin=14 * mm,
                             leftMargin=18 * mm, rightMargin=18 * mm, title=f"非選回饋單_{args.quiz}")
     flow, tmpfiles = [], []
@@ -164,27 +196,43 @@ def main():
         d = bystu[stu]
         name = d.get("name", "")
         got = sum(int(pick_level(d[q])) for q in order if q in d and pick_level(d[q]) != "")
-        mx = 3 * sum(1 for q in order if q in d)
+        mx = 3 * len(order)
+        pending = sum(1 for q in order if q not in d or pick_level(d[q]) == "")
         flow.append(P(f"非選作答回饋單　{esc(stu)}　{esc(name)}", 16, bold=True))
-        flow.append(P(f"{esc(args.quiz)}　合計 <b>{got}</b> / {mx}", 10, colors.HexColor("#6b7280")))
+        flow.append(P(f"{esc(args.quiz)}　已評合計 <b>{got}</b> / {mx}（尚待評分 {pending} 題；含 AI 初評，最終以老師覆核為準）", 10, colors.HexColor("#6b7280")))
+        rows = [d[q] for q in order if q in d]
+        first = rows[0]
+        choice = latest_choice(choices, args.quiz, first["班級"], first["座號"])
+        summary = grade_summary(rows, choice, expected, cutoff_data.get("平均門檻", {}), expected_choice_total)
+        flow.append(P(esc(summary), 10, colors.HexColor("#1d4ed8")))
+        if "參考等級" in summary:
+            years = "、".join(map(str, cutoff_data.get("採用年份", [])))
+            flow.append(P(f"依 {esc(years)} 年門檻平均換算；模考難度不同，等級僅供參考。", 8.5))
         flow.append(Spacer(1, 4))
-        for q in order:
+        for qi, q in enumerate(order):
+            if qi:
+                flow.append(PageBreak())
+                flow.append(P(f"非選作答回饋單　{esc(stu)}　{esc(name)}", 12, bold=True))
+                flow.append(P(esc(args.quiz), 9, colors.HexColor("#6b7280")))
             r = d.get(q)
             if not r:
+                flow.append(P(f"{esc(q)}：尚未收到本題作答", 10))
                 continue
             year = str(q).split("-")[0]; num = str(q).split("N")[-1]
             topic = r.get("題目ID", "")
             lv = pick_level(r)
             lvc = LV_COLOR.get(lv, colors.HexColor("#6b7280"))
             flow.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e5e7eb"), spaceBefore=8, spaceAfter=4))
-            flow.append(P(f"{year}年 非選第{num}題　—　得分 <font color='{lvc.hexval()}'><b>{esc(lv) or '批改中'}</b></font> / 3", 12.5, bold=True))
+            flow.append(P(f"{year} 非選第{num}題　—　得分 <font color='{lvc.hexval()}'><b>{esc(lv) or '批改中'}</b></font> / 3", 12.5, bold=True))
             # 題目圖
-            qimg = ROOT / f"01_題目圖片/{year}/{year}_NQ{num}.png"
+            qimg = ROOT / bank.get(q, {}).get("img", f"01_題目圖片/{year}/{year}_NQ{num}.png")
             if qimg.exists():
                 flow.append(P("題目：", 8.5, colors.HexColor("#6b7280")))
-                flow.append(img_flow(str(qimg), CW, 62 * mm))
+                flow.append(img_flow(str(qimg), CW, 100 * mm))
             # 作答圖：優先用紅筆批改版（原圖＋紅筆標註，原圖像素未更動）；沒有就用原圖
-            redpen = ROOT / "redpen_out" / f"{stu}_{q}.png"
+            redpen = ROOT / "redpen_out" / f"{r['班級']}-{r['座號']}_{q}.png"
+            if not redpen.exists():
+                redpen = ROOT / "redpen_out" / f"{stu}_{q}.png"
             if redpen.exists():
                 top, sol = split_redpen(str(redpen))
                 if top != str(redpen):
@@ -196,7 +244,7 @@ def main():
                     # 續寫解答另外整段呈現，才有足夠寬度把分數、算式看清楚
                     tmpfiles.append(sol)
                     flow.append(Spacer(1, 4))
-                    flow.append(P("✍ 老師續寫的解答（照著訂正一遍）：", 9.5, bold=True))
+                    flow.append(P("老師續寫的解答（照著訂正一遍）：", 9.5, bold=True))
                     flow.append(img_flow(sol, CW, 185 * mm))
             else:
                 ai = dl_img(str(r.get("檔案ID", "")), r.get("圖片連結", ""))
@@ -210,12 +258,12 @@ def main():
             # AI 讀到的內容
             if r.get("AI辨識內容"):
                 flow.append(Spacer(1, 3))
-                flow.append(P("🔎 AI 讀到的內容（對照上圖，檢查有無讀錯）", 9.5, bold=True))
+                flow.append(P("AI 讀到的內容（對照上圖，檢查有無讀錯）", 9.5, bold=True))
                 flow.append(box(esc(r["AI辨識內容"]).replace("\n", "<br/>"), colors.HexColor("#fffdf5"), colors.HexColor("#fde68a")))
             # 失分／評分說明
             if r.get("AI理由"):
                 flow.append(Spacer(1, 3))
-                flow.append(P("📋 評分說明（依官方規準）", 9.5, bold=True))
+                flow.append(P("評分說明（依本題評分規準）", 9.5, bold=True))
                 flow.append(box(esc(clean_reason(r["AI理由"])).replace("\n", "<br/>"), colors.HexColor("#f0f9ff"), colors.HexColor("#bae6fd")))
             if r.get("老師備註"):
                 flow.append(box("老師評語：" + esc(r["老師備註"]), colors.HexColor("#fef2f2"), colors.HexColor("#fecaca")))

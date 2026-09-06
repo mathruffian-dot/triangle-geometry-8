@@ -8,10 +8,13 @@
 - **語意腳本角色**：發言者一律設定為**「數學老師」**（如：「各位同學大家好，我是數學老師...」）。
 - **語音合成模型**：使用「三師爸」的複製聲音模型。
 - **執行環境環境**：
-  - Python 解譯器：`C:\Users\mathr\voxcpm\Scripts\python.exe`
-  - 克隆腳本路徑：`G:\我的雲端硬碟\2026Agents\voxcpm2-voice-cloner\clone.py`
+  - 解譯器：由 `scripts/config.py` 解析目前使用者的 `~/voxcpm/`；可用 `MATH809_VIDEO_CLONER_PYTHON` 覆寫。
+  - 克隆腳本：由 `scripts/config.py` 解析；可用 `MATH809_VIDEO_CLONER_SCRIPT` 覆寫。
 
 ---
+
+原始 PPTX 使用 `MATH809_VIDEO_PPTX_PATH` 或 `scripts/video_runtime.local.json` 設定。
+製作前先跑 `python scripts/generator.py q1 --check`；此檢查不會配音、開啟 PowerPoint 或渲染。
 
 ## 2. 影片渲染與混音引擎 (Rendering & Audio Engine)
 - **動態渲染引擎**：使用 HeyGen HyperFrames (基於 HTML5 + CSS3 + GSAP 網頁動畫技術)。

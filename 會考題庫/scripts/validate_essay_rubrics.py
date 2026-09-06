@@ -74,7 +74,7 @@ def main():
                 if r.get("official_guide_available", False):
                     warns.append(f"{qid} 115 標為已有官方規準，請確認官方是否已上架")
 
-    print(f"題目數：{len(qs)}（預期 24＝12年×2）")
+    print(f"題目數：{len(qs)}（含歷屆、模擬卷與自編題）")
     print(f"錯誤 {len(errs)}、警告 {len(warns)}")
     for e in errs:
         print("  ✗", e)
