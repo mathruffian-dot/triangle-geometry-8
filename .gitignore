@@ -51,3 +51,6 @@ __pycache__/
 
 # 影片製作的本機路徑，不進版控
 scripts/video_runtime.local.json
+
+# 自動批改的執行紀錄（含學生座號，且為執行產物）
+會考題庫/auto_grade_*.log

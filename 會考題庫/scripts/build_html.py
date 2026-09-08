@@ -431,7 +431,7 @@ function mfPreset(key, v){   // 年度快選：最近N屆
   page=1; render();
 }
 // 非歷屆來源（模擬卷）的 year 不是年份數字，選單顯示可讀名稱
-const YRLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL113:'翰林模擬 113'};
+const YRLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL112:'翰林模擬 112', HL113:'翰林模擬 113'};
 registerMF('year','mfYear','年度／屆數（可複選）',
   ()=>years.map(y=>({v:y, t:YRLBL[y]||(y+'年')})),
   [{v:'R3',t:'最近3屆'},{v:'R5',t:'最近5屆'},{v:'R10',t:'最近10屆'}]);
@@ -1416,7 +1416,7 @@ document.getElementById('totalQ').textContent = ITEMS.length;
 document.getElementById('doneT').textContent = ITEMS.length;
 
 // 非歷屆來源（模擬卷）的題目標示：year 不是年份數字，需另給可讀名稱
-const SRCLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL113:'翰林模擬 113'};
+const SRCLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL112:'翰林模擬 112', HL113:'翰林模擬 113'};
 
 document.getElementById('qwrap').innerHTML = ITEMS.map((q,i)=>`
   <div class="qcard" id="q-${q.id}">

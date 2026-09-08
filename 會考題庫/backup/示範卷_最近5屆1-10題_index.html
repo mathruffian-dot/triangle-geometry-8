@@ -154,7 +154,7 @@ document.getElementById('totalQ').textContent = ITEMS.length;
 document.getElementById('doneT').textContent = ITEMS.length;
 
 // 非歷屆來源（模擬卷）的題目標示：year 不是年份數字，需另給可讀名稱
-const SRCLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL113:'翰林模擬 113'};
+const SRCLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL112:'翰林模擬 112', HL113:'翰林模擬 113'};
 
 document.getElementById('qwrap').innerHTML = ITEMS.map((q,i)=>`
   <div class="qcard" id="q-${q.id}">
