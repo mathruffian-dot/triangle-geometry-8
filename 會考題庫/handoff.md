@@ -1066,3 +1066,25 @@ python scripts/make_essay_solution.py --ids G0813-N1 G0813-N2 --title "卷名" -
 
 **⚠ 這批成績是 AI 初評未經人工確認就放行的**。老師事後仍可在覆核頁改分（會覆蓋放行的值）。
 建議至少抽看：信心 <0.7 的、以及被判 0 級分的那幾份。
+
+### ✅ 2026-09-14 翰林 110 第3次模擬卷（第1~4冊，HL110T3 27題），派科資班
+來源：`複習卷/110_B1_B4/`（題本、解答篇、非選樣卷說明），已複製到 `00_原始試題PDF/翰林110第3次/`。
+封面：110學年度第三次國中教育會考模擬測驗，1~4冊，條碼 99061703-30（J3）。
+
+- **前綴 `HL110T3`**（不能用 `HL110`：與 110 第1次的 `HL1` 語意混淆；也不能含「-」，程式用 `-` 切 qid）。
+  之後若再做「第N次、1~4冊」的卷，比照 `HL<年><T次>` 命名。
+- `data/questions_HL110T3.json`：選擇 25＋非選 2，含 B3／B4 課綱代碼（第3次範圍到第4冊）。
+- `data/essay_rubrics.json`：新增 HL110T3-N1（讀書計畫：一元一次方程式＋等差級數）、N2（梯形作高＋中點連線面積比），評分指引逐字取自解答篇。共 42 題。
+- `scripts/build_html.py`：`SRCLBL`／`YRLBL` 加 `HL110T3:'翰林模擬 110 第3次'`。
+- `data/quizzes.json`：`hanlin-110-3`，classes `["kz"]`（沿用前三場科資班）→ 網址 `/q/hanlin-110-3-kz/`，
+  卷名（試算表鍵）為「翰林模擬會考 110年第3次（第1~4冊）｜科資班」。
+- **修 `scripts/crop_hanlin.py` 的共用題幹 bug**：題組題幹（「請閱讀下列敘述後，回答第24、25題」）前一題
+  原本會一路裁到下一個題號，把題幹也包進去（第23題多了一整塊題幹）。改成遇到下方題幹就截止。
+  舊卷 HL2／HL112／HL113 的題幹若在頁首則不受影響，沒有重裁。
+- 題庫現況：539 題（官方 358＋翰林 135＋自編 46）、評分規準 42 題。
+- ✅ **已部署**（2026-09-14）：quiz_site 與 bank_site 皆上線，CDN 已確認切到新版。
+  ⚠ 部署踩坑：wrangler 一度被登入成學校帳號 `mathruffian@gwjh.hc.edu.tw`、又一次誤登 `gameruffian@gmail.com`，都回 `Authentication error [code: 10000]`。
+  math809 所有站台都在 **`mathruffian@gmail.com`** 的 Cloudflare 帳號（account b87e54…）。
+  `wrangler login` 授權頁會沿用瀏覽器目前登入的 Cloudflare 帳號，且只等 2 分鐘；
+  要先在 dash.cloudflare.com 登出別的帳號、登入 mathruffian@gmail.com，再把授權網址貼到**同一個瀏覽器視窗**按 Allow。
+  部署前可用 `npx wrangler whoami` 確認帳號。

@@ -166,6 +166,10 @@ def main():
         for k, q in enumerate(qs):
             y0 = float(q["y"]) - args.pad
             y1 = float(qs[k + 1]["y"]) - args.pad if k + 1 < len(qs) else FOOT
+            # 下方若先出現共用題幹（如「請閱讀下列敘述後，回答第24、25題」），本題要在題幹前截止
+            nxt_stem = [float(s["y"]) - args.pad for s in stems if float(s["y"]) > float(q["y"])]
+            if nxt_stem:
+                y1 = min(y1, min(nxt_stem))
             y0 = max(0.0, y0); y1 = min(FOOT, max(y1, y0 + 0.02))
             crop = im.crop((0, int(y0 * H), W, int(y1 * H)))
             # 若本題屬於某共用題幹，把題幹接在上方
