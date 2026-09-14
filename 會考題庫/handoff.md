@@ -1088,3 +1088,8 @@ python scripts/make_essay_solution.py --ids G0813-N1 G0813-N2 --title "卷名" -
   `wrangler login` 授權頁會沿用瀏覽器目前登入的 Cloudflare 帳號，且只等 2 分鐘；
   要先在 dash.cloudflare.com 登出別的帳號、登入 mathruffian@gmail.com，再把授權網址貼到**同一個瀏覽器視窗**按 Allow。
   部署前可用 `npx wrangler whoami` 確認帳號。
+
+### ⏳ 2026-09-14 HL110T3 考試輪詢批改（排程）
+- 任務 `MathQuizAutoGrade_HL110T3`：14:10 觸發，`--until 15:10`，**未加 `--apply`**（AI 批完不自動放行，等老師覆核）。
+- log：`會考題庫/auto_grade_20260914.log`；卷名「翰林模擬會考 110年第3次（第1~4冊）｜科資班」。
+- 13:18 已用 `--once` 測過能讀到後端（當時 0 份）。考完記得 `Unregister-ScheduledTask -TaskName 'MathQuizAutoGrade_HL110T3' -Confirm:$false`。
