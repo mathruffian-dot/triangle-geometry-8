@@ -16,27 +16,22 @@ import os, sys, json, base64, argparse, time
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
-import fitz, requests
+import fitz
 from PIL import Image
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from config import get as _cfg  # noqa: E402  集中設定
+from llm import chat_json, image_messages, is_reasoning  # noqa: E402  共用的 LLM 呼叫層
 
 SRC = Path(r"G:/我的雲端硬碟/2026會考歷屆試題/翰林模擬試題")
 BOOK = SRC / "01-紙筆模擬會考／數學【第1次第1~2冊】題本(平浮).pdf"
 ROOT = Path(__file__).resolve().parent.parent
 
-MODEL = os.environ.get("KAOKAO_GRADE_MODEL", "gpt-5.6-luna")
-API = "https://api.openai.com/v1/chat/completions"
+MODEL = os.environ.get("KAOKAO_GRADE_MODEL") or _cfg("grade_model")
 DPI = 200          # 輸出解析度
 PROBE_DPI = 130    # 送模型辨識用（省 token）
 GAP = int(DPI * 0.5)   # 視為區塊分界的空白高度（0.5 吋；題內行距遠小於此）
 FOOT = 0.89        # 頁尾（頁碼／logo／請翻頁）以下不要；實測各頁題目內容最遠僅到 0.796
-
-
-def load_key():
-    p = Path.home() / ".openai.env"
-    for line in p.read_text(encoding="utf-8").splitlines():
-        if line.strip().startswith("OPENAI_API_KEY"):
-            return line.split("=", 1)[1].strip().strip('"').strip("'")
-    return os.environ["OPENAI_API_KEY"]
 
 
 PROMPT = """這是數學試卷的一頁掃描圖。請由上而下找出頁面上的內容區塊。
@@ -80,19 +75,12 @@ def trim(im, max_pad=40):
     return im.crop((0, top, im.size[0], bot))
 
 
-def probe_page(key, doc, i):
+def probe_page(doc, i):
     pix = doc[i].get_pixmap(dpi=PROBE_DPI)
     b64 = base64.b64encode(pix.tobytes("png")).decode()
-    body = {"model": MODEL,
-            "messages": [{"role": "user", "content": [
-                {"type": "text", "text": PROMPT},
-                {"type": "image_url", "image_url": {"url": "data:image/png;base64," + b64}}]}],
-            "max_completion_tokens": 3000,
-            "response_format": {"type": "json_object"}}
-    r = requests.post(API, headers={"Authorization": f"Bearer {key}",
-                                    "Content-Type": "application/json"}, json=body, timeout=240)
-    r.raise_for_status()
-    items = json.loads(r.json()["choices"][0]["message"]["content"]).get("items", [])
+    budget = 4000 if is_reasoning(MODEL) else 1500
+    data = chat_json(MODEL, image_messages("", PROMPT, b64, "image/png"), max_tokens=budget)
+    items = data.get("items", [])
     return sorted(items, key=lambda x: float(x.get("y", 0)))
 
 
@@ -114,11 +102,10 @@ def main():
         pages = {int(k): v for k, v in json.load(open(cache, encoding="utf-8")).items()}
         print(f"沿用已存的定位結果 {cache.name}（要重新辨識請加 --probe）")
     else:
-        key = load_key()
         pages = {}
         for i in range(1, doc.page_count):          # 跳過封面
             try:
-                items = probe_page(key, doc, i)
+                items = probe_page(doc, i)
             except Exception as e:
                 print(f"p{i+1} 失敗：{e}"); items = []
             pages[i] = items

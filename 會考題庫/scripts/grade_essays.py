@@ -18,7 +18,10 @@
   # 離線試批一張本機圖（驗證管線，不連後端、不回寫）
   python scripts/grade_essays.py --demo --qid 111-N1 --img some.jpg
 
-需求：~/.openai.env 內含 OPENAI_API_KEY=sk-...
+需求：金鑰與端點都走 scripts/config.py（見 llm.py）。
+  預設讀 ~/.openai.env 的 OPENAI_API_KEY 並打 api.openai.com；
+  要換供應商就改 data/config.json 的 grade_api_base／grade_model／grade_api_style
+  （`python scripts/config.py --preset opencode-go` 會印出可直接貼的片段）。
 """
 import os, sys, json, argparse, base64, time, statistics
 from collections import Counter
@@ -30,26 +33,14 @@ import requests
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from config import SUBMIT_URL as _CFG_SUBMIT_URL, get as _cfg  # noqa: E402  集中設定
+from llm import chat_json, image_messages, is_reasoning  # noqa: E402  共用的 LLM 呼叫層
 ROOT = HERE.parent
 RUBRICS = ROOT / "data" / "essay_rubrics.json"
 
 # 收卷／回寫後端（GAS 網頁應用程式 URL，含 ?token=）。可用 --url 或環境變數覆蓋。
 DEFAULT_URL = os.environ.get("KAOKAO_SUBMIT_URL", _CFG_SUBMIT_URL())
-MODEL = os.environ.get("KAOKAO_GRADE_MODEL", "gpt-5.6-luna")   # 預設用最新推理型；可換 gpt-4o(便宜) / gpt-5.6-sol / gpt-5.6-terra / gpt-5.5 等
-API = "https://api.openai.com/v1/chat/completions"
+MODEL = os.environ.get("KAOKAO_GRADE_MODEL") or _cfg("grade_model")
 REVIEW_CONF = 0.60   # 低於此信心 → 標記需老師覆核
-
-
-def load_key():
-    envp = Path.home() / ".openai.env"
-    if envp.exists():
-        for line in envp.read_text(encoding="utf-8").splitlines():
-            if line.strip().startswith("OPENAI_API_KEY"):
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
-    k = os.environ.get("OPENAI_API_KEY")
-    if k:
-        return k
-    sys.exit("找不到 OPENAI_API_KEY（請確認 ~/.openai.env）")
 
 
 def load_rubrics():
@@ -99,58 +90,22 @@ def build_user_text(r, student_ans):
     return "\n".join(L)
 
 
-def grade_once(key, r, img_b64, mime, student_ans, model, temperature=0.2):
-    # 推理型/新世代模型（gpt-5.x、o系列）：用 max_completion_tokens、不吃 temperature、需較大 token 額度（含內部推理）
-    reasoning = any(model.startswith(p) for p in ("gpt-5", "o1", "o3", "o4"))
-    body = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": SYS},
-            {"role": "user", "content": [
-                {"type": "text", "text": build_user_text(r, student_ans)},
-                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_b64}"}},
-            ]},
-        ],
-        "response_format": {"type": "json_object"},
-    }
-    if reasoning:
-        body["max_completion_tokens"] = 5000
-    else:
-        body["max_tokens"] = 1200
-        body["temperature"] = temperature
-    resp = requests.post(API, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                         json=body, timeout=180)
-    resp.raise_for_status()
-    j = resp.json()
-    content = j["choices"][0]["message"]["content"]
-    usage = j.get("usage", {})
-    data = json.loads(content)
-    data["_usage"] = usage
-    return data
+def grade_once(r, img_b64, mime, student_ans, model, temperature=0.2):
+    """單次評閱。推理型模型需要大一點的額度（含內部推理），否則會回空字串。"""
+    budget = 5000 if is_reasoning(model) else 1200
+    msgs = image_messages(SYS, build_user_text(r, student_ans), img_b64, mime)
+    return chat_json(model, msgs, max_tokens=budget, temperature=temperature)
 
 
-def transcribe_once(key, img_b64, mime, model):
+def transcribe_once(img_b64, mime, model):
     """只把手寫作答忠實轉成文字（不評分），供對照 AI 是否讀錯（OCR 檢核）。"""
-    reasoning = any(model.startswith(p) for p in ("gpt-5", "o1", "o3", "o4"))
-    body = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "你是手寫數學辨識助理。把圖中手寫作答忠實逐字轉成文字，只輸出你讀到的內容，不評分、不補充。"},
-            {"role": "user", "content": [
-                {"type": "text", "text": "請把這張手寫數學作答忠實轉成文字（含算式；分數寫 a/b、根號寫 √、次方寫 ^、角度寫 °）。看不清的字用 ? 標記。只輸出 JSON：{\"transcript\":\"...\"}"},
-                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_b64}"}},
-            ]},
-        ],
-        "response_format": {"type": "json_object"},
-    }
-    if reasoning:
-        body["max_completion_tokens"] = 3000
-    else:
-        body["max_tokens"] = 1000
-    resp = requests.post(API, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                         json=body, timeout=180)
-    resp.raise_for_status()
-    return json.loads(resp.json()["choices"][0]["message"]["content"]).get("transcript", "")
+    budget = 3000 if is_reasoning(model) else 1000
+    msgs = image_messages(
+        "你是手寫數學辨識助理。把圖中手寫作答忠實逐字轉成文字，只輸出你讀到的內容，不評分、不補充。",
+        "請把這張手寫數學作答忠實轉成文字（含算式；分數寫 a/b、根號寫 √、次方寫 ^、角度寫 °）。"
+        "看不清的字用 ? 標記。只輸出 JSON：{\"transcript\":\"...\"}",
+        img_b64, mime)
+    return chat_json(model, msgs, max_tokens=budget).get("transcript", "")
 
 
 def aggregate(runs, is_pending):
@@ -211,7 +166,7 @@ def post_grades(url, updates):
     return r.json()
 
 
-def grade_record(key, rubrics, qid, img_bytes, mime, student_ans, votes, model):
+def grade_record(rubrics, qid, img_bytes, mime, student_ans, votes, model):
     r = rubrics.get(qid)
     if not r:
         return {"level": "", "confidence": 0.0, "need_review": True,
@@ -221,7 +176,7 @@ def grade_record(key, rubrics, qid, img_bytes, mime, student_ans, votes, model):
     runs = []
     for i in range(votes):
         try:
-            runs.append(grade_once(key, r, img_b64, mime, student_ans, model,
+            runs.append(grade_once(r, img_b64, mime, student_ans, model,
                                    temperature=0.2 if i == 0 else 0.4))
         except Exception as e:
             print(f"    ! 第{i+1}次批改失敗：{e}")
@@ -250,7 +205,6 @@ def main():
     ap.add_argument("--img", default="")
     args = ap.parse_args()
 
-    key = load_key()
     rubrics = load_rubrics()
 
     if args.demo:
@@ -259,7 +213,7 @@ def main():
         data = Path(args.img).read_bytes()
         mime = "image/png" if data[:1] == b"\x89" else "image/jpeg"
         print(f"離線試批：{args.qid}　模型={args.model}　票數={args.votes}")
-        agg = grade_record(key, rubrics, args.qid, data, mime, "", args.votes, args.model)
+        agg = grade_record(rubrics, args.qid, data, mime, "", args.votes, args.model)
         print(json.dumps({k: v for k, v in agg.items() if k != "_usage"}, ensure_ascii=False, indent=2))
         u = agg.get("_usage", [])
         tin = sum(x.get("prompt_tokens", 0) for x in u); tout = sum(x.get("completion_tokens", 0) for x in u)
@@ -278,7 +232,7 @@ def main():
             if not img:
                 print(f"[{i}/{len(todo)}] {who} 取圖失敗"); continue
             try:
-                t = transcribe_once(key, base64.b64encode(img).decode(), mime, args.model)
+                t = transcribe_once(base64.b64encode(img).decode(), mime, args.model)
                 updates.append({"fileId": fid, "transcript": t})
                 print(f"[{i}/{len(todo)}] {who} ✓ {t[:36].replace(chr(10),' ')}")
             except Exception as e:
@@ -309,7 +263,7 @@ def main():
         if not img:
             return (i, who, qid, fid, None, "取圖失敗")
         try:
-            agg = grade_record(key, rubrics, qid, img, mime, x.get("最後答案", ""),
+            agg = grade_record(rubrics, qid, img, mime, x.get("最後答案", ""),
                                args.votes, args.model)
         except Exception as e:
             return (i, who, qid, fid, None, f"批改例外：{e}")

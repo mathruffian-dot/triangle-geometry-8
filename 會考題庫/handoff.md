@@ -1093,3 +1093,72 @@ python scripts/make_essay_solution.py --ids G0813-N1 G0813-N2 --title "卷名" -
 - 任務 `MathQuizAutoGrade_HL110T3`：14:10 觸發，`--until 15:10`，**未加 `--apply`**（AI 批完不自動放行，等老師覆核）。
 - log：`會考題庫/auto_grade_20260914.log`；卷名「翰林模擬會考 110年第3次（第1~4冊）｜科資班」。
 - 13:18 已用 `--once` 測過能讀到後端（當時 0 份）。考完記得 `Unregister-ScheduledTask -TaskName 'MathQuizAutoGrade_HL110T3' -Confirm:$false`。
+
+### ✅ 2026-09-23 AI 批改可切換供應商（新增 llm.py）＋ 批註吸附空白處
+
+**為什麼**：老師問「能不能改用 opencode-go 方案的 deepseek-v4.1-flash，一定要 luna 嗎」。
+實測後確認可以，而且比 luna 更好接（luna 在 opencode-go 上走 Responses API，反而要改寫）。
+但換模型不能只改名字——舊程式的推理判斷是寫死的字串前綴，`deepseek-*` 不符合會走「非推理」
+分支（`max_tokens=1200`），推理模型會把額度燒光、`content` 回空字串。
+
+**做了什麼**
+
+1. **新增 `scripts/llm.py`**：共用的 LLM 呼叫層。端點、金鑰、API 風格、推理參數全部走
+   `config.py`，三支腳本不再各自寫死 `https://api.openai.com/v1/chat/completions`。
+   - `chat_json()` 解析失敗時會明講「疑似被截斷」並附 `finish_reason`，不再是
+     `Expecting value: line 1 column 1` 這種查不出原因的錯。
+   - 支援 `chat`（chat/completions）與 `responses`（Responses API）兩種風格。
+2. **`grade_essays.py`／`make_redpen.py`／`crop_hanlin.py`**：移除各自的 `load_key()`／`API`
+   與字串前綴判斷，改呼叫 `llm`。
+3. **`config.py`**：新增 `grade_api_base`／`grade_api_style`／`grade_api_key_env`／
+   `grade_api_key`／`grade_reasoning`／`grade_extra_headers`，並加了 `LLM_PRESETS`
+   （`python scripts/config.py --preset opencode-go|openai|local-llamacpp` 會印出可貼的片段）。
+4. **`annotate_redpen.py`**：新增「批註吸附空白處」。`note` 會依「下 → 右下 → 右 → 左下…」
+   搜尋（每圈約圖寬 3%，最多 8 圈），移到筆跡比例 ≤ `blank_tol`（預設 0.004）的位置；
+   `--no-snap` 或標註裡的 `"snap": false` 可關閉。原圖逐位元不動的保證不變（`--verify` 仍通過）。
+5. **`data/config.json` 已切到 opencode-go 的 `deepseek-v4.1-flash`**；金鑰放 `~/.openai.env`
+   的 `OPENCODE_API_KEY`。要改回 OpenAI 見 config.json 裡的 `_ai_說明`。
+
+**踩到的坑（都是實測才發現的）**
+
+- **opencode-go 一定要帶 `x-opencode-session` 與自訂 User-Agent**，否則 400 `MissingSessionID`。
+  已放進 `grade_extra_headers`。
+- **`gpt-5.6-luna` 在 opencode-go 走 `/zen/go/v1/responses`**，打 chat/completions 會回 503
+  `Endpoint is unavailable`（不是壞掉，是路徑不對）。deepseek-v4.1-flash 才是 chat/completions。
+- **推理模型 token 額度不足時 `content` 是空字串**：本地 Qwen3.8-27B 在二級分樣卷上
+  8000 個 token 全花在 thinking、`finish_reason=length`、`content=""`。`llm.chat_json` 現在會
+  直接把這個情形講出來。
+- **圖片沒送出去不會報錯**：`llm.py` 內部統一用 `{"type":"image"}`，第一次忘了在 chat 風格
+  轉成 `image_url`，模型照樣回 200 但說「未提供作答影像」→ 端到端測一定要看 transcript，
+  不能只看有沒有例外。
+- **抓筆跡的門檻不能用固定值**：二級分樣卷是淡鉛筆字，`<145` 抓不到，吸附會以為是空白。
+  改成「以 90 百分位當紙張底色、暗 40 以上才算筆跡」才準。
+
+**實測（官方 `00_非選評分規準PDF/103_N1.pdf` 樣卷 p3~p6，級分 3/2/1/0 已知、非學生個資）**
+
+| 模型／路徑 | 結果 |
+|---|---|
+| opencode-go `deepseek-v4.1-flash`（chat）| **4/4 正確**，信心 0.90~0.98，5~14 秒／題 |
+| opencode-go `gpt-5.6-luna`（chat）| 503，走錯端點 |
+| opencode-go `gpt-5.6-luna`（responses）| p5 判 1 級 ✅，信心 0.94（`grade_api_style=responses` 時可用）|
+| 本地 `qwen3.8-27b`（llama.cpp）| 3/4 正確，p4 因 reasoning 吃光 token 失敗 |
+
+**怎麼驗證的**
+
+```bash
+python scripts/config.py && python scripts/config.py --preset opencode-go
+python scripts/selftest_all.py --quick          # ✓ 全部通過
+# 端到端（不吃後端、不回寫）：
+python scripts/grade_essays.py --demo --qid 103-N1 --img <樣卷頁面.png> --votes 1
+python scripts/annotate_redpen.py --image <原圖.png> --json <標註.json> --out out.png --verify
+```
+
+**給下一個人的提醒**
+
+- `llm.py` 的 `grade_reasoning=auto` 是**猜的**（看模型名稱）。換到沒見過的模型時，
+  先跑一次 `--demo` 確認不是空字串，或直接把 `grade_reasoning` 設 true。
+- opencode-go 是**訂閱制**（$10/月），額度以金額計；DeepSeek V4.1 Flash 目前 4 倍促銷
+  （$60/月）**到 2026-09-27 截止**，之後回 $15/月。尖峰時段（台北 09:00–12:00、14:00–18:00）
+  單價 ×2。實測一次批改約 2,100 in／800~3,000 out，一場 30 人考試約 NT$10。
+- 官方明說 Go 是給 coding agent 用的、會監控異常流量；拿它當批次批改後端算非典型用途。
+

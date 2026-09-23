@@ -87,10 +87,14 @@ python scripts/config.py
 會印出每個值與**來源**。讀取順序：環境變數 `MATH809_*` → `data/config.json`（gitignore） → 內建預設。
 
 管的東西：`submit_url`（GAS 收卷網址）、`quiz_project`／`bank_project`（Cloudflare 專案名）、
-`quiz_site_url`／`bank_site_url`、`openai_env_file`、`grade_model`、`font_files`。
+`quiz_site_url`／`bank_site_url`、`openai_env_file`、`grade_model`、`font_files`、
+以及 **AI 批改的連線設定** `grade_api_base`／`grade_api_style`／`grade_api_key_env`／
+`grade_api_key`／`grade_reasoning`／`grade_extra_headers`（可切 OpenAI／opencode-go／本地 llama.cpp，
+懶得填就跑 `python scripts/config.py --preset opencode-go`）。
 
 ⚠ **不要把新的網址、專案名、字型路徑寫死在腳本裡**——加進 `config.py` 的 `DEFAULTS` 再從那裡取。
 這件事踩過：GAS 網址曾寫死在 8 支腳本、字型路徑寫死在 4 支共 11 行。
+（2026-09-23 也把 AI 端點與金鑰收進去了：三支腳本原本各自寫死 `api.openai.com`，現在統一走 `scripts/llm.py`。）
 
 ### 字型（踩過很多次）
 清單在 `config.json` 的 `font_files`。微軟正黑體**缺這些字**，用了會變 □ 方框：
@@ -108,7 +112,8 @@ python scripts/config.py
 ⚠ **不要改 `~/.claude-skills/` 底下那份**——那是 chezmoi 管理的全域技能，更新會被蓋回去。
 
 ### API key
-`~/.openai.env` 內含 `OPENAI_API_KEY=sk-...`（只有 AI 批改需要）。沒進版控。
+`~/.openai.env` 存 AI 批改用的金鑰（只有批改需要）。沒進版控。
+目前用 opencode-go 方案，金鑰名是 `OPENCODE_API_KEY`；要改回 OpenAI 就填 `OPENAI_API_KEY`（見 `config.py` 的 `LLM_PRESETS`）。
 
 ---
 
@@ -199,6 +204,12 @@ python scripts/make_feedback_pdf.py --quiz "卷名"           # 個人回饋單 
 python scripts/make_review_sheet.py --quiz "卷名"           # 覆核彙整頁
 ```
 ⚠ 一班一網址時卷名會帶「｜<班級>班」後綴，`--quiz` 要用**完整名稱**，且**一個班跑一次**。
+換供應商／模型不用改程式：改 `data/config.json`（或 `MATH809_GRADE_*` 環境變數），
+端點、金鑰、推理參數都走 `scripts/config.py` ＋ `scripts/llm.py`。
+先驗證用 `--demo`（離線試批一張本機圖，不連後端、不回寫）：
+```bash
+python scripts/grade_essays.py --demo --qid 103-N1 --img 樣卷.png --votes 1
+```
 
 ### 部署
 ```bash
@@ -463,6 +474,7 @@ python scripts/selftest_all.py        # 加 --quick 可跳過重建題庫那步
 | **Google 試算表** | 資料庫：作答紀錄／逐題明細／非選作答／出題紀錄 | 同上 | ⚠ 可透過 GAS 讀寫，但**沒有刪除接口** |
 | **Google Drive** | 學生手寫圖與紅筆批改圖（「會考題庫非選作答」資料夾）| 同上 | ⚠ 只能透過 GAS 寫入，agent 無直接刪除權 |
 | **OpenAI API** | AI 批改與紅筆標註定位 | `~/.openai.env`（未進版控）| ✅ 可（有 key 就能用，**會花錢**）|
+| **opencode-go**（現行）| 同上；目前批改走這裡的 `deepseek-v4.1-flash` | `~/.openai.env` 的 `OPENCODE_API_KEY` | ✅ 可（訂閱制，見「花錢的地方」）|
 | Netlify（舊） | 早期站台，**保留不動、不再更新** | 另一個帳號 gameruffian@gmail.com | ❌ 不要碰 |
 
 ### 換一台電腦要手動補的
@@ -476,8 +488,14 @@ python scripts/selftest_all.py        # 加 --quick 可跳過重建題庫那步
 （這件事已經整理過——收卷網址原本寫死在 8 支腳本裡，現在集中在 `scripts/config.py`）。
 
 ### 花錢的地方
-只有 OpenAI：批改一份約 NT$0.3（3 次投票），紅筆標註每份再一次。
-一場 30 人的考試（60 份非選）約 NT$40~60。其餘全部免費（GAS、試算表、Drive、Cloudflare Pages 都在免費額度內）。
+AI 批改（`grade_essays.py` 的 3 次投票 ＋ `make_redpen.py` 的紅筆標註定位）是唯一會花錢的部分。
+2026-09-23 起改走 **opencode-go 訂閱制**（$10/月）的 `deepseek-v4.1-flash`：一次批改約
+2,100 in／800~3,000 out tokens，一場 30 人考試（60 份非選、180 次呼叫）約 NT$10。
+⚠ 額度以金額計，DeepSeek V4.1 Flash 目前 4 倍促銷（$60/月）**到 2026-09-27**，之後回 $15/月；
+尖峰時段（台北 09:00–12:00、14:00–18:00）單價 ×2。
+
+以前的算法（改回 OpenAI 時適用）：批改一份約 NT$0.3（3 次投票），紅筆標註每份再一次，
+一場 30 人的考試約 NT$40~60。其餘全部免費（GAS、試算表、Drive、Cloudflare Pages 都在免費額度內）。
 
 ---
 

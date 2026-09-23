@@ -36,9 +36,42 @@ DEFAULTS = {
     "bank_site_url": "https://math809-bank.pages.dev",
     "openai_env_file": "~/.openai.env",
     "grade_model": "gpt-5.6-luna",
+    # ── 非選 AI 批改的連線設定（同一支腳本可切 OpenAI／opencode-go／本地 llama.cpp）──
+    "grade_api_base": "https://api.openai.com/v1",
+    "grade_api_style": "chat",          # chat＝chat/completions；responses＝Responses API
+    "grade_api_key_env": "OPENAI_API_KEY",
+    "grade_api_key": "",                # 不想用金鑰檔時可直接寫這裡（config.json 已 gitignore）
+    "grade_reasoning": "auto",          # auto｜true｜false：決定用 max_completion_tokens 或 max_tokens
+    "grade_extra_headers": {},          # 例：opencode-go 需要 x-opencode-session
     "font_files": ["C:/Windows/Fonts/msjh.ttc", "C:/Windows/Fonts/msjhbd.ttc",
                    "C:/Windows/Fonts/msjhl.ttc", "C:/Windows/Fonts/mingliu.ttc",
                    "C:/Windows/Fonts/simsun.ttc"],
+}
+
+# 常見供應商的現成組合；用 `python scripts/config.py --preset <名稱>` 印出可直接貼進
+# data/config.json 的片段（環境變數同樣可用，例如 MATH809_GRADE_API_BASE）。
+LLM_PRESETS = {
+    "openai": {
+        "grade_api_base": "https://api.openai.com/v1",
+        "grade_api_style": "chat",
+        "grade_api_key_env": "OPENAI_API_KEY",
+        "grade_model": "gpt-5.6-luna",
+    },
+    "opencode-go": {
+        "grade_api_base": "https://opencode.ai/zen/go/v1",
+        "grade_api_style": "chat",      # gpt-5.6-luna 要改 "responses"（見說明）
+        "grade_api_key_env": "OPENCODE_API_KEY",
+        "grade_model": "deepseek-v4.1-flash",
+        "grade_extra_headers": {"x-opencode-session": "math809-grade"},
+    },
+    "local-llamacpp": {
+        "grade_api_base": "http://127.0.0.1:8080/v1",
+        "grade_api_style": "chat",
+        "grade_api_key_env": "MATH809_LOCAL_KEY",
+        "grade_api_key": "none",
+        "grade_model": "qwen3.8-27b",
+        "grade_reasoning": "true",
+    },
 }
 
 # 這幾個值換人一定要改，還停在內建預設就代表「資料會進到原作者的試算表／站台」
@@ -106,13 +139,29 @@ def describe() -> str:
         val = get(k)
         if k == "submit_url" and val:
             val = val[:52] + "…" + val[-18:]
-        lines.append(f"  {k:<16} {val}   ← {src}")
+        if k == "grade_api_key" and val:
+            val = str(val)[:6] + "…（已設定）"
+        lines.append(f"  {k:<20} {val}   ← {src}")
     return "\n".join(lines)
 
 
 if __name__ == "__main__":
     import sys
     sys.stdout.reconfigure(encoding="utf-8")
+    if len(sys.argv) >= 3 and sys.argv[1] == "--preset":
+        name = sys.argv[2]
+        if name not in LLM_PRESETS:
+            print(f"沒有這個預設組合：{name}；可用：{'、'.join(LLM_PRESETS)}")
+            raise SystemExit(1)
+        print(f"# 把下列片段併進 data/config.json（{name}）")
+        print(json.dumps(LLM_PRESETS[name], ensure_ascii=False, indent=2))
+        if name == "opencode-go":
+            print("# 註：opencode-go 上的 gpt-5.6-luna 走 Responses API，"
+                  'grade_api_style 要改成 "responses"；\n'
+                  "#     deepseek-v4.1-flash 走 chat/completions，維持 \"chat\" 即可。\n"
+                  "# 註：opencode-go 的金鑰在 opencode 的 auth.json，"
+                  '可設 OPENCODE_API_KEY 或把值填進 grade_api_key。')
+        raise SystemExit(0)
     print(f"設定檔：{CONFIG_FILE}（{'存在' if CONFIG_FILE.exists() else '不存在，使用內建預設值'}）")
     print(describe())
     print()

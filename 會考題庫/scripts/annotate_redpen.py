@@ -23,6 +23,7 @@ annotate_redpen.py — 程式化「紅筆批改」標註器
   circle     紅色圈選（ellipse 橢圓 或 rect 圓角方框），圈住有問題的區域
   underline  紅色底線（wave 波浪 / line 直線 / double 雙線）
   note       紅色中文批註（微軟正黑體；白色描邊 + 半透明白底，壓在手寫字上也看得清）
+             ⚠ 預設會「吸附到附近沒有筆跡的空白處」（見下方），避免遮住學生字跡
   score      右上角分數印章（例如 2/3，紅圈圈起來，微微傾斜像蓋章）
   arrow      紅色引線箭頭（把批註連到對應位置，非必要但很好用）
   solution   「續寫解答」區塊：畫在原圖**下方延伸出來的白區**，讓老師接著學生的思路把解答補完
@@ -41,6 +42,14 @@ JSON 格式（list of dict，座標皆為相對值 0~1）
 
 共用可選欄位：color（"#E03131" 或 [r,g,b]）、width（筆畫粗細倍率，預設 1.0）、seed（手繪抖動亂數種子）
 
+批註吸附（note）
+----------------
+AI 給的座標常常落在學生字跡上，違反「批註寫在空白處」。本腳本會把 note 的矩形
+在附近（每圈約圖寬 3.5%，最多 6 圈）依「下 → 右下 → 右 → 左下 → 左上…」搜尋，
+移到第一個筆跡比例 ≤ blank_tol（預設 0.010）的位置；找不到更好的就維持原位。
+可用標註欄位關閉或調整：{"type":"note", ..., "snap": false, "blank_tol": 0.02}
+或整體關閉：--no-snap
+
 用法
 ----
   python annotate_redpen.py --image 原圖.jpg --json 標註.json --out 成品.png
@@ -48,6 +57,7 @@ JSON 格式（list of dict，座標皆為相對值 0~1）
   python annotate_redpen.py --image 原圖.jpg --json-str '[{"type":"check","at":[0.5,0.5]}]' --out 成品.png
 
   可選：--overlay-out 疊圖層.png   （只輸出透明紅筆層，證明原圖沒被動過）
+  可選：--no-snap                  （關閉批註吸附空白處）
 """
 
 from __future__ import annotations
@@ -339,6 +349,28 @@ def quad_bezier(p0, p1, p2, n=48):
 # 主體
 # --------------------------------------------------------------------------
 
+def build_ink_mask(base_img, W, H, target_w=720):
+    """把原圖縮到約 target_w 寬，回傳「哪裡有筆跡」的布林遮罩與縮放倍率。
+
+    門檻採「相對背景」而非固定值：先以 90 百分位當作紙張底色，比底色暗 40 以上
+    才算筆跡。這樣淺鉛筆、淡墨水的字也抓得到（固定門檻會漏掉）。
+    縮圖只是為了快（找空白區不需要原解析度）。沒有 numpy 就回傳 (None, 1.0)，
+    呼叫端會自動停用吸附功能（維持舊行為）。
+    """
+    try:
+        import numpy as np
+    except Exception:
+        return None, 1.0
+    scale = max(1.0, W / float(target_w))
+    small = base_img.convert("L")
+    if scale > 1:
+        small = small.resize((max(1, int(W / scale)), max(1, int(H / scale))), Image.BILINEAR)
+    a = np.asarray(small, dtype=np.uint8)
+    bg = float(np.percentile(a, 90))
+    thr = min(200.0, bg - 40.0)
+    return (a < thr), scale
+
+
 class RedPenAnnotator:
     """在透明圖層上畫紅筆標記，最後以正確 alpha 合成疊回原圖。"""
 
@@ -360,6 +392,62 @@ class RedPenAnnotator:
         # 基準筆畫粗細：以圖寬為準，1x 約為寬度的 1/280（2048px → 約 7.3px）
         self.pen = self.W * self.ss / 280.0 * pen_scale
         self.color = RED
+        self._ink = None          # 筆跡遮罩快取（延遲計算）
+        self.snap_log = []        # 吸附紀錄，供 --verify 之外的人工檢查
+
+    # ---- 空白區吸附：批註只能壓在沒有字的地方 ----
+    def _mask(self):
+        if self._ink is None:
+            self._ink = build_ink_mask(self.base, self.W, self.H)
+        return self._ink
+
+    def ink_ratio(self, box_px):
+        """回傳 box（超取樣座標 x0,y0,x1,y1）內的筆跡比例 0~1。"""
+        mask, scale = self._mask()
+        if mask is None:
+            return 0.0
+        ss = self.ss
+        h, w = mask.shape
+        x0 = max(0, min(w, int(box_px[0] / ss / scale)))
+        x1 = max(0, min(w, int(math.ceil(box_px[2] / ss / scale))))
+        y0 = max(0, min(h, int(box_px[1] / ss / scale)))
+        y1 = max(0, min(h, int(math.ceil(box_px[3] / ss / scale))))
+        if x1 <= x0 or y1 <= y0:
+            return 1.0
+        return float(mask[y0:y1, x0:x1].mean())
+
+    def snap_to_blank(self, ox, oy, tw, th, tol=0.004, rings=8):
+        """把批註矩形移到附近最空的位置。
+
+        優先往下（紙張下方通常最空），再依序右下、右、左下、左上…。
+        搜尋半徑每圈約圖寬的 3%。回傳 (ox, oy, ratio, moved)。
+        """
+        mask, _ = self._mask()
+        if mask is None:
+            return ox, oy, 0.0, False
+        # 只考慮原圖範圍：不要被推到下方 solution 的延伸白區
+        CW, CH = self.W * self.ss, self.H * self.ss
+        sx = sy = self.U(0.030)
+        dirs = [(0, 1), (1, 1), (1, 0), (-1, 1), (1, -1), (-1, 0), (-1, -1), (0, -1)]
+
+        def clamp(x, y):
+            x = min(max(x, 0), max(0.0, CW - tw))
+            y = min(max(y, 0), max(0.0, CH - th))
+            return x, y
+
+        best = None
+        for r in range(0, rings + 1):
+            for dx, dy in ([(0, 0)] if r == 0 else dirs):
+                x, y = clamp(ox + dx * r * sx, oy + dy * r * sy)
+                ratio = self.ink_ratio((x, y, x + tw, y + th))
+                if ratio <= tol:
+                    moved = abs(x - ox) > 1 or abs(y - oy) > 1
+                    return x, y, ratio, moved
+                if best is None or ratio < best[2]:
+                    best = (x, y, ratio)
+        x, y, ratio = best
+        moved = abs(x - ox) > 1 or abs(y - oy) > 1
+        return x, y, ratio, moved
 
     # ---- 座標換算 ----
     def P(self, xy):
@@ -524,6 +612,20 @@ class RedPenAnnotator:
         margin = fs * 0.75            # 左側紅槓 + 面板留白
         ox = min(max(ox, margin), max(margin, CW - tw - pad_ - fs * 0.3))
         oy = min(max(oy, pad_), max(pad_, CH - th - pad_))
+
+        # 批註不得壓在學生字跡上 → 吸附到附近最空的位置（a["snap"]=false 可關閉）
+        if a.get("snap", True):
+            nx, ny, ratio, moved = self.snap_to_blank(
+                ox, oy, tw, th, tol=float(a.get("blank_tol", 0.004)))
+            if moved:
+                self.snap_log.append({"text": text.split("\n")[0][:24],
+                                      "at": [round(nx / CW, 3), round(ny / CH, 3)],
+                                      "筆跡比例": round(ratio, 4)})
+                print(f"  [吸附] 批註「{text.split(chr(10))[0][:16]}」"
+                      f"移到空白處（筆跡比例 {ratio:.3f}）", file=sys.stderr)
+            ox, oy = nx, ny
+            ox = min(max(ox, margin), max(margin, CW - tw - pad_ - fs * 0.3))
+            oy = min(max(oy, pad_), max(pad_, CH - th - pad_))
 
         if a.get("panel", True):
             pad = fs * 0.34
@@ -779,6 +881,8 @@ def main(argv=None):
     ap.add_argument("--pen-scale", type=float, default=1.0, help="筆畫粗細倍率，預設 1.0")
     ap.add_argument("--supersample", type=int, default=SUPERSAMPLE, help="超取樣倍率，預設 3")
     ap.add_argument("--verify", action="store_true", help="驗證未覆蓋區域與原圖是否逐位元相同")
+    ap.add_argument("--no-snap", action="store_true",
+                    help="關閉『批註吸附空白處』（預設會把 note 移到附近沒有筆跡的位置）")
     args = ap.parse_args(argv)
 
     if args.demo:
@@ -790,6 +894,10 @@ def main(argv=None):
         annotations = json.loads(args.json_str)
     if isinstance(annotations, dict):
         annotations = annotations.get("annotations", [])
+    if args.no_snap:
+        for a in annotations:
+            if str(a.get("type", "")).lower() in ("note", "text"):
+                a["snap"] = False
 
     base = Image.open(args.image)
     print(f"原圖：{args.image}  尺寸 {base.size[0]}x{base.size[1]}  模式 {base.mode}")
@@ -812,6 +920,11 @@ def main(argv=None):
     os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
     result.save(args.out, "PNG")
     print(f"已輸出：{args.out}（{len(annotations)} 筆標註）")
+
+    if ann.snap_log:
+        print("--- 批註吸附到空白處 ---")
+        for s in ann.snap_log:
+            print(f"  {s['text']} → {s['at']}（該處筆跡比例 {s['筆跡比例']}）")
 
     if args.overlay_out:
         prem, alp = ann.get_overlay()

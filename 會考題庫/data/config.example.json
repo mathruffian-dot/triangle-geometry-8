@@ -12,8 +12,26 @@
   "bank_site_url": "https://你的-bank.pages.dev",
 
   "openai_env_file": "~/.openai.env",
-  "_openai_說明": "存放 OPENAI_API_KEY=sk-... 的檔案路徑。也可以直接設環境變數 OPENAI_API_KEY。",
+  "_openai_說明": "存放 API 金鑰的檔案路徑（預設找 OPENAI_API_KEY=sk-...）。也可以直接設環境變數。",
 
   "grade_model": "gpt-5.6-luna",
-  "_model_說明": "非選 AI 批改用的模型。gpt-5.x／o 系列是推理型（用 max_completion_tokens、不吃 temperature）。"
+  "_model_說明": "非選 AI 批改用的模型。",
+
+  "grade_api_base": "https://api.openai.com/v1",
+  "grade_api_style": "chat",
+  "_api_說明": "grade_api_style：chat＝/chat/completions；responses＝Responses API。OpenAI 用 chat；opencode-go 的 gpt-5.6-luna 要改 responses，deepseek-v4.1-flash 維持 chat。",
+
+  "grade_api_key_env": "OPENAI_API_KEY",
+  "_key_env_說明": "金鑰的環境變數名稱。opencode-go 用 OPENCODE_API_KEY。",
+
+  "grade_api_key": "",
+  "_api_key_說明": "不想用金鑰檔時可直接把金鑰填這裡（config.json 已 gitignore）。留空則讀 grade_api_key_env 或 openai_env_file。",
+
+  "grade_reasoning": "auto",
+  "_reasoning_說明": "auto＝依模型名稱猜（gpt-5／deepseek／qwen…視為推理型，用 max_completion_tokens）；要強制就填 true／false。",
+
+  "grade_extra_headers": {},
+  "_headers_說明": "額外 HTTP 標頭。opencode-go 需要 {\"x-opencode-session\": \"math809-grade\"}，否則會回 400 MissingSessionID。",
+
+  "_preset_用法": "懶得自己填就跑 `python scripts/config.py --preset openai|opencode-go|local-llamacpp`，把印出的片段貼進來。"
 }

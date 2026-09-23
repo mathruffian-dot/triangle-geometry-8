@@ -25,25 +25,13 @@ import requests
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from config import SUBMIT_URL as _CFG_SUBMIT_URL, get as _cfg  # noqa: E402  集中設定
+from llm import chat_json, image_messages, is_reasoning  # noqa: E402  共用的 LLM 呼叫層
 ROOT = HERE.parent
 RUBRICS = ROOT / "data" / "essay_rubrics.json"
 ANNOTATOR = HERE / "annotate_redpen.py"
 
 DEFAULT_URL = os.environ.get("KAOKAO_SUBMIT_URL", _CFG_SUBMIT_URL())
-MODEL = os.environ.get("KAOKAO_GRADE_MODEL", "gpt-5.6-luna")
-API = "https://api.openai.com/v1/chat/completions"
-
-
-def load_key():
-    p = Path.home() / ".openai.env"
-    if p.exists():
-        for line in p.read_text(encoding="utf-8").splitlines():
-            if line.strip().startswith("OPENAI_API_KEY"):
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
-    k = os.environ.get("OPENAI_API_KEY")
-    if k:
-        return k
-    sys.exit("找不到 OPENAI_API_KEY（請確認 ~/.openai.env）")
+MODEL = os.environ.get("KAOKAO_GRADE_MODEL") or _cfg("grade_model")
 
 
 SYS = ("你是資深國中數學老師，正在用紅筆批改學生手寫作答。"
@@ -122,29 +110,10 @@ def build_prompt(r, lv, reason, transcript):
 只輸出 JSON：{{"annotations":[ ... ]}}"""
 
 
-def ask_annotations(key, img_b64, mime, r, lv, reason, transcript, model):
-    reasoning = any(model.startswith(p) for p in ("gpt-5", "o1", "o3", "o4"))
-    body = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": SYS},
-            {"role": "user", "content": [
-                {"type": "text", "text": build_prompt(r, lv, reason, transcript)},
-                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_b64}"}},
-            ]},
-        ],
-        "response_format": {"type": "json_object"},
-    }
-    if reasoning:
-        body["max_completion_tokens"] = 9000      # 續寫解答是整段文字，比純標註耗 token
-    else:
-        body["max_tokens"] = 3500
-        body["temperature"] = 0.3
-    resp = requests.post(API, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                         json=body, timeout=240)
-    resp.raise_for_status()
-    data = json.loads(resp.json()["choices"][0]["message"]["content"])
-    return data.get("annotations", [])
+def ask_annotations(img_b64, mime, r, lv, reason, transcript, model):
+    budget = 9000 if is_reasoning(model) else 3500   # 續寫解答是整段文字，比純標註耗 token
+    msgs = image_messages(SYS, build_prompt(r, lv, reason, transcript), img_b64, mime)
+    return chat_json(model, msgs, max_tokens=budget, temperature=0.3).get("annotations", [])
 
 
 def sanitize(anns, lv):
@@ -242,7 +211,6 @@ def main():
     ap.add_argument("--no-upload", action="store_true", help="只存本機，不上傳到 Drive")
     args = ap.parse_args()
 
-    key = load_key()
     rubrics = json.load(open(RUBRICS, encoding="utf-8"))["questions"]
     outdir = Path(args.outdir); outdir.mkdir(parents=True, exist_ok=True)
 
@@ -292,7 +260,7 @@ def main():
                 print(f"[{i}/{len(recs)}] {who} {qid} 取圖失敗"); failed.append(f"{who} {qid} 取圖失敗")
             return
         try:
-            anns = ask_annotations(key, base64.b64encode(img).decode(), mime,
+            anns = ask_annotations(base64.b64encode(img).decode(), mime,
                                    rubrics.get(qid), lv, reason, str(x.get("AI辨識內容", "")), args.model)
             anns = sanitize(anns, lv)
             with _render_lock:
