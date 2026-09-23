@@ -1083,10 +1083,10 @@ python scripts/make_essay_solution.py --ids G0813-N1 G0813-N2 --title "卷名" -
   舊卷 HL2／HL112／HL113 的題幹若在頁首則不受影響，沒有重裁。
 - 題庫現況：539 題（官方 358＋翰林 135＋自編 46）、評分規準 42 題。
 - ✅ **已部署**（2026-09-14）：quiz_site 與 bank_site 皆上線，CDN 已確認切到新版。
-  ⚠ 部署踩坑：wrangler 一度被登入成學校帳號 `mathruffian@gwjh.hc.edu.tw`、又一次誤登 `gameruffian@gmail.com`，都回 `Authentication error [code: 10000]`。
-  math809 所有站台都在 **`mathruffian@gmail.com`** 的 Cloudflare 帳號（account b87e54…）。
+  ⚠ 部署踩坑：wrangler 一度被登入成學校帳號、又一次誤登另一個 Google 帳號，都回 `Authentication error [code: 10000]`。
+  math809 所有站台都在 **主要 Google 帳號** 的 Cloudflare 帳號（account ID 見 Obsidian）。
   `wrangler login` 授權頁會沿用瀏覽器目前登入的 Cloudflare 帳號，且只等 2 分鐘；
-  要先在 dash.cloudflare.com 登出別的帳號、登入 mathruffian@gmail.com，再把授權網址貼到**同一個瀏覽器視窗**按 Allow。
+  要先在 dash.cloudflare.com 登出別的帳號、登入主要 Google 帳號，再把授權網址貼到**同一個瀏覽器視窗**按 Allow。
   部署前可用 `npx wrangler whoami` 確認帳號。
 
 ### ⏳ 2026-09-14 HL110T3 考試輪詢批改（排程）

@@ -468,14 +468,14 @@ python scripts/selftest_all.py        # 加 --quick 可跳過重建題庫那步
 
 | 服務 | 用途 | 帳號／位置 | agent 能不能自己來 |
 |---|---|---|---|
-| **GitHub** | 版控備份 `mathruffian-dot/triangle-geometry-8`（私有）| `mathruffian-dot` | ✅ 可（gh CLI 已登入）|
-| **Cloudflare Pages** | 八個站台：quiz／bank／review1~6 | mathruffian@gmail.com | ✅ 可（wrangler 已登入）|
-| **Google Apps Script** | 後端「會考題庫收卷 v1」，`apps_script/Code.gs` 的線上版 | mathruffian@gmail.com | ❌ **只有老師能重新部署** |
+| **GitHub** | 版控備份 `mathruffian-dot/triangle-geometry-8`（**公開**，勿放試算表 ID、帳號與學生資料）| `mathruffian-dot` | ✅ 可（gh CLI 已登入）|
+| **Cloudflare Pages** | 八個站台：quiz／bank／review1~6 | 帳號見 Obsidian 系統文件 | ✅ 可（wrangler 已登入）|
+| **Google Apps Script** | 後端「會考題庫收卷 v1」，`apps_script/Code.gs` 的線上版 | 帳號見 Obsidian 系統文件 | ❌ **只有老師能重新部署** |
 | **Google 試算表** | 資料庫：作答紀錄／逐題明細／非選作答／出題紀錄 | 同上 | ⚠ 可透過 GAS 讀寫，但**沒有刪除接口** |
 | **Google Drive** | 學生手寫圖與紅筆批改圖（「會考題庫非選作答」資料夾）| 同上 | ⚠ 只能透過 GAS 寫入，agent 無直接刪除權 |
 | **OpenAI API** | AI 批改與紅筆標註定位 | `~/.openai.env`（未進版控）| ✅ 可（有 key 就能用，**會花錢**）|
 | **opencode-go**（現行）| 同上；目前批改走這裡的 `deepseek-v4.1-flash` | `~/.openai.env` 的 `OPENCODE_API_KEY` | ✅ 可（訂閱制，見「花錢的地方」）|
-| Netlify（舊） | 早期站台，**保留不動、不再更新** | 另一個帳號 gameruffian@gmail.com | ❌ 不要碰 |
+| Netlify（舊） | 早期站台，**保留不動、不再更新** | 另一個 Google 帳號 | ❌ 不要碰 |
 
 ### 換一台電腦要手動補的
 `~/.openai.env`（AI 批改）、`~/.groq_api_key`、`~/.kie.env`。
