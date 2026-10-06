@@ -159,9 +159,17 @@ def main():
         if not did:
             time.sleep(min(args.interval, max(1, (end - dt.datetime.now()).total_seconds())))
 
-    log(f"已到 {args.until}，輪詢結束。最後再確認一次全部放行：")
-    for l in run("apply_ai_grades.py", "--quiz", args.quiz, "--url", args.url):
-        log(f"  {l}")
+    # ⚠ 2026-10-05 修：這段收尾原本「無條件」呼叫 apply_ai_grades，
+    #   等於不管有沒有加 --apply，時間一到就把 AI 級分全部放行給學生看。
+    #   老師當天交代「交給我覆核再放行」，排程也確實沒加 --apply，結果 18 份仍被放行。
+    #   現在收尾一律跟隨 --apply。
+    if args.apply:
+        log(f"已到 {args.until}，輪詢結束。最後再確認一次全部放行：")
+        for l in run("apply_ai_grades.py", "--quiz", args.quiz, "--url", args.url):
+            log(f"  {l}")
+    else:
+        log(f"已到 {args.until}，輪詢結束。未加 --apply，**不放行**；"
+            f"請到覆核頁定分，或自行執行 apply_ai_grades.py。")
     return 0
 
 

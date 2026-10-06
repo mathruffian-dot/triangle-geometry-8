@@ -166,6 +166,47 @@ footer{color:var(--sub);font-size:.78rem;text-align:center;padding:20px}
   body.print-clean .qhead{display:none}
 }
 </style>
+<!-- KaTeX：把詳解裡 $...$ 的數學式排成真正的分數／根號／上下標。
+     用 defer＋onerror 保護：CDN 連不上時整頁照常運作，只是數學式維持純文字。 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+<script>
+// 詳解是純文字，但前端用 innerHTML 塞進去：裡面的數學小於號（如 a+b<a<b）
+// 會被瀏覽器當成 HTML 標籤，整段解答就這樣消失。統一先跳脫再塞。
+// （跳脫成 &lt; 之後，文字節點取回來仍是 "<"，KaTeX 照樣讀得到。）
+window.escH = function (s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+};
+</script>
+<script>
+// 任何時候都可呼叫：把某個節點（或整頁）裡的 $...$ 轉成排版後的數學式。
+// KaTeX 沒載入就直接跳過，不丟錯、不影響作答與交卷。
+window.typesetMath = function (el) {
+  try {
+    if (!window.renderMathInElement) return;
+    renderMathInElement(el || document.body, {
+      delimiters: [{left:'$$', right:'$$', display:true},
+                   {left:'$',  right:'$',  display:false}],
+      throwOnError: false, errorColor: '#111827', ignoredTags: ['script','noscript','style','textarea','pre','code']
+    });
+  } catch (e) { /* 數學式排版失敗不影響頁面其他功能 */ }
+};
+window.addEventListener('load', function () { window.typesetMath(document.body); });
+// 詳解、訂正區、查成績都是事後才塞進 DOM，這裡補排新節點（去抖動 80ms）
+(function () {
+  var q = [], t = null;
+  new MutationObserver(function (ms) {
+    for (var i = 0; i < ms.length; i++)
+      for (var j = 0; j < ms[i].addedNodes.length; j++)
+        if (ms[i].addedNodes[j].nodeType === 1) q.push(ms[i].addedNodes[j]);
+    if (!q.length) return;
+    clearTimeout(t);
+    t = setTimeout(function () { var a = q; q = []; a.forEach(function (n) { window.typesetMath(n); }); }, 80);
+  }).observe(document.documentElement, {childList: true, subtree: true});
+})();
+</script>
 </head>
 <body>
 <header>
@@ -431,7 +472,7 @@ function mfPreset(key, v){   // 年度快選：最近N屆
   page=1; render();
 }
 // 非歷屆來源（模擬卷）的 year 不是年份數字，選單顯示可讀名稱
-const YRLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL112:'翰林模擬 112', HL113:'翰林模擬 113', HL110T3:'翰林模擬 110 第3次'};
+const YRLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL112:'翰林模擬 112', HL113:'翰林模擬 113', HL110T3:'翰林模擬 110 第3次', HL111T3:'翰林模擬 111 第3次', HL112T2:'翰林模擬 112 第2次', HL113T3:'翰林模擬 113 第3次'};
 registerMF('year','mfYear','年度／屆數（可複選）',
   ()=>years.map(y=>({v:y, t:YRLBL[y]||(y+'年')})),
   [{v:'R3',t:'最近3屆'},{v:'R5',t:'最近5屆'},{v:'R10',t:'最近10屆'}]);
@@ -518,8 +559,8 @@ function card(q){
     </div>
     <div class="sol" id="sol-${q.id}">
       <div class="ansline">✅ 答案：${q.answer}</div>
-      <div>${q.solution}</div>
-      ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${q.trap}</div>`:''}
+      <div>${escH(q.solution)}</div>
+      ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${escH(q.trap)}</div>`:''}
     </div>
   </div>`;
 }
@@ -647,8 +688,8 @@ function cardMini(q){
       <label class="pickbox"><input type="checkbox" ${picked.has(q.id)?'checked':''} onchange="togglePick('${q.id}',this.checked)">選入補強卷</label>
     </div>
     <div class="sol" id="msol-${uid}">
-      <div class="ansline">✅ 答案：${q.answer}</div><div>${q.solution}</div>
-      ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${q.trap}</div>`:''}
+      <div class="ansline">✅ 答案：${q.answer}</div><div>${escH(q.solution)}</div>
+      ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${escH(q.trap)}</div>`:''}
     </div>
   </div>`;
 }
@@ -713,8 +754,8 @@ function stuCard(q){
       <label class="pickbox"><input type="checkbox" ${picked.has(q.id)?'checked':''} onchange="togglePick('${q.id}',this.checked)">選入補強卷</label>
     </div>
     <div class="sol" id="ssol-${q.id}">
-      <div class="ansline">✅ 答案：${q.answer}</div><div>${q.solution}</div>
-      ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${q.trap}</div>`:''}
+      <div class="ansline">✅ 答案：${q.answer}</div><div>${escH(q.solution)}</div>
+      ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${escH(q.trap)}</div>`:''}
     </div>
     <div id="srec-m-${q.id}" style="display:none;background:var(--blue-bg);border-radius:10px;padding:8px 12px;margin-top:8px"></div>
     <div id="srec-s-${q.id}" style="display:none;background:var(--green-bg);border-radius:10px;padding:8px 12px;margin-top:8px"></div>
@@ -817,8 +858,8 @@ function analyze(){
           <button class="btn btn-ghost" onclick="miniSolQ('${qid}',this)">📖 本題詳解</button>
         </div>
         <div class="sol" id="wsol-${qid}">
-          <div class="ansline">✅ 答案：${q.answer}</div><div>${q.solution}</div>
-          ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${q.trap}</div>`:''}
+          <div class="ansline">✅ 答案：${q.answer}</div><div>${escH(q.solution)}</div>
+          ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${escH(q.trap)}</div>`:''}
         </div>
         <div id="rec-m-${qid}" style="display:none;background:var(--blue-bg);border-radius:10px;padding:8px 12px;margin-top:8px"></div>
         <div id="rec-s-${qid}" style="display:none;background:var(--green-bg);border-radius:10px;padding:8px 12px;margin-top:8px"></div>
@@ -1218,8 +1259,8 @@ function conceptQHtml(ci, qi){
     ${['A','B','C','D'].map((L,k)=>`<button class="copt" onclick="cAnswer(${ci},${qi},'${L}',this)">(${L}) ${q.options[k]}</button>`).join('')}
     <div class="cfeedback" id="cfb-${ci}-${qi}"></div>
     <div class="sol" id="csol-${ci}-${qi}">
-      <div class="ansline">✅ 答案：(${q.answer})</div><div>${q.solution}</div>
-      ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${q.trap}</div>`:''}
+      <div class="ansline">✅ 答案：(${q.answer})</div><div>${escH(q.solution)}</div>
+      ${q.trap?`<div class="trap"><b>⚠ 易錯提醒：</b>${escH(q.trap)}</div>`:''}
     </div>
   </div>`;
 }
@@ -1347,6 +1388,47 @@ table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-alig
 .wrongnav{margin-top:12px;font-size:.95rem;background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:10px 12px}
 .wrongnav a{color:var(--red);font-weight:800;text-decoration:none;border-bottom:1px dashed;margin-right:12px;white-space:nowrap}
 </style>
+<!-- KaTeX：把詳解裡 $...$ 的數學式排成真正的分數／根號／上下標。
+     用 defer＋onerror 保護：CDN 連不上時整頁照常運作，只是數學式維持純文字。 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+<script>
+// 詳解是純文字，但前端用 innerHTML 塞進去：裡面的數學小於號（如 a+b<a<b）
+// 會被瀏覽器當成 HTML 標籤，整段解答就這樣消失。統一先跳脫再塞。
+// （跳脫成 &lt; 之後，文字節點取回來仍是 "<"，KaTeX 照樣讀得到。）
+window.escH = function (s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+};
+</script>
+<script>
+// 任何時候都可呼叫：把某個節點（或整頁）裡的 $...$ 轉成排版後的數學式。
+// KaTeX 沒載入就直接跳過，不丟錯、不影響作答與交卷。
+window.typesetMath = function (el) {
+  try {
+    if (!window.renderMathInElement) return;
+    renderMathInElement(el || document.body, {
+      delimiters: [{left:'$$', right:'$$', display:true},
+                   {left:'$',  right:'$',  display:false}],
+      throwOnError: false, errorColor: '#111827', ignoredTags: ['script','noscript','style','textarea','pre','code']
+    });
+  } catch (e) { /* 數學式排版失敗不影響頁面其他功能 */ }
+};
+window.addEventListener('load', function () { window.typesetMath(document.body); });
+// 詳解、訂正區、查成績都是事後才塞進 DOM，這裡補排新節點（去抖動 80ms）
+(function () {
+  var q = [], t = null;
+  new MutationObserver(function (ms) {
+    for (var i = 0; i < ms.length; i++)
+      for (var j = 0; j < ms[i].addedNodes.length; j++)
+        if (ms[i].addedNodes[j].nodeType === 1) q.push(ms[i].addedNodes[j]);
+    if (!q.length) return;
+    clearTimeout(t);
+    t = setTimeout(function () { var a = q; q = []; a.forEach(function (n) { window.typesetMath(n); }); }, 80);
+  }).observe(document.documentElement, {childList: true, subtree: true});
+})();
+</script>
 </head>
 <body>
 <header><h1>📝 __TITLE__</h1>__PRINTPDF__</header>
@@ -1416,7 +1498,7 @@ document.getElementById('totalQ').textContent = ITEMS.length;
 document.getElementById('doneT').textContent = ITEMS.length;
 
 // 非歷屆來源（模擬卷）的題目標示：year 不是年份數字，需另給可讀名稱
-const SRCLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL112:'翰林模擬 112', HL113:'翰林模擬 113', HL110T3:'翰林模擬 110 第3次'};
+const SRCLBL = {HL1:'翰林模擬 110', HL2:'翰林模擬 111', HL112:'翰林模擬 112', HL113:'翰林模擬 113', HL110T3:'翰林模擬 110 第3次', HL111T3:'翰林模擬 111 第3次', HL112T2:'翰林模擬 112 第2次', HL113T3:'翰林模擬 113 第3次'};
 
 document.getElementById('qwrap').innerHTML = ITEMS.map((q,i)=>`
   <div class="qcard" id="q-${q.id}">
@@ -2064,7 +2146,7 @@ function qHtml(ci,qi){
     <div style="margin:6px 0">${q.stem}</div>
     ${['A','B','C','D'].map((L,k)=>`<button class="copt" onclick="pick(${qi},'${L}',this)">(${L}) ${q.options[k]}</button>`).join('')}
     <div class="cfb" id="fb-${qi}"></div>
-    <div class="sol" id="sol-${qi}"><div>✅ 答案：(${q.answer})</div><div>${q.solution}</div>${q.trap?`<div class="trap">⚠ ${q.trap}</div>`:''}</div></div>`;
+    <div class="sol" id="sol-${qi}"><div>✅ 答案：(${q.answer})</div><div>${escH(q.solution)}</div>${q.trap?`<div class="trap">⚠ ${escH(q.trap)}</div>`:''}</div></div>`;
 }
 function pick(qi,L,btn){
   const c = DB[cur.i], q = c.questions[qi], box = el('q-'+qi);

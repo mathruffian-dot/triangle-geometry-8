@@ -66,6 +66,7 @@ import argparse
 import json
 import math
 import os
+import re
 import random
 import sys
 from pathlib import Path
@@ -249,17 +250,94 @@ def math_img(latex, fs_px, color=RED):
         matplotlib.use("Agg")
         from matplotlib import mathtext
         from matplotlib.font_manager import FontProperties
+        prop = FontProperties(size=max(6.0, fs_px))
         buf = io.BytesIO()
         mathtext.math_to_image("$" + latex + "$", buf,
-                               prop=FontProperties(size=max(6.0, fs_px)),
-                               dpi=72, format="png", color="#%02X%02X%02X" % tuple(color))
+                               prop=prop, dpi=72, format="png",
+                               color="#%02X%02X%02X" % tuple(color))
         buf.seek(0)
         im = Image.open(buf).convert("RGBA")
+        # depth＝基線以下的高度。沒有它就只能把圖「外框置中」，分數／下標會把整個式子
+        # 往上頂，看起來比同一行的中文字高一截（老師回報「應該再往下一點點」）。
+        try:
+            _, _, depth, _, _ = mathtext.MathTextParser("path").parse(
+                "$" + latex + "$", dpi=72, prop=prop)
+        except Exception:
+            depth = 0.0
+        im.info["depth"] = float(depth)
     except Exception as e:
         print(f"  [警告] 數學式渲染失敗 {latex!r}：{e}", file=sys.stderr)
         im = None
     _MATH_CACHE[key] = im
     return im
+
+
+# ── LaTeX 修補 ───────────────────────────────────────────────────────────
+# 批改模型寫續寫解答時，數學式應該用 $...$ 包起來、指令要帶反斜線。實測它會飄：
+#   ① $triangle AFE$        → $ 有包但反斜線掉了（畫成斜體英文字）
+#   ② \triangle AFE（沒包 $）→ 當成純文字畫出去，反斜線在正黑體缺字 → 「□triangle」
+# 兩種都讓學生看到亂碼，所以這裡在排版前先自動修補，不能只靠 prompt。
+MATH_CMDS = ("triangle", "angle", "overline", "underline", "frac", "sqrt", "circ",
+             "cong", "sim", "times", "div", "cdot", "pm", "neq", "leq", "geq",
+             "le", "ge", "approx", "perp", "parallel", "therefore", "because",
+             "alpha", "beta", "theta", "pi", "Delta", "left", "right", "mathrm", "text")
+
+# mathtext 仍渲染不出來時的最後退路：換成 Unicode，至少學生讀得懂（絕不印出反斜線）
+LATEX_UNICODE = {
+    "triangle": "△", "angle": "∠", "circ": "°", "cong": "≅", "sim": "～",
+    "times": "×", "div": "÷", "cdot": "·", "pm": "±", "neq": "≠",
+    "leq": "≦", "geq": "≧", "le": "≦", "ge": "≧", "approx": "約",
+    "perp": "⊥", "parallel": "∥", "therefore": "∴", "because": "∵",
+    "sqrt": "√", "alpha": "α", "beta": "β", "theta": "θ", "pi": "π", "Delta": "△",
+}
+_BS = chr(92)
+_BSRE = _BS + _BS            # 正規表示式裡要用跳脫過的反斜線
+
+
+def _add_missing_backslash(expr):
+    """$...$ 內把 `triangle`／`circ` 這類掉了反斜線的指令補回去。"""
+    for c in sorted(MATH_CMDS, key=len, reverse=True):
+        expr = re.sub(r"(?<![" + _BSRE + r"A-Za-z])" + c + r"(?![A-Za-z])", lambda m, c=c: _BS + c, expr)
+    return expr
+
+
+def fix_latex(text):
+    """把模型寫壞的數學式修回「$ 有包、指令有反斜線」的形式。
+
+    2026-10-05 實測到的三種壞法（同一次批改就同時出現）：
+      ① `$\\x00triangle AFE$` 反斜線變成 NUL 之類的控制字元（字型畫不出來 → 方框）
+      ② `$triangle AFE$`      反斜線整個不見（畫成斜體英文字）
+      ③ `\\triangle AFE`       有反斜線但沒用 $ 包（當純文字畫出去 → 方框）
+    """
+    s = str(text)
+    # ① 落單的控制字元幾乎都是被吃掉的反斜線（\n \r \t 是排版用的，不動）
+    s = re.sub(r"[\x00-\x08\x0b\x0e-\x1f]", lambda m: _BS, s)
+    s = re.sub(r"\^\s+(?=" + _BSRE + r"?[A-Za-z0-9{])", "^", s)   # `60^ \circ` → `60^\circ`
+    segs = s.split("$")
+    for i in range(1, len(segs), 2):                 # 奇數索引＝原本就在 $...$ 內
+        segs[i] = _add_missing_backslash(segs[i])
+    # 偶數索引＝$ 外面的文字：若含反斜線指令，把那一整段數學式包進 $...$
+    run = re.compile(r"(?:" + _BSRE + r"[A-Za-z]+|[A-Za-z0-9_^{}=+\-*/().,])"
+                     r"(?:\s*(?:" + _BSRE + r"[A-Za-z]+|[A-Za-z0-9_^{}=+\-*/().,]))*")
+    for i in range(0, len(segs), 2):
+        if _BS not in segs[i]:
+            continue
+        segs[i] = run.sub(lambda m: "$" + m.group(0) + "$" if _BS in m.group(0) else m.group(0),
+                          segs[i])
+    return "$".join(segs)
+
+
+def latex_to_unicode(expr):
+    """渲染失敗時用：把 LaTeX 指令換成 Unicode 符號，並拆掉 \\frac{}{} 與 \\overline{}。"""
+    s = str(expr)
+    s = re.sub(_BSRE + r"frac\s*{([^{}]*)}\s*{([^{}]*)}", r"\1/\2", s)
+    s = re.sub(_BSRE + r"(?:overline|bar|vec|mathrm|text)\s*{([^{}]*)}", r"\1", s)
+    for c, u in sorted(LATEX_UNICODE.items(), key=lambda kv: -len(kv[0])):
+        s = s.replace(_BS + c, u)
+    s = s.replace(_BS + "left", "").replace(_BS + "right", "")
+    s = re.sub(r"\^\s*{([^{}]*)}", r"^\1", s)
+    s = s.replace("^°", "°").replace("^ °", "°")
+    return s.replace(_BS, "").replace("{", "").replace("}", "")
 
 
 def split_math(text):
@@ -275,6 +353,22 @@ def split_math(text):
     return parts
 
 
+def math_y(y, line_h, fs, font, im):
+    """算數學式圖片要貼的 y：讓它的基線和同一行中文字的基線對齊。
+
+    文字是以「字框頂端」畫在 y+(line_h-fs)/2，基線再往下 ascent；
+    數學式圖片的基線則在「圖高 - depth」的位置（depth＝基線以下的下伸部分）。
+    原本兩邊都用外框置中，分數／下標會把式子整個往上頂，看起來比中文字高一截。
+    """
+    top = y + (line_h - fs) / 2
+    try:
+        ascent = font.getmetrics()[0]
+    except Exception:
+        ascent = fs * 0.88
+    depth = float(im.info.get("depth", 0.0)) if hasattr(im, "info") else 0.0
+    return top + ascent - (im.height - depth)
+
+
 def layout_rich(text, font, fs, max_w, draw, color=RED):
     """中文與數學式混排的斷行計算。
 
@@ -282,7 +376,7 @@ def layout_rich(text, font, fs, max_w, draw, color=RED):
     中文可逐字斷行；數學式視為不可切開的一整塊。
     """
     lines = []
-    for para in str(text).split("\n"):
+    for para in fix_latex(text).split("\n"):
         if not para.strip():
             lines.append((fs * 0.6, []))
             continue
@@ -290,8 +384,8 @@ def layout_rich(text, font, fs, max_w, draw, color=RED):
         for kind, seg in split_math(para):
             if kind == "m":
                 im = math_img(seg.strip(), fs, color)
-                if im is None:                       # 渲染失敗 → 當純文字排（至少內容不遺失）
-                    kind, seg = "t", seg
+                if im is None:                       # 渲染失敗 → 退成 Unicode 純文字
+                    kind, seg = "t", latex_to_unicode(seg)
                 else:
                     if cur_w + im.width > max_w and cur:
                         lines.append((cur_h, cur)); cur, cur_w, cur_h = [], 0.0, fs
@@ -641,7 +735,7 @@ class RedPenAnnotator:
                     d.text((x, y + (line_h - fs) / 2), payload, font=font, fill=col + (250,),
                            stroke_width=halo, stroke_fill=(255, 255, 255, HALO_ALPHA))
                 else:
-                    self.overlay.alpha_composite(payload, (int(x), int(y + (line_h - ih) / 2)))
+                    self.overlay.alpha_composite(payload, (int(x), int(math_y(y, line_h, fs, font, payload))))
                 x += iw
             y += line_h + gap
 
@@ -725,7 +819,7 @@ class RedPenAnnotator:
                     # 文字以行高垂直置中（同一行若有分數，文字不會被頂到上緣）
                     d.text((x, y + (line_h - fs) / 2), payload, font=font, fill=col + (248,))
                 else:
-                    self.overlay.alpha_composite(payload, (int(x), int(y + (line_h - h) / 2)))
+                    self.overlay.alpha_composite(payload, (int(x), int(math_y(y, line_h, fs, font, payload))))
                 x += w
             y += line_h + gap
 

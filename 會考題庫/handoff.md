@@ -1094,6 +1094,44 @@ python scripts/make_essay_solution.py --ids G0813-N1 G0813-N2 --title "卷名" -
 - log：`會考題庫/auto_grade_20260914.log`；卷名「翰林模擬會考 110年第3次（第1~4冊）｜科資班」。
 - 13:18 已用 `--once` 測過能讀到後端（當時 0 份）。考完記得 `Unregister-ScheduledTask -TaskName 'MathQuizAutoGrade_HL110T3' -Confirm:$false`。
 
+### ✅ 2026-09-21 翰林 111 第3次模擬卷（第1~4冊，HL111T3 27題），派科資班＋排程自動批改放行
+**來源**：老師從 Downloads 丟三份 PDF（題本／解答篇／非選樣卷說明），已複製到 `00_原始試題PDF/翰林111第3次/`。
+封面：**111 學年度**國中教育會考模擬測驗，1~4冊，條碼 **99061703-31（J3）**。
+⚠ 檔名和 9/14 的 HL110T3 **一字不差**，md5 不同（f564ce61dd vs eb8db57164），靠封面年度＋條碼末碼才分得出來。
+
+**建置**（照 AGENTS.md「新增一份模擬卷」十步走，約 25 分鐘）
+- 前綴 `HL111T3`（比照 `HL110T3`）。`crop_hanlin.py --probe` 定位後切 27 張 → `01_題目圖片/HL111T3/`
+- ⚠ **定位踩坑兩個（已手修 `data/hanlin_layout_HL111T3.json`）**：
+  1. 第 11 頁的非選第 2 題被 AI 標成 `"2"`（會跟選擇第 2 題撞名）→ 改成 `"N2"`。**probe 完一定要看非選那兩頁的標籤**。
+  2. 第 2 題的聯立方程式大括號比題號那行高，切點 0.409 把第一行 `6x－4y＝36` 切到上一張 → 改 0.396。
+     **有「多行式子開頭」的題目，定位點要往上挪**；逐張目視才抓得到。
+- `data/questions_HL111T3.json`：25 選擇＋2 非選，答案與標準答案表逐題比對一致，27 題解法都自行重算。
+  正解分布 A6／B7／C6／D6。
+- `data/essay_rubrics.json` 加 HL111T3-N1（甜甜圈次數分配表：26 種、中位數 42）、N2（府城魚丸：1.5 倍；14 或 16 顆），
+  評分指引逐字取自解答篇；**另從樣卷說明歸納 `common_errors` 與 `alt_paths`**（例：N1 把 9 個數自己的中位數 43 當答案＝0 級；
+  N2 只寫出一個答案＝2 級），讓 AI 批改有真實學生樣態可對照。共 44 題。
+- `build_html.py` 的 `SRCLBL`／`YRLBL` 加 `HL111T3:'翰林模擬 111 第3次'`
+- `data/quizzes.json` 加 `hanlin-111-3`，classes `["kz"]`（沿用翰林系列給科資班）
+  → 卷名（試算表鍵）「**翰林模擬會考 111年第3次（第1~4冊）｜科資班**」
+
+**上線**（兩站都已部署，CDN 以檔案大小確認切換完成）
+- 學生卷：https://math809-quiz.pages.dev/q/hanlin-111-3-kz/ （紙本 PDF：同網址 `print.pdf`）
+- 驗證：`validate.py`（566 題）與 `validate_essay_rubrics.py` 全過、`node --check` 通過、瀏覽器實測 27 張題圖載入、
+  班級 kz 唯讀、100 個選項鈕、2 個手寫畫布＋拍照鈕、紙本連結。測完清 localStorage，**未送任何測試交卷**。
+- 題庫站同步（覆核頁與學生查成績才吃得到新規準）
+
+**排程自動批改（老師下午不在，要求 AI 全部核定發放）**
+- 任務 `MathQuizAutoGrade_HL111T3`：**2026-09-21 14:00 觸發，`--until 15:00 --apply`**
+  （批改→紅筆→AI 級分直接套用為老師覆核級分，學生即可查成績）。執行上限 2 小時、`WakeToRun`、`StartWhenAvailable`。
+- 執行檔 `C:\Python314\python.exe`（12:11 已用它 `--once` 測過，能讀後端，當時 0 份）
+- log：`會考題庫/auto_grade_20260921.log`（已被 gitignore，含學生資料）
+- ⚠ 電腦必須開機；15:00 之後才交的卷不會自動批，要手動補：
+  `python scripts/auto_grade_watch.py --quiz "翰林模擬會考 111年第3次（第1~4冊）｜科資班" --once --apply`
+- 考完記得刪任務：`Unregister-ScheduledTask -TaskName 'MathQuizAutoGrade_HL111T3' -Confirm:$false`
+  （順帶：`MathQuizAutoGrade_HL110T3` 也還在排程器裡，一次性觸發已過期、不會再跑，可一併刪）
+- ⚠ **這批成績是 AI 初評未經人工確認就放行的**，老師回來檢討時建議先抽看信心 <0.7 與 0 級分的份數，
+  可在覆核頁改分（會覆蓋放行值）。
+
 ### ✅ 2026-09-23 AI 批改可切換供應商（新增 llm.py）＋ 批註吸附空白處
 
 **為什麼**：老師問「能不能改用 opencode-go 方案的 deepseek-v4.1-flash，一定要 luna 嗎」。
@@ -1162,3 +1200,110 @@ python scripts/annotate_redpen.py --image <原圖.png> --json <標註.json> --ou
   單價 ×2。實測一次批改約 2,100 in／800~3,000 out，一場 30 人考試約 NT$10。
 - 官方明說 Go 是給 coding agent 用的、會監控異常流量；拿它當批次批改後端算非典型用途。
 
+
+### ✅ 2026-10-05 翰林 113 第3次模擬卷（第1~4冊，HL113T3 27題），派科資班＋排程批改（不自動放行）
+**來源**：`G:\我的雲端硬碟\2026數學809\113_B1_B4\`（題本／解答／非選樣卷），已備份到 `00_原始試題PDF/翰林113第3次/`。
+封面：**113 學年度**，1~4冊，條碼 **99061703-33（J3）**。與既有 `HL113`（113年第1次、1~2冊）不同卷，故前綴 `HL113T3`。
+
+**建置**（照 AGENTS.md 十步走）
+- 27 題全建；答案與標準答案表逐題核對一致，解法自行重算。正解分布 A6／B6／C7／D6。
+- 非選：N1 行車管制燈（(1) 以 x 表示綠燈秒數 97－x；(2) 單位換算＋夾擠不等式求整數 2 秒）、
+  N2 矩形中兩正三角形（(1) SAS 全等；(2) 推得 E 為 AC 中點）。評分指引逐字取自解答篇，
+  另補 `alt_paths` 與 `common_errors`（N1 最常見是速限沒換單位、N2 常見是只證到 ∠ECF＝30° 就停）。規準共 48 題。
+- 題庫現況：620 題（選擇 572＋非選 48）。
+- 派卷 `hanlin-113-3`，classes `["kz"]` → 卷名「翰林模擬會考 113年第3次（第1~4冊）｜科資班」。
+- 學生網址：https://math809-quiz.pages.dev/q/hanlin-113-3-kz/ （紙本 PDF 同網址 `print.pdf`）
+- 驗證：validate 全過、`node --check` 通過、瀏覽器實測 27 張題圖／班級 kz 唯讀／100 個選項鈕／2 畫布＋拍照鈕／紙本連結，
+  測後清 localStorage，**未送測試交卷**。題庫站同步部署（覆核頁要吃得到新規準）。
+
+**⚠ 這次踩到的三個坑（都已處理，值得記住）**
+1. **定位把「非選第2題」標成 `2`**（和 9/21 HL111T3 一模一樣），會與選擇第 2 題撞名 → 手動改成 `N2`。
+   **probe 完必看非選那兩頁**。
+2. **N1 的公式方框被誤判成共用題幹 `stem:1-2`**：若留著，裁切會在方框處截斷，N1 會少掉題目核心的公式。
+   → 從 layout JSON 刪掉該筆。凡是非選頁出現 `stem:`，先確認是不是真的題組題幹。
+3. **Google Drive 把 `data/quizzes.json` 的修改蓋回舊版**（我 13:13 寫入、13:15 檔案時間變成 09-24 00:43，
+   新卷整個不見，建置出來缺這份卷）。其他檔案（questions／essay_rubrics／build_html）沒事。
+   → **寫完 `data/*.json` 後要重讀驗證一次**（這次改成寫入後 sleep 8 秒再讀回確認），否則會白做。
+4. 另外：`build_html.py` 的 `SRCLBL`／`YRLBL` 已被別的 agent 加入 `HL112T2`，我原本的 sed 比對字串過時而靜默失敗
+   （`grep -c` 回 0 才發現）。**sed 改完一定要 grep 驗證**。
+
+**AI 批改供應商：OpenCode 缺金鑰（重要）**
+- `data/config.json` 現在指向 OpenCode（`grade_api_base=https://opencode.ai/zen/go/v1`、
+  `grade_api_key_env=OPENCODE_API_KEY`、model `deepseek-v4.1-flash`），但這台**沒有 `OPENCODE_API_KEY`**，
+  任何走 AI 的腳本（crop_hanlin --probe、grade_essays、make_redpen）都會直接「找不到 API key」而中止。
+- 本次處理：**沒有改 `data/config.json`**（不蓋掉別人的設定），改用環境變數覆寫回 OpenAI：
+  `MATH809_GRADE_API_KEY_ENV=OPENAI_API_KEY`、`MATH809_GRADE_API_BASE=https://api.openai.com/v1`、
+  `MATH809_GRADE_MODEL=gpt-5.6-luna`、`MATH809_GRADE_EXTRA_HEADERS={}`
+- 新增 `scripts/run_auto_grade.cmd`：給工作排程器用的包裝檔，裡面就是上面四個環境變數再呼叫 `auto_grade_watch.py`
+  （排程器不方便帶環境變數）。**OPENCODE_API_KEY 設好之後，把那四行註解掉即可恢復用 OpenCode。**
+
+**排程批改（老師要求：今天交給他覆核再放行）**
+- 任務 `MathQuizAutoGrade_HL113T3`：**2026-10-05 14:00 觸發、`--until 15:00`，⚠ 不帶 `--apply`**
+  → 只做「AI 批改 → 產紅筆圖」，**不套用級分**；學生在老師放行前看到「批改中…」。
+- 老師覆核後放行：math809-bank「✍ 非選覆核」逐份定分，或
+  `python scripts/apply_ai_grades.py --quiz "翰林模擬會考 113年第3次（第1~4冊）｜科資班"`（可加 `--min-conf 0.7`）。
+- 13:14 已用包裝檔 `--once` 實測：連得到後端、顯示「自動放行 否」、當時 0 份。
+- log：`會考題庫/auto_grade_20261005.log`（gitignore 已涵蓋）。
+- 順手刪掉兩個過期任務 `MathQuizAutoGrade_HL110T3`／`_HL111T3`。
+- 考完記得：`Unregister-ScheduledTask -TaskName 'MathQuizAutoGrade_HL113T3' -Confirm:$false`
+
+**⚠ 另外回報**：9/21 的 HL111T3（科資班）那場，`auto_grade_20260921.log` 最後顯示 0 份交卷，
+看起來沒有人線上作答，待老師確認是否改用紙本。
+
+### ✅ 2026-10-05（下午）HL113T3 考試實況、批改引擎換 gpt-6-luna、紅筆 LaTeX 修補、學生端 KaTeX
+**考試結果**：9 人 18 份全批完，老師覆核後 **0 份改分**（AI 與老師判斷一致），非選平均 **3.67/6**
+（N1 行車管制燈、N2 全等證明）。9/21 那場 10 人平均 2.90/6 可對照。
+
+#### 🐛 最嚴重：`--apply` 形同虛設，不該放行的卷被放行了
+- `auto_grade_watch.py` 收尾那段（`--until` 到點後）**無條件**呼叫 `apply_ai_grades.py`，
+  完全不看有沒有加 `--apply`。老師當天交代「交給我覆核再放行」、排程也沒加旗標、log 一路顯示「自動放行 否」，
+  結果 15:00:04 收尾時 18 份仍被全部放行。
+- 已修：收尾改成 `if args.apply:` 才放行，否則印「未加 --apply，**不放行**」。
+  已實測（`--until` 設成一分鐘後跑完整流程）確認放行份數維持 0。
+- 當天用 `reset_review.py --quiz "<卷名>"` 撤回 18 份，AI 級分與紅筆圖都保留，老師再逐份覆核。
+- ⚠ **9/21 那場也是同一個 bug**：即使沒加 `--apply` 也會放行，那批的覆核級分同樣是系統填的。
+
+#### 批改引擎改用 gpt-6-luna（老師指定）
+- `data/config.json`：`grade_model` → `gpt-6-luna`、`grade_api_base` → OpenAI、`grade_api_key_env` → `OPENAI_API_KEY`、
+  清掉 OpenCode 的 `x-opencode-session` 標頭。**舊值**（要換回去時用）：
+  `grade_api_base=https://opencode.ai/zen/go/v1`、`grade_api_key_env=OPENCODE_API_KEY`、`grade_model=deepseek-v4.1-flash`、
+  `grade_extra_headers={"x-opencode-session":"math809-grade"}`。原檔備份在 `backup/config_備份_*.json`。
+- ⚠ **OpenCode 這條路本來就是壞的**：這台沒有 `OPENCODE_API_KEY`，所有走 AI 的腳本（含 `crop_hanlin --probe`）
+  一執行就「找不到 API key」。
+- `scripts/llm.py` 的 `REASONING_HINTS` 補 `gpt-6`：gpt-6 系列只吃 `max_completion_tokens`，
+  沒補之前第一次呼叫就 400。之後 gpt-6.x 也會自動吃對參數。
+- 新增 `scripts/run_auto_grade.cmd`：工作排程器用的包裝檔（排程不方便帶環境變數），
+  裡面設 `MATH809_GRADE_*` 覆寫。OPENCODE 金鑰補好後把那四行註解掉即可。
+- ⚠ 重啟排程踩到：`Stop-ScheduledTask` 只停外層 cmd，裡面的 python 變孤兒 → 一度有**兩個 watcher 同時批同一批資料**。
+  重啟後要用 `Get-CimInstance Win32_Process` 確認只剩一個。
+
+#### 紅筆圖：LaTeX 壞字與基線對齊（學生回報）
+- **根因是反斜線被換成 `\x00`**（模型回傳時壞掉），不是 prompt 沒寫清楚。正黑體畫不出 NUL → 學生看到 `□triangle`。
+  同一批還有另外兩種壞法：`$triangle AFE$`（掉反斜線）、`\triangle AFE`（沒包 `$`）。
+- `annotate_redpen.py` 新增 `fix_latex()`／`latex_to_unicode()`，四層修補：
+  控制字元還原成反斜線 → `$` 內補指令反斜線 → `$` 外的指令自動包起來 → 仍渲染不出就退成 Unicode（△∠°≅）。
+  **絕不讓反斜線直接畫出去。**
+- **基線對齊**：原本文字與數學式各自「外框置中」，分數／下標會把式子往上頂。改用 `MathTextParser.parse()` 取得
+  `depth`（基線以下高度）＋字型 ascent，讓兩者基線對齊（新增 `math_y()`）。
+- 今天 18 份用 `redpen_out/*.json` ＋ Drive 原圖**重畫並重新上傳，零 AI 成本**，`--verify` 全部「原圖逐位元相同」。
+  重畫腳本放在 scratchpad（`regen_redpen.py`），之後要再用可以照抄：`annotate_redpen.py --image <原圖> --json <標註> --out <png>`。
+- ⚠ 自己踩的坑：正規表示式裡的反斜線要用 `_BSRE = chr(92)*2`，`re.sub` 的**取代字串**含 `\u`／單一反斜線會被當成樣板
+  → 一律改用 `lambda m: ...`。
+
+#### 學生端詳解：導入 KaTeX（學生反映數學式不好讀）
+- `build_html.py` 兩個模板（題庫站＋學生卷）加 KaTeX CDN ＋ `window.typesetMath()`，
+  並用 **MutationObserver** 補排「事後才塞進 DOM」的內容（訂正區、查成績、題庫篩選）。
+  CDN 載不到就維持純文字，**不影響作答與交卷**。
+- 新增 `scripts/texify_solutions.py`：把詳解裡的純文字算式轉成 `$...$`。
+  保守策略——只轉「整行都是算式」的行、中文敘述不碰、括號不配對就放棄該行、預設只預覽（要 `--write` 才寫檔）。
+  已套用於 `questions_HL113T3.json`（27 題、19 行）。**其餘 593 題仍是純文字，待分批轉換。**
+- 🐛 **順手修掉既有隱性 bug**：詳解裡的數學小於號（如 `a+b<a<b`）在題庫站被瀏覽器當成 HTML 標籤，
+  **整段解答會消失**，全庫 30 處中招（115-11、113-08、113-25…）。已加 `escH()` 並套用到 6 個注入點。
+  學生卷本來就有 `esc()`，不受影響。
+- 端到端驗證：線上頁面解出 `HL113T3-06` 的 `e` 欄位（每題各自 base64），
+  走訂正區同一條路徑渲染出 2 個 `.katex` 節點，根號正常。
+
+#### 其他
+- 老師要求：**以後給覆核頁連結一律附上可複製的完整卷名**（已寫進記憶 `review-page-needs-quiz-name`）。
+- 覆核頁「載入失敗：TypeError: Failed to fetch」＝連線層級失敗，通常是瀏覽器裡的「試算表收卷設定」空了或貼錯
+  （換瀏覽器／無痕視窗就會不見）。錯誤訊息目前直接丟 JS 原始錯誤，**建議改成可行動的提示**（尚未做）。

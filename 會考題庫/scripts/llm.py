@@ -24,7 +24,7 @@ from config import get
 
 # 這些家族的模型屬於「推理型」：要給大一點的 token 額度，且多數不吃 temperature。
 # grade_reasoning 設 auto 時用這份清單判斷；要強制就設 true／false。
-REASONING_HINTS = ("gpt-5", "o1", "o3", "o4", "deepseek", "qwen", "kimi", "glm",
+REASONING_HINTS = ("gpt-5", "gpt-6", "o1", "o3", "o4", "deepseek", "qwen", "kimi", "glm",
                    "grok", "minimax", "mimo", "longcat", "hy3", "hy4", "muse",
                    "ring", "ling", "nemotron")
 
