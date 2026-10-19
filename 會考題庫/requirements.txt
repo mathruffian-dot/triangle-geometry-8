@@ -12,6 +12,7 @@ numpy>=1.26          # matplotlib 相依
 # 文件與 PDF
 reportlab>=4.0       # 紙本作答卷、個人回饋單 PDF
 pymupdf>=1.24        # 官方試題 PDF 切圖（import 名稱是 fitz，不是 pymupdf）
+qrcode[pil]>=7.4     # 紙本作答卷封面的 QR code（沒裝會整個卷缺 QR，2026-10-19 踩過）
 
 # 網路與 AI
 requests>=2.31       # 抓官方 PDF、打 Google Apps Script

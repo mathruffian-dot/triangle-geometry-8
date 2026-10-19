@@ -64,18 +64,18 @@ def cover(c, W, H, title, url, n_choice, n_essay):
     c.drawCentredString(W / 2, H - m - 48, "　".join(parts))
     c.setFillGray(0)
 
-    # QR code
+    # QR code（學生靠它進作答網站，缺了就不該產出紙本 → 失敗直接中止，不再默默略過）
     try:
         import qrcode
-        img = qrcode.make(url)
-        tf = tempfile.NamedTemporaryFile(delete=False, suffix=".png"); tf.close()
-        img.save(tf.name)
-        size = 190
-        c.drawImage(tf.name, (W - size) / 2, H - m - 90 - size, size, size)
-        os.unlink(tf.name)
-        y = H - m - 105 - size
-    except Exception:
-        y = H - m - 110
+    except ImportError:
+        raise SystemExit("缺少 qrcode 套件，封面無法印 QR code：pip install \"qrcode[pil]\"")
+    img = qrcode.make(url)
+    tf = tempfile.NamedTemporaryFile(delete=False, suffix=".png"); tf.close()
+    img.save(tf.name)
+    size = 190
+    c.drawImage(tf.name, (W - size) / 2, H - m - 90 - size, size, size)
+    os.unlink(tf.name)
+    y = H - m - 105 - size
     c.setFont(FONT, 12)
     c.drawCentredString(W / 2, y, "寫完後，用平板掃描上方 QR code 上傳作答")
     c.setFont(FONT, 9.5); c.setFillGray(0.4)
@@ -130,15 +130,27 @@ def build(questions, out_path, title="", url="", with_cover=False):
     if choices:
         c.setFont(FONT, 13); c.drawString(m, y, "第一部分：選擇題")
         y -= 22
-    for q in choices:
+    # 跨卷選題（如歷屆精選）時，題圖上印的是原卷題號，與本卷順序對不上 →
+    # 每題上方補印「第 n 題（原出處）」，與線上卷的標題一致。
+    # 題號本來就對得上的卷（翰林、單一年度）不加，版面維持原樣。
+    renum = any(q.get("num") != i + 1 for i, q in enumerate(choices))
+    LBL = 18 if renum else 0
+    for i, q in enumerate(choices):
         ip = ROOT / q["img"]
         if not ip.exists():
             continue
         ir = ImageReader(str(ip)); iw, ih = ir.getSize()
         sc = min((W - 2 * m) / iw, (H - 2 * m) * 0.42 / ih)
         dw, dh = iw * sc, ih * sc
-        if y - dh < m + 26:                      # 這頁放不下 → 換頁
+        if y - dh - LBL < m + 26:                # 這頁放不下 → 換頁
             footer(); c.showPage(); y = H - m - 18
+        if renum:
+            yr = q.get("year", "")
+            src = f"{yr}年會考 第{q.get('num','')}題" if isinstance(yr, int) else f"{yr} 第{q.get('num','')}題"
+            c.setFont(FONT, 12); c.drawString(m, y - 12, f"第 {i + 1} 題")
+            c.setFont(FONT, 9); c.setFillGray(0.45)
+            c.drawString(m + 52, y - 12, f"（{src}）"); c.setFillGray(0)
+            y -= LBL
         c.drawImage(ir, m, y - dh, dw, dh, preserveAspectRatio=True, mask="auto")
         y -= dh + 14
     if choices:
@@ -189,7 +201,8 @@ def main():
         a, b = (args.years.split("-") + [args.years])[:2]
         lo, hi = int(a), int(b)
         ids = [i for i in ids if lo <= ess[i]["year"] <= hi]
-    ids.sort(key=lambda i: (str(ess[i]["year"]), i))
+    if not args.ids:                      # 指定 --ids 時照給定順序（＝卷面題序），不可重排
+        ids.sort(key=lambda i: (str(ess[i]["year"]), i))
     build([ess[i] for i in ids], Path(args.out),
           title=args.title, url=args.url, with_cover=bool(args.url))
 

@@ -92,7 +92,8 @@ def build_user_text(r, student_ans):
 
 def grade_once(r, img_b64, mime, student_ans, model, temperature=0.2):
     """單次評閱。推理型模型需要大一點的額度（含內部推理），否則會回空字串。"""
-    budget = 5000 if is_reasoning(model) else 1200
+    # 5000 在判準多的題目（如 107-N2 有 8 個 checkpoint）會被推理吃光、JSON 截斷 → 拉到 10000（只是上限，不會多花）
+    budget = 10000 if is_reasoning(model) else 1200
     msgs = image_messages(SYS, build_user_text(r, student_ans), img_b64, mime)
     return chat_json(model, msgs, max_tokens=budget, temperature=temperature)
 

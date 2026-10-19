@@ -1307,3 +1307,64 @@ python scripts/annotate_redpen.py --image <原圖.png> --json <標註.json> --ou
 - 老師要求：**以後給覆核頁連結一律附上可複製的完整卷名**（已寫進記憶 `review-page-needs-quiz-name`）。
 - 覆核頁「載入失敗：TypeError: Failed to fetch」＝連線層級失敗，通常是瀏覽器裡的「試算表收卷設定」空了或貼錯
   （換瀏覽器／無痕視窗就會不見）。錯誤訊息目前直接丟 JS 原始錯誤，**建議改成可行動的提示**（尚未做）。
+
+---
+
+### ✅ 2026-10-19 會考模擬卷「歷屆精選（第1~4冊）1019」派科資班（⏳ 部署卡在 Cloudflare 授權）
+
+**卷**：`data/quizzes.json` 的 `cap-b1b4-1019`，classes `["kz"]`（比照 9/14、9/21、10/5 週一下午的 1~4 冊模擬系列）
+→ 網址 `/q/cap-b1b4-1019-kz/`，**卷名（試算表鍵）「會考模擬卷 歷屆精選（第1~4冊）1019｜科資班」**。
+
+**選題規則**（腳本在 scratchpad，邏輯如下，下次可照做）
+- 題池：官方 103~113（**排除 114／115**，已有仿真全卷）、`book` 與每個 `codes` 對應冊別都落在 B1~B4、題圖存在。
+- 排除：後端「作答紀錄」中任何班級答過的題（`?` 全部紀錄的 answers 清單）＋「出題紀錄」（`?assigned=1`）。
+  ⚠ 作答紀錄的 `answers` 是 **list of `{id,a,ok}`**，不是 dict。
+- 結果：選擇 25（B1 6／B2 7／B3 6／B4 6；易 9／中 9／難 7；正解 A7 B7 C6 D5、無連續同答案），
+  第 24~25 題放 112 年題組（高齡社會），題號剛好對上；非選 110-N1（碳足跡近似標示）＋107-N2（格點路徑比較）。
+- 驗證：25 題答案與 `official_answers.json` 逐題一致；27 張題圖逐張目視並自行重算；頁面內嵌答案解碼比對一致。
+
+**修了兩個共用腳本的 bug**
+1. `make_essay_print.py`：給 `--ids` 時仍按年度排序 → 跨年度選題的紙本題序和線上不同（學生照紙本填線上會全錯位）。
+   改成給 `--ids` 就照給定順序；另外「題圖原題號≠卷面題號」時，每題上方補印「第 n 題（xxx年會考 第m題）」。
+   回歸：hanlin-113-3／s115a／sim-114／essay-all 新舊 PDF **逐頁渲染完全相同**。
+2. `llm.py`：`MATH809_GRADE_EXTRA_HEADERS` 從環境變數來是字串，舊程式只吃 dict → **靜默丟掉**
+   （所以 `run_auto_grade.cmd` 的標頭覆寫從來沒生效）。現在會 `json.loads`。
+
+**批改設定（重要）**
+- 這台 `~/.openai.env` **只有 `OPENCODE_API_KEY`，沒有 `OPENAI_API_KEY`** → 原本 config（OpenAI＋gpt-6-luna）一跑就「找不到 API key」。
+- `data/config.json` 改為 **OpenCode＋`gpt-6-luna`＋`grade_api_style=responses`＋`x-opencode-session` 標頭**
+  （模型維持老師 10/5 指定的 gpt-6-luna；它在 OpenCode 的 chat 端點回 `ModelProtocolUnsupported`，要走 responses）。舊檔在 `backup/config_備份_*.json`。
+- `run_auto_grade.cmd` 的四行 OpenAI 覆寫已 `rem` 掉，改吃 config.json。
+- `grade_essays.py` 推理型 token 上限 5000 → 10000：107-N2（8 個判準）三票有一票 `finish_reason=length` 截斷。
+- 離線實測（官方樣卷 `--demo`）：110-N1 3／2／0 級、107-N2 3／2 級 **5/5 正確**，三票一致、信心 0.84~0.95，每份約 90 秒（3 票）。
+  紅筆圖離線試產（不上傳）成功，原圖逐位元相同。小瑕疵：模型寫 `\sqrt5`（沒大括號）會退回純文字顯示，可讀但不美觀。
+
+**⏳ 未完成：部署**
+- `wrangler pages deploy` 回 `Authentication error [code: 10000]`（whoami 顯示主要帳號、有 pages:write，token 06:52 剛刷新仍失敗）。
+  需老師重新 `npx wrangler login`（見 9/14 段的登入注意事項），之後：
+  `npx wrangler pages deploy quiz_site --project-name math809-quiz --branch main --commit-dirty=true`
+- `quiz_site/` 已建好（含 `cap-b1b4-1019-kz/print.pdf`，12 頁），本機瀏覽器實測：27 圖、班級 kz 唯讀、100 選項鈕、2 畫布、無 console 錯誤，未送測試交卷。
+- 題庫站不需重部署（新卷沒有新增題目或規準）。
+- 批改：`python scripts/auto_grade_watch.py --quiz "會考模擬卷 歷屆精選（第1~4冊）1019｜科資班" --until HH:MM`（**不加 `--apply`**，等老師覆核）。`selftest_all.py --quick` ✓ 全部通過。
+
+#### ✅ 2026-10-19（午）已上線＋部署改用 API token
+- **wrangler OAuth 對 Pages 一律 403／10000**：重新 `wrangler login` 無效；同帳號 KV、Workers 正常、帳號正確
+  （math809-quiz 確實在此帳號）。社群 10 月中有相同回報，判斷是 Cloudflare 端問題。後台拖曳上傳也沒產生部署。
+- **解法**：老師建立 API token（Account → Cloudflare Pages → Edit），自行存到 `~/.cloudflare_token`（不進版控、agent 不讀出內容），部署時：
+  ```bash
+  CLOUDFLARE_API_TOKEN="$(tr -d '\r\n ' < "$HOME/.cloudflare_token")" CLOUDFLARE_ACCOUNT_ID=<帳號ID> \
+    npx wrangler pages deploy quiz_site --project-name math809-quiz --branch main --commit-dirty=true
+  ```
+- 部署 `c97daa32`，CDN 首輪即切換；線上與本機 index.html md5 一致、print.pdf 1,374,014 bytes 一致。
+- 正式站實測：27 圖、班級 kz 唯讀、100 選項鈕、2 畫布、25 題內嵌答案與核定答案一致、PDF 可下載、無 console 錯誤；未送測試交卷。
+- 學生網址：https://math809-quiz.pages.dev/q/cap-b1b4-1019-kz/
+
+#### ✅ 2026-10-19（午）補回紙本 QR code、修好排程包裝檔
+- **紙本封面 QR code 整批消失**：這台沒裝 `qrcode`，`make_essay_print.py` 的 `except Exception` 默默略過 → 今早重建的 32 份 print.pdf 全無 QR（老師發現）。
+  已 `pip install "qrcode[pil]"`、補進 `requirements.txt`，並改成缺套件直接中止（不再默默略過）。
+  重建＋部署 `9e9acd55` 後，**從線上下載 32 份 PDF 用 OpenCV 解碼 QR，全部＝各自網址**。
+- **`run_auto_grade.cmd` 在這台根本跑不起來**：① UTF-8 中文註解被 cmd.exe 以 cp950 解析成怪指令（加 `chcp 65001` 也沒用）；
+  ② 寫死 `C:\Python314\python.exe`，這台不存在。→ 改成**純 ASCII**，Python 依序找 `C:\Python314`、`%LOCALAPPDATA%\Programs\Python\Python314`、`python`。
+  以 PowerShell 模擬排程呼叫實測：讀到完整卷名、連上後端、「自動放行 否」、每 120 秒輪詢（測完已停掉程序）。
+- 用正式設定（無任何 MATH809_* 覆寫）再試批：107-N2 官方 2 級樣卷 → 2 級（2,2,2，信心 0.94）；110-N1 p5（2 級＋1 級兩份樣卷同頁）→ 1 級。
+- 後端非選作答盤點：10 份卷 232 筆，**AI 未批 0、未覆核 0、缺紅筆圖 0**。翰林 112 第2次（科資班）線上沒有任何交卷紀錄。

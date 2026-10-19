@@ -60,6 +60,11 @@ def is_reasoning(model: str) -> bool:
 def _headers() -> dict:
     h = {"Authorization": "Bearer " + load_api_key(), "Content-Type": "application/json"}
     extra = get("grade_extra_headers") or {}
+    if isinstance(extra, str):          # 來自環境變數 MATH809_GRADE_EXTRA_HEADERS 時是 JSON 字串
+        try:
+            extra = json.loads(extra)
+        except ValueError:
+            raise SystemExit(f"grade_extra_headers 不是合法 JSON：{extra!r}")
     if isinstance(extra, dict):
         h.update({str(k): str(v) for k, v in extra.items()})
     # 有些 gateway（如 opencode-go）會檢查 User-Agent 是否為「用戶端」而非 SDK
